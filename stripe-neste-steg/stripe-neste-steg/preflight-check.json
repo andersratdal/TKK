@@ -1,0 +1,19 @@
+{
+  "signup_calls_checkout_function": true,
+  "signup_sets_payment_status_ubetalt": true,
+  "app_shows_payment_status": true,
+  "app_gates_move_until_paid": true,
+  "checkout_function_exists": true,
+  "webhook_function_exists": true,
+  "sql_has_payment_columns": true,
+  "syntax": {
+    "create-school-signup-checkout.js": {
+      "ok": true,
+      "stderr": ""
+    },
+    "stripe-webhook.js": {
+      "ok": true,
+      "stderr": ""
+    }
+  }
+}

@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Påmelding skøyteskole – Høst 2026</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg: #f5f8fc;
+      --card: #ffffff;
+      --text: #132238;
+      --muted: #64748b;
+      --line: #dbe4f0;
+      --accent: #003a8f;
+      --good: #166534;
+      --good-bg: #dcfce7;
+      --danger: #991b1b;
+      --danger-bg: #fee2e2;
+      --shadow: 0 18px 40px rgba(16, 35, 63, 0.12);
+      --radius-lg: 22px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(31,79,255,0.10), transparent 32%),
+        linear-gradient(180deg, #f7faff 0%, #edf3fb 100%);
+    }
+    .container { max-width: 820px; margin: 0 auto; padding: 24px 16px 40px; }
+    .card {
+      background: var(--card);
+      border: 1px solid rgba(16,35,63,0.06);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      padding: 24px;
+    }
+    .brand { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+    .brand img { height: 48px; width: auto; object-fit: contain; }
+    .eyebrow { font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); font-weight: 700; margin-bottom: 6px; }
+    h1 { margin: 0; }
+    .title { font-size: 34px; line-height: 1.1; }
+    .subtitle { color: var(--muted); margin-top: 8px; line-height: 1.5; }
+    .notice { margin-top: 18px; padding: 14px 16px; border-radius: 14px; border: 1px solid #bfdbfe; background: #eff6ff; line-height: 1.5; }
+    .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 14px; margin-top: 18px; align-items: end; }
+    .col-6 { grid-column: span 6; }
+    .col-12 { grid-column: span 12; }
+    label { display: block; margin-bottom: 6px; font-size: 14px; font-weight: 700; }
+    input, select {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      background: white;
+      font: inherit;
+    }
+    .field-help, .muted { color: var(--muted); font-size: 14px; line-height: 1.45; margin-top: 6px; }
+    .fixed-batch {
+      display: inline-block;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: #eef2ff;
+      color: #3730a3;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    button {
+      border: none;
+      border-radius: 12px;
+      padding: 12px 16px;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 700;
+      background: var(--accent);
+      color: white;
+    }
+    button:hover { background: #002b68; }
+    button[disabled] { opacity: 0.65; cursor: default; }
+    .message { margin-top: 16px; padding: 14px 16px; border-radius: 14px; display: none; white-space: pre-wrap; line-height: 1.5; }
+    .message.show { display: block; }
+    .message.ok { background: var(--good-bg); color: var(--good); border: 1px solid #86efac; }
+    .message.error { background: var(--danger-bg); color: var(--danger); border: 1px solid #fca5a5; }
+    details { margin-top: 20px; border-top: 1px solid var(--line); padding-top: 16px; }
+    summary { cursor: pointer; font-weight: 700; color: var(--accent); }
+    .footer-note { margin-top: 20px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+    @media (max-width: 700px) {
+      .title { font-size: 28px; }
+      .col-6 { grid-column: span 12; }
+      .card { padding: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="brand">
+        <img src="logo.png" alt="Trondheim Kortbaneklubb" onerror="this.style.display='none'"/>
+        <div>
+          <div class="eyebrow">Trondheim Kortbaneklubb</div>
+          <h1 class="title">Påmelding skøyteskole</h1>
+          <div class="subtitle">
+            Denne siden melder på til <strong>ett aktivt parti</strong>. Akkurat nå gjelder påmeldingen
+            <strong>Høst 2026</strong>. Påmeldingen blir lagret i appens oversikt som en påmelding først.
+            Det opprettes <strong>ikke</strong> automatisk medlem dersom barnet ikke finnes fra før. Etter innsending sendes du videre til betaling i Stripe.
+          </div>
+        </div>
+      </div>
+
+      <div class="notice">
+        <strong>Parti:</strong> <span class="fixed-batch" id="batchBadge">Høst 2026</span><br/>
+        Det er ikke valg av parti på denne siden. Alle påmeldinger går til samme parti.
+      </div>
+
+      <form id="signupForm" class="grid">
+        <div class="col-12">
+          <label for="childName">Barnets navn</label>
+          <input id="childName" type="text" autocomplete="name" placeholder="Fornavn Etternavn" required />
+        </div>
+
+        <div class="col-6">
+          <label for="birthDate">Fødselsdato</label>
+          <input id="birthDate" type="date" required />
+          <div class="field-help">Brukes senere til automatisk plassering i riktig skøyteskolegruppe.</div>
+        </div>
+
+        <div class="col-6">
+          <label for="skateSize">Ønsket størrelse på skøytene</label>
+          <select id="skateSize">
+            <option value="">Velg størrelse (EU)</option>
+            <option value="28">28</option>
+            <option value="29">29</option>
+            <option value="30">30</option>
+            <option value="31">31</option>
+            <option value="32">32</option>
+            <option value="33">33</option>
+            <option value="34">34</option>
+            <option value="35">35</option>
+            <option value="36">36</option>
+            <option value="37">37</option>
+            <option value="38">38</option>
+            <option value="39">39</option>
+            <option value="40">40</option>
+          </select>
+          <div class="field-help">Velg størrelse hvis barnet trenger å låne skøyter.</div>
+        </div>
+
+        <div class="col-6" style="display:flex; align-items:flex-end;">
+          <label style="display:flex; align-items:center; gap:8px; font-weight:700; margin:0 0 12px 0;">
+            <input id="hasOwnSkates" type="checkbox" />
+            Har egne skøyter
+          </label>
+        </div>
+
+        <div class="col-12 field-help">
+          Du må enten velge ønsket størrelse eller krysse av for at barnet har egne skøyter. Du kan ikke fylle ut begge.
+        </div>
+
+        <div class="col-6">
+          <label for="phone">Telefon</label>
+          <input id="phone" type="tel" autocomplete="tel" placeholder="For eksempel 90000000" />
+          <div class="field-help">Bruk gjerne telefon til foresatt dersom barnet ikke har egen.</div>
+        </div>
+
+        <div class="col-6">
+          <label for="email">E-post</label>
+          <input id="email" type="email" autocomplete="email" placeholder="navn@epost.no" />
+          <div class="field-help">Bruk gjerne e-post til foresatt dersom barnet ikke har egen.</div>
+        </div>
+
+        <div class="col-12">
+          <button id="submitBtn" type="submit">Send påmelding</button>
+        </div>
+      </form>
+
+      <div id="message" class="message"></div>
+
+      <details>
+        <summary>Teknisk oppsett</summary>
+        <div class="grid">
+          <div class="col-12 muted">
+            Siden prøver først å bruke samme Supabase-oppsett som hovedappen via lagret konfigurasjon i nettleseren.
+            Hvis det ikke finnes, kan du fylle inn URL og anon key her.
+          </div>
+          <div class="col-6">
+            <label for="supabaseUrl">Supabase URL</label>
+            <input id="supabaseUrl" type="text" placeholder="https://xxxxx.supabase.co" />
+          </div>
+          <div class="col-6">
+            <label for="supabaseAnonKey">Supabase anon public key</label>
+            <input id="supabaseAnonKey" type="text" placeholder="eyJ..." />
+          </div>
+        </div>
+      </details>
+
+      <div class="footer-note">
+        Påmeldingen lagres i tabellen <code>skating_school_signups</code>. Hvis barnet allerede finnes som medlem,
+        kobles påmeldingen til eksisterende medlems-ID. Hvis ikke, lagres den som påmelding uten at medlem opprettes automatisk.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const CONFIG_KEY = "skoyteutleie_supabase_config_v7";
+    const ACTIVE_BATCH_NAME = "Høst 2026";
+    let supabaseClient = null;
+
+    function byId(id) { return document.getElementById(id); }
+    function normalizeValue(value) { return String(value || "").trim(); }
+    function normalizePhone(value) { return normalizeValue(value).replace(/\s+/g, ""); }
+
+    function setMessage(text, isError) {
+      const box = byId("message");
+      box.textContent = text || "";
+      box.className = "message show " + (isError ? "error" : "ok");
+    }
+
+    function loadSavedConfig() {
+      try {
+        const raw = localStorage.getItem(CONFIG_KEY);
+        const parsed = raw ? JSON.parse(raw) : {};
+        byId("supabaseUrl").value = parsed.url || "";
+        byId("supabaseAnonKey").value = parsed.anonKey || "";
+        return parsed;
+      } catch (error) {
+        console.error(error);
+        return {};
+      }
+    }
+
+    function initSupabase() {
+      const saved = loadSavedConfig();
+      const url = normalizeValue(byId("supabaseUrl").value || saved.url || "");
+      const anonKey = normalizeValue(byId("supabaseAnonKey").value || saved.anonKey || "");
+      if (!url || !anonKey) return null;
+      if (!window.supabase || !window.supabase.createClient) {
+        throw new Error("Supabase-biblioteket ble ikke lastet.");
+      }
+      supabaseClient = window.supabase.createClient(url, anonKey);
+      return supabaseClient;
+    }
+
+    async function findActiveBatch() {
+      const res = await supabaseClient
+        .from("skating_school_batches")
+        .select("id, name, department_id, status")
+        .eq("name", ACTIVE_BATCH_NAME)
+        .limit(1)
+        .maybeSingle();
+      if (res.error) throw res.error;
+      return res.data || null;
+    }
+
+    async function submitSignup(event) {
+      event.preventDefault();
+
+      const childName = normalizeValue(byId("childName").value);
+      const birthDate = normalizeValue(byId("birthDate").value);
+      const phone = normalizePhone(byId("phone").value);
+      const email = normalizeValue(byId("email").value).toLowerCase();
+      const skateSize = normalizeValue(byId("skateSize").value);
+      const hasOwnSkates = !!byId("hasOwnSkates").checked;
+
+      if (!childName) return setMessage("Du må fylle inn barnets navn.", true);
+      if (!birthDate) return setMessage("Du må fylle inn fødselsdato.", true);
+      if (!phone && !email) return setMessage("Du må fylle inn telefon eller e-post.", true);
+      if (!skateSize && !hasOwnSkates) return setMessage("Du må enten velge skøytestørrelse eller krysse av for egne skøyter.", true);
+      if (skateSize && hasOwnSkates) return setMessage("Du kan ikke velge både størrelse og egne skøyter.", true);
+
+      try {
+        if (!supabaseClient) initSupabase();
+        if (!supabaseClient) {
+          throw new Error("Supabase-oppsett mangler. Fyll inn URL og anon key under Teknisk oppsett.");
+        }
+
+        byId("submitBtn").disabled = true;
+        setMessage("Sender påmelding ...", false);
+
+        const activeBatch = await findActiveBatch();
+        if (!activeBatch) {
+          throw new Error("Fant ikke partiet " + ACTIVE_BATCH_NAME + " i databasen.");
+        }
+
+        const insertRes = await supabaseClient
+          .from("skating_school_signups")
+          .insert([{
+            batch_name: activeBatch.name,
+            batch_id: activeBatch.id,
+            department_id: activeBatch.department_id || null,
+            child_name: childName,
+            phone: phone || null,
+            email: email || null,
+            birth_date: birthDate,
+            requested_skate_size: skateSize || null,
+            has_own_skates: hasOwnSkates,
+            status: "Ny",
+            payment_status: "Ubetalt",
+            amount_nok: 1500,
+            source: "signup_page",
+            notes: "Påmeldt via offentlig påmeldingsside."
+          }])
+          .select()
+          .single();
+
+        if (insertRes.error) throw insertRes.error;
+
+        setMessage("Påmelding registrert. Sender deg videre til betaling ...", false);
+
+        const checkoutRes = await fetch("/.netlify/functions/create-school-signup-checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ signup_id: insertRes.data.id })
+        });
+
+        const checkoutData = await checkoutRes.json().catch(() => ({}));
+        if (!checkoutRes.ok) {
+          throw new Error(checkoutData && checkoutData.error ? checkoutData.error : "Kunne ikke starte betaling.");
+        }
+        if (!checkoutData.url) {
+          throw new Error("Fant ikke betalingslenke fra serveren.");
+        }
+
+        window.location.href = checkoutData.url;
+      } catch (error) {
+        console.error(error);
+        setMessage("Kunne ikke sende påmelding.\n\n" + (error && error.message ? error.message : error), true);
+      } finally {
+        byId("submitBtn").disabled = false;
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+      loadSavedConfig();
+      byId("batchBadge").textContent = ACTIVE_BATCH_NAME;
+      byId("signupForm").addEventListener("submit", submitSignup);
+    });
+  </script>
+</body>
+</html>

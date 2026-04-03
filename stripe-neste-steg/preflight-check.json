@@ -1,0 +1,7 @@
+{
+  "app_points_to_pamelding_html": true,
+  "app_no_old_signup_link": true,
+  "signup_no_hardcoded_amount": true,
+  "checkout_uses_env_first": true,
+  "checkout_enables_phone_collection": true
+}
