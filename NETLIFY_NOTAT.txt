@@ -1,0 +1,4 @@
+Netlify endring:
+- legg inn miljøvariabelen SCHOOL_SIGNUP_AMOUNT_NOK, f.eks. 1500
+- erstatt Netlify function-fila create-school-signup-checkout.js med denne nye versjonen
+- påmeldingssiden krever nå både telefon og e-post
