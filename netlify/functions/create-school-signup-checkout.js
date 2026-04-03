@@ -18,35 +18,42 @@ exports.handler = async (event) => {
 
   try {
     const { signup_id } = JSON.parse(event.body || "{}");
-    if (!signup_id) return json(400, { error: "signup_id mangler" });
+    if (!signup_id) {
+      return json(400, { error: "signup_id mangler" });
+    }
 
     const supabase = createClient(
       process.env.SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY
     );
 
-    const signupRes = await supabase
+    const { data: signup, error } = await supabase
       .from("skating_school_signups")
-      .select("id, batch_name, child_name, email, payment_status, amount_nok")
+      .select("id, batch_name, child_name, email, phone, payment_status, amount_nok")
       .eq("id", signup_id)
       .single();
 
-    if (signupRes.error || !signupRes.data) {
+    if (error || !signup) {
       return json(404, { error: "Fant ikke påmelding" });
     }
 
-    const signup = signupRes.data;
     if (String(signup.payment_status || "") === "Betalt") {
-      return json(400, { error: "Påmeldingen er allerede betalt" });
+      return json(400, { error: "Allerede betalt" });
     }
 
-    const amountNok = Number(signup.amount_nok || 1500);
+    // 🔥 Viktig linje (styrer beløp)
+    const amountNok = Number(
+      process.env.SCHOOL_SIGNUP_AMOUNT_NOK || signup.amount_nok || 1500
+    );
+
     const siteUrl = process.env.SITE_URL || process.env.URL || "";
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
+
       success_url: `${siteUrl}/betaling-fullfort.html?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${siteUrl}/betaling-avbrutt.html?signup_id=${signup.id}`,
+
       line_items: [
         {
           price_data: {
@@ -59,15 +66,23 @@ exports.handler = async (event) => {
           quantity: 1,
         },
       ],
+
       customer_email: signup.email || undefined,
+
+      // 👉 gjør at Stripe spør etter telefon
+      phone_number_collection: {
+        enabled: true,
+      },
+
       metadata: {
         signup_id: String(signup.id),
         child_name: String(signup.child_name || ""),
         batch_name: String(signup.batch_name || ""),
+        phone: String(signup.phone || ""),
       },
     });
 
-    const upd = await supabase
+    await supabase
       .from("skating_school_signups")
       .update({
         stripe_checkout_session_id: session.id,
@@ -75,13 +90,13 @@ exports.handler = async (event) => {
       })
       .eq("id", signup.id);
 
-    if (upd.error) {
-      return json(500, { error: "Checkout ble opprettet, men kunne ikke lagre session-id i databasen." });
-    }
+    return json(200, {
+      url: session.url,
+      amount_nok: amountNok,
+    });
 
-    return json(200, { url: session.url, session_id: session.id });
-  } catch (error) {
-    console.error(error);
-    return json(500, { error: error && error.message ? error.message : "Ukjent feil" });
+  } catch (err) {
+    console.error(err);
+    return json(500, { error: err.message || "Ukjent feil" });
   }
 };
