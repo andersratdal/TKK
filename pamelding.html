@@ -202,9 +202,14 @@
   </div>
 
   <script>
-    const CONFIG_KEY = "skoyteutleie_supabase_config_v7";
-    const ACTIVE_BATCH_NAME = "Høst 2026";
-    let supabaseClient = null;
+const CONFIG_KEY = "skoyteutleie_supabase_config_v7";
+const ACTIVE_BATCH_NAME = "Høst 2026";
+
+// 🔥 LEGG INN DISSE TO
+const HARD_CODED_SUPABASE_URL = "https://dcfhisxyiuatftzjtuwz.supabase.co";
+const HARD_CODED_SUPABASE_ANON_KEY = sb_publishable_W_3O4m4r0aZ3ukSOJVTcHw_Gy6W6uj9;
+
+let supabaseClient = null;
 
     function byId(id) { return document.getElementById(id); }
     function normalizeValue(value) { return String(value || "").trim(); }
