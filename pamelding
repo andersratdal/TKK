@@ -150,7 +150,7 @@
   <script>
     const ACTIVE_BATCH_NAME = "Høst 2026";
     const SUPABASE_URL = "https://dcfhisxyiuatftzjtuwz.supabase.co";
-    const SUPABASE_ANON_KEY = "";
+    const SUPABASE_ANON_KEY = "sb_publishable_W_3O4m4r0aZ3ukSOJVTcHw_Gy6W6uj9";
 
     let supabaseClient = null;
 
