@@ -41,10 +41,19 @@ exports.handler = async (event) => {
       return json(400, { error: "Allerede betalt" });
     }
 
-    // 🔥 Viktig linje (styrer beløp)
-    const amountNok = Number(
-      process.env.SCHOOL_SIGNUP_AMOUNT_NOK || signup.amount_nok || 1500
-    );
+const amountNokRaw = process.env.SCHOOL_SIGNUP_AMOUNT_NOK;
+
+if (!amountNokRaw) {
+  console.error("Missing SCHOOL_SIGNUP_AMOUNT_NOK");
+  return json(500, { error: "Server config error: missing amount" });
+}
+
+const amountNok = Number(amountNokRaw);
+
+if (!Number.isFinite(amountNok) || amountNok <= 0) {
+  console.error("Invalid SCHOOL_SIGNUP_AMOUNT_NOK:", amountNokRaw);
+  return json(500, { error: "Server config error: invalid amount" });
+}
 
     const siteUrl = process.env.SITE_URL || process.env.URL || "";
 
