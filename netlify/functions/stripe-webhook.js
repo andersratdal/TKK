@@ -3,9 +3,17 @@ const { createClient } = require("@supabase/supabase-js");
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
+function json(statusCode, body) {
+  return {
+    statusCode,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  };
+}
+
 exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: "Method not allowed" };
+    return json(405, { error: "Method not allowed" });
   }
 
   try {
@@ -13,62 +21,79 @@ exports.handler = async (event) => {
       event.headers["stripe-signature"] ||
       event.headers["Stripe-Signature"];
 
-    const body = event.isBase64Encoded
-      ? Buffer.from(event.body || "", "base64").toString("utf8")
-      : (event.body || "");
+    if (!signature) {
+      console.error("Missing Stripe signature header");
+      return json(400, { error: "Missing Stripe signature" });
+    }
+
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    if (!webhookSecret) {
+      console.error("Missing STRIPE_WEBHOOK_SECRET");
+      return json(500, { error: "Missing STRIPE_WEBHOOK_SECRET" });
+    }
 
     const stripeEvent = stripe.webhooks.constructEvent(
-      body,
+      event.body,
       signature,
-      process.env.STRIPE_WEBHOOK_SECRET
+      webhookSecret
     );
+
     console.log("Stripe webhook received", {
-  type: stripeEvent.type,
-  id: stripeEvent.id,
-});
+      type: stripeEvent.type,
+      id: stripeEvent.id,
+    });
 
     if (stripeEvent.type === "checkout.session.completed") {
       const session = stripeEvent.data.object;
-      const signupId = session && session.metadata ? session.metadata.signup_id : null;
+
+      const signupId =
+        session?.metadata?.signup_id ||
+        session?.client_reference_id ||
+        null;
 
       if (!signupId) {
-  console.error("Missing signupId in Stripe session", {
-    sessionId: session?.id,
-    metadata: session?.metadata,
-    client_reference_id: session?.client_reference_id,
-  });
-  return { statusCode: 200, body: JSON.stringify({ received: true }) };
-}
+        console.error("Missing signupId in Stripe session", {
+          sessionId: session?.id,
+          metadata: session?.metadata,
+          client_reference_id: session?.client_reference_id,
+        });
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-
-const upd = await supabase
-  .from("skating_school_signups")
-  .update({
-    payment_status: "Betalt",
-    stripe_checkout_session_id: session.id || null,
-    stripe_payment_intent_id: session.payment_intent || null,
-    paid_at: new Date().toISOString(),
-  })
-  .eq("id", signupId);
-
-if (upd.error) {
-  console.error("Supabase update failed", upd.error);
-  return { statusCode: 500, body: "Database update failed" };
-}
+        return json(200, { received: true });
       }
+
+      const supabase = createClient(
+        process.env.SUPABASE_URL,
+        process.env.SUPABASE_SERVICE_ROLE_KEY
+      );
+
+      const upd = await supabase
+        .from("skating_school_signups")
+        .update({
+          payment_status: "Betalt",
+          stripe_checkout_session_id: session.id || null,
+          stripe_payment_intent_id: session.payment_intent || null,
+          paid_at: new Date().toISOString(),
+        })
+        .eq("id", signupId);
+
+      if (upd.error) {
+        console.error("Supabase update failed", upd.error);
+        return {
+          statusCode: 500,
+          body: "Database update failed",
+        };
+      }
+
+      console.log("Signup marked as paid", {
+        signupId,
+        sessionId: session?.id,
+        paymentIntentId: session?.payment_intent || null,
+      });
     }
 
-    return { statusCode: 200, body: JSON.stringify({ received: true }) };
+    return json(200, { received: true });
   } catch (error) {
-    console.error(error);
-    return { statusCode: 400, body: `Webhook Error: ${error.message}` };
+    console.error("Stripe webhook error:", error);
+    return json(400, { error: "Webhook Error" });
   }
-};
-
-exports.config = {
-  path: "/.netlify/functions/stripe-webhook",
 };
