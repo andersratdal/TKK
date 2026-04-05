@@ -22,6 +22,10 @@ exports.handler = async (event) => {
       signature,
       process.env.STRIPE_WEBHOOK_SECRET
     );
+    console.log("Stripe webhook received", {
+  type: stripeEvent.type,
+  id: stripeEvent.id,
+});
 
     if (stripeEvent.type === "checkout.session.completed") {
       const session = stripeEvent.data.object;
