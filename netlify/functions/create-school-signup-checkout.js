@@ -3,11 +3,11 @@ const { createClient } = require("@supabase/supabase-js");
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-function json(statusCode, payload) {
+function json(statusCode, body) {
   return {
     statusCode,
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(body),
   };
 }
 
@@ -18,8 +18,9 @@ exports.handler = async (event) => {
 
   try {
     const { signup_id } = JSON.parse(event.body || "{}");
+
     if (!signup_id) {
-      return json(400, { error: "signup_id mangler" });
+      return json(400, { error: "Missing signup_id" });
     }
 
     const supabase = createClient(
@@ -27,85 +28,100 @@ exports.handler = async (event) => {
       process.env.SUPABASE_SERVICE_ROLE_KEY
     );
 
-    const { data: signup, error } = await supabase
+    const { data: signup, error: signupError } = await supabase
       .from("skating_school_signups")
-      .select("id, batch_name, child_name, email, phone, payment_status, amount_nok")
+      .select("*")
       .eq("id", signup_id)
       .single();
 
-    if (error || !signup) {
-      return json(404, { error: "Fant ikke påmelding" });
+    if (signupError || !signup) {
+      console.error("Signup fetch error:", signupError);
+      return json(404, { error: "Signup not found" });
     }
 
     if (String(signup.payment_status || "") === "Betalt") {
-      return json(400, { error: "Allerede betalt" });
+      return json(400, { error: "Signup is already paid" });
     }
 
-const amountNokRaw = process.env.SCHOOL_SIGNUP_AMOUNT_NOK;
+    const amountNokRaw = process.env.SCHOOL_SIGNUP_AMOUNT_NOK;
 
-if (!amountNokRaw) {
-  console.error("Missing SCHOOL_SIGNUP_AMOUNT_NOK");
-  return json(500, { error: "Server config error: missing amount" });
-}
+    if (!amountNokRaw) {
+      console.error("Missing SCHOOL_SIGNUP_AMOUNT_NOK");
+      return json(500, { error: "Server config error: missing amount" });
+    }
 
-const amountNok = Number(amountNokRaw);
+    const amountNok = Number(amountNokRaw);
 
-if (!Number.isFinite(amountNok) || amountNok <= 0) {
-  console.error("Invalid SCHOOL_SIGNUP_AMOUNT_NOK:", amountNokRaw);
-  return json(500, { error: "Server config error: invalid amount" });
-}
+    if (!Number.isFinite(amountNok) || amountNok <= 0) {
+      console.error("Invalid SCHOOL_SIGNUP_AMOUNT_NOK:", amountNokRaw);
+      return json(500, { error: "Server config error: invalid amount" });
+    }
 
+    const unitAmountOre = Math.round(amountNok * 100);
     const siteUrl = process.env.SITE_URL || process.env.URL || "";
+
+    if (!siteUrl) {
+      console.error("Missing SITE_URL");
+      return json(500, { error: "Missing SITE_URL" });
+    }
+
+    console.log("Checkout debug", {
+      signup_id: signup.id,
+      env_amount: process.env.SCHOOL_SIGNUP_AMOUNT_NOK,
+      parsed_amount: amountNok,
+      unit_amount_ore: unitAmountOre,
+      site_url: siteUrl,
+    });
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
-
+      client_reference_id: String(signup.id),
       success_url: `${siteUrl}/betaling-fullfort.html?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${siteUrl}/betaling-avbrutt.html?signup_id=${signup.id}`,
-
-      line_items: [
-        {
-          price_data: {
-            currency: "nok",
-            product_data: {
-              name: `Skøyteskole ${signup.batch_name || ""}`.trim(),
-            },
-            unit_amount: Math.round(amountNok * 100),
-          },
-          quantity: 1,
-        },
-      ],
-
+      cancel_url: `${siteUrl}/betaling-avbrutt.html`,
       customer_email: signup.email || undefined,
-
-      // 👉 gjør at Stripe spør etter telefon
       phone_number_collection: {
         enabled: true,
       },
-
       metadata: {
         signup_id: String(signup.id),
         child_name: String(signup.child_name || ""),
         batch_name: String(signup.batch_name || ""),
         phone: String(signup.phone || ""),
       },
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: "nok",
+            unit_amount: unitAmountOre,
+            product_data: {
+              name: "Skøyteskole",
+              description: "Trondheim Kortbaneklubb",
+            },
+          },
+        },
+      ],
     });
 
-    await supabase
+    const { error: updateError } = await supabase
       .from("skating_school_signups")
       .update({
-        stripe_checkout_session_id: session.id,
         amount_nok: amountNok,
+        stripe_checkout_session_id: session.id,
       })
       .eq("id", signup.id);
 
+    if (updateError) {
+      console.error("Signup update error:", updateError);
+      return json(500, { error: "Failed to update signup before checkout" });
+    }
+
     return json(200, {
       url: session.url,
-      amount_nok: amountNok,
+      session_id: session.id,
     });
-
-  } catch (err) {
-    console.error(err);
-    return json(500, { error: err.message || "Ukjent feil" });
+  } catch (error) {
+    console.error("Create checkout error:", error);
+    return json(500, { error: "Failed to create checkout session" });
   }
 };
