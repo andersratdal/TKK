@@ -27,26 +27,34 @@ exports.handler = async (event) => {
       const session = stripeEvent.data.object;
       const signupId = session && session.metadata ? session.metadata.signup_id : null;
 
-      if (signupId) {
-        const supabase = createClient(
-          process.env.SUPABASE_URL,
-          process.env.SUPABASE_SERVICE_ROLE_KEY
-        );
+      if (!signupId) {
+  console.error("Missing signupId in Stripe session", {
+    sessionId: session?.id,
+    metadata: session?.metadata,
+    client_reference_id: session?.client_reference_id,
+  });
+  return { statusCode: 200, body: JSON.stringify({ received: true }) };
+}
 
-        const upd = await supabase
-          .from("skating_school_signups")
-          .update({
-            payment_status: "Betalt",
-            stripe_checkout_session_id: session.id || null,
-            stripe_payment_intent_id: session.payment_intent || null,
-            paid_at: new Date().toISOString(),
-          })
-          .eq("id", signupId);
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
-        if (upd.error) {
-          console.error("Supabase update failed", upd.error);
-          return { statusCode: 500, body: "Database update failed" };
-        }
+const upd = await supabase
+  .from("skating_school_signups")
+  .update({
+    payment_status: "Betalt",
+    stripe_checkout_session_id: session.id || null,
+    stripe_payment_intent_id: session.payment_intent || null,
+    paid_at: new Date().toISOString(),
+  })
+  .eq("id", signupId);
+
+if (upd.error) {
+  console.error("Supabase update failed", upd.error);
+  return { statusCode: 500, body: "Database update failed" };
+}
       }
     }
 
