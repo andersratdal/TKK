@@ -65,18 +65,10 @@ exports.handler = async (event) => {
       return json(500, { error: "Missing SITE_URL" });
     }
 
-    console.log("Checkout debug", {
-      signup_id: signup.id,
-      env_amount: process.env.SCHOOL_SIGNUP_AMOUNT_NOK,
-      parsed_amount: amountNok,
-      unit_amount_ore: unitAmountOre,
-      site_url: siteUrl,
-    });
-
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       client_reference_id: String(signup.id),
-      success_url: `${siteUrl}/pamelding-bekreftet-tkk.html?session_id={CHECKOUT_SESSION_ID}`,,
+      success_url: `${siteUrl}/pamelding-bekreftet.html?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${siteUrl}/betaling-avbrutt.html`,
       customer_email: signup.email || undefined,
       phone_number_collection: {
