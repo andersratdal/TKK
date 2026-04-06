@@ -76,7 +76,7 @@ exports.handler = async (event) => {
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       client_reference_id: String(signup.id),
-      success_url: `${siteUrl}/betaling-fullfort.html?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${siteUrl}/pamelding-bekreftet-tkk.html?session_id={CHECKOUT_SESSION_ID}`,,
       cancel_url: `${siteUrl}/betaling-avbrutt.html`,
       customer_email: signup.email || undefined,
       phone_number_collection: {
