@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Videre til MinIdrett</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f4f7fb;
+      color: #1f2937;
+      min-height: 100vh;
+    }
+
+    .page {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 24px 16px 40px;
+    }
+
+    .video-wrapper {
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+
+    video {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: #000;
+    }
+
+    .button-wrap {
+      text-align: center;
+      margin: 0 0 24px;
+    }
+
+    .button {
+      display: inline-block;
+      padding: 14px 24px;
+      background: #1d4ed8;
+      color: white;
+      text-decoration: none;
+      border-radius: 10px;
+      font-weight: bold;
+    }
+
+    .button:hover {
+      background: #1e40af;
+    }
+
+    .content {
+      background: #ffffff;
+      padding: 32px;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+      text-align: center;
+    }
+
+    h1 {
+      margin-top: 0;
+      color: #0f172a;
+      font-size: 2rem;
+    }
+
+    p {
+      font-size: 1.1rem;
+      line-height: 1.6;
+      margin: 16px 0;
+    }
+
+    .highlight {
+      font-weight: bold;
+    }
+
+    .countdown {
+      margin-top: 24px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #1d4ed8;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="video-wrapper">
+      <video autoplay muted playsinline controls>
+        <source src="TKK avatar.mp4" type="video/mp4" />
+        Nettleseren din støtter ikke videoavspilling.
+      </video>
+    </div>
+
+    <div class="button-wrap">
+      <a class="button" href="https://minidrett.nif.no/">
+        Gå direkte til MinIdrett
+      </a>
+    </div>
+
+    <div class="content">
+      <h1>Takk for påmeldingen!</h1>
+
+      <p>Du har nå meldt deg på skøyteskolen.</p>
+
+      <p>
+        Dersom du <span class="highlight">ikke allerede er medlem i skøyteklubben</span>,
+        må du nå registrere medlemskap i <span class="highlight">MinIdrett</span>,
+        som er Norges idrettsforbund sin portal for medlemsregistrering.
+      </p>
+
+      <p>
+        Du blir automatisk sendt videre til <span class="highlight">minidrett.no</span>.
+      </p>
+
+      <p class="countdown">
+        Viderekobler om <span id="seconds">40</span> sekunder...
+      </p>
+    </div>
+  </div>
+
+  <script>
+    const targetUrl = "https://minidrett.nif.no/";
+    let seconds = 40;
+    const secondsEl = document.getElementById("seconds");
+
+    const timer = setInterval(() => {
+      seconds--;
+      secondsEl.textContent = seconds;
+
+      if (seconds <= 0) {
+        clearInterval(timer);
+        window.location.href = targetUrl;
+      }
+    }, 1000);
+  </script>
+</body>
+</html>
