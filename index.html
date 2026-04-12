@@ -3228,9 +3228,14 @@ async function moveSignupToParticipant(signupId) {
   }
 
   try {
-    if (String(signup.payment_status || "Ubetalt") !== "Betalt") {
-      setSchoolMessage("schoolSignupMessage", "Barnet må være betalt før det kan flyttes til deltaker.", true);
-      return;
+    if (
+  String(signup.payment_status || "Ubetalt") !== "Betalt" &&
+  String(signup.payment_status || "Ubetalt") !== "Fritatt" &&
+  signup.payment_exempt !== true
+) {
+  setSchoolMessage("schoolSignupMessage", "Barnet må være betalt før det kan flyttes til deltaker.", true);
+  return;
+}
     }
     setSchoolMessage("schoolSignupMessage", "Flytter påmelding til deltaker ...", false);
     const result = await moveSingleSignupToParticipant(signup, { reloadAfter: true });
