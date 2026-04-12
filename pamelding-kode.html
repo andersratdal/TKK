@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Påmelding skøyteskole med kode</title>
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #d1d5db;
+      --primary: #0f766e;
+      --primary-dark: #115e59;
+      --danger: #b91c1c;
+      --success: #166534;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 24px 16px 48px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+    }
+
+    h1, h2, h3 {
+      margin-top: 0;
+    }
+
+    p {
+      line-height: 1.5;
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .grid-2 {
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    input, select, button, textarea {
+      font: inherit;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+    }
+
+    input[type="checkbox"] {
+      width: auto;
+      margin-right: 8px;
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      margin-top: 10px;
+    }
+
+    .child-card {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      margin-top: 18px;
+      background: #fcfcfd;
+    }
+
+    .child-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 24px;
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 12px 18px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+    }
+
+    .btn-secondary {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    .btn-danger {
+      background: #fee2e2;
+      color: var(--danger);
+    }
+
+    .message {
+      margin-top: 18px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      display: none;
+    }
+
+    .message.error {
+      display: block;
+      background: #fef2f2;
+      color: var(--danger);
+      border: 1px solid #fecaca;
+    }
+
+    .message.success {
+      display: block;
+      background: #f0fdf4;
+      color: var(--success);
+      border: 1px solid #bbf7d0;
+    }
+
+    .required {
+      color: var(--danger);
+    }
+
+    .small {
+      font-size: 0.95rem;
+    }
+
+    .loading {
+      opacity: 0.7;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>Påmelding til skøyteskole med kode</h1>
+      <p class="muted">
+        Denne siden er for deltakere som har fått tildelt en kode og derfor ikke skal betale ved påmelding.
+      </p>
+
+      <form id="signupForm">
+        <div class="grid grid-2">
+          <div>
+            <label for="access_code">Kode <span class="required">*</span></label>
+            <input id="access_code" name="access_code" type="text" required />
+          </div>
+
+          <div>
+            <label for="email">E-post <span class="required">*</span></label>
+            <input id="email" name="email" type="email" required />
+          </div>
+
+          <div>
+            <label for="phone">Telefon <span class="required">*</span></label>
+            <input id="phone" name="phone" type="tel" required />
+          </div>
+        </div>
+
+        <div id="childrenContainer"></div>
+
+        <div class="actions">
+          <button type="button" class="btn-secondary" id="addChildBtn">Legg til barn</button>
+          <button type="submit" class="btn-primary" id="submitBtn">Send påmelding</button>
+        </div>
+
+        <div id="message" class="message"></div>
+      </form>
+    </div>
+  </div>
+
+  <template id="childTemplate">
+    <div class="child-card">
+      <div class="child-header">
+        <h3>Barn <span class="child-number"></span></h3>
+        <button type="button" class="btn-danger remove-child-btn">Fjern</button>
+      </div>
+
+      <div class="grid grid-2">
+        <div>
+          <label>Barnets navn <span class="required">*</span></label>
+          <input type="text" class="child-name" required />
+        </div>
+
+        <div>
+          <label>Fødselsdato <span class="required">*</span></label>
+          <input type="date" class="birth-date" required />
+        </div>
+
+        <div>
+          <label>Ønsket skøytestørrelse</label>
+          <select class="requested-skate-size">
+            <option value="">Velg størrelse</option>
+            <option value="24">24</option>
+            <option value="25">25</option>
+            <option value="26">26</option>
+            <option value="27">27</option>
+            <option value="28">28</option>
+            <option value="29">29</option>
+            <option value="30">30</option>
+            <option value="31">31</option>
+            <option value="32">32</option>
+            <option value="33">33</option>
+            <option value="34">34</option>
+            <option value="35">35</option>
+            <option value="36">36</option>
+            <option value="37">37</option>
+            <option value="38">38</option>
+            <option value="39">39</option>
+            <option value="40">40</option>
+            <option value="41">41</option>
+            <option value="42">42</option>
+            <option value="43">43</option>
+            <option value="44">44</option>
+            <option value="45">45</option>
+          </select>
+          <div class="small muted">La stå tom hvis barnet har egne skøyter.</div>
+        </div>
+
+        <div>
+          <label>&nbsp;</label>
+          <div class="checkbox-row">
+            <input type="checkbox" class="has-own-skates" />
+            <span>Har egne skøyter</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <script>
+    const ACTIVE_BATCH_NAME = "Høst 2026";
+
+    const form = document.getElementById("signupForm");
+    const childrenContainer = document.getElementById("childrenContainer");
+    const addChildBtn = document.getElementById("addChildBtn");
+    const submitBtn = document.getElementById("submitBtn");
+    const messageBox = document.getElementById("message");
+    const childTemplate = document.getElementById("childTemplate");
+
+    function showMessage(text, type = "error") {
+      messageBox.textContent = text;
+      messageBox.className = `message ${type}`;
+    }
+
+    function clearMessage() {
+      messageBox.textContent = "";
+      messageBox.className = "message";
+    }
+
+    function updateChildNumbers() {
+      const cards = childrenContainer.querySelectorAll(".child-card");
+      cards.forEach((card, index) => {
+        const numberEl = card.querySelector(".child-number");
+        const removeBtn = card.querySelector(".remove-child-btn");
+        numberEl.textContent = index + 1;
+        removeBtn.style.display = cards.length > 1 ? "inline-block" : "none";
+      });
+    }
+
+    function addChild() {
+      const clone = childTemplate.content.cloneNode(true);
+      const card = clone.querySelector(".child-card");
+      const skateSizeSelect = card.querySelector(".requested-skate-size");
+      const ownSkatesCheckbox = card.querySelector(".has-own-skates");
+      const removeBtn = card.querySelector(".remove-child-btn");
+
+      ownSkatesCheckbox.addEventListener("change", () => {
+        if (ownSkatesCheckbox.checked) {
+          skateSizeSelect.value = "";
+          skateSizeSelect.disabled = true;
+        } else {
+          skateSizeSelect.disabled = false;
+        }
+      });
+
+      skateSizeSelect.addEventListener("change", () => {
+        if (skateSizeSelect.value) {
+          ownSkatesCheckbox.checked = false;
+        }
+      });
+
+      removeBtn.addEventListener("click", () => {
+        card.remove();
+        updateChildNumbers();
+      });
+
+      childrenContainer.appendChild(clone);
+      updateChildNumbers();
+    }
+
+    function collectChildren() {
+      const cards = childrenContainer.querySelectorAll(".child-card");
+
+      return Array.from(cards).map((card) => ({
+        child_name: card.querySelector(".child-name").value.trim(),
+        birth_date: card.querySelector(".birth-date").value,
+        requested_skate_size: card.querySelector(".requested-skate-size").value || null,
+        has_own_skates: card.querySelector(".has-own-skates").checked
+      }));
+    }
+
+    function validateChildren(children) {
+      if (!children.length) {
+        return "Du må legge til minst ett barn.";
+      }
+
+      for (let i = 0; i < children.length; i += 1) {
+        const child = children[i];
+        const nr = i + 1;
+
+        if (!child.child_name) {
+          return `Barn ${nr}: Du må fylle inn barnets navn.`;
+        }
+
+        if (!child.birth_date) {
+          return `Barn ${nr}: Du må fylle inn fødselsdato.`;
+        }
+
+        if (!child.requested_skate_size && !child.has_own_skates) {
+          return `Barn ${nr}: Du må velge skøytestørrelse eller krysse av for egne skøyter.`;
+        }
+
+        if (child.requested_skate_size && child.has_own_skates) {
+          return `Barn ${nr}: Du kan ikke velge både størrelse og egne skøyter.`;
+        }
+      }
+
+      return null;
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      clearMessage();
+
+      if (!ACTIVE_BATCH_NAME || ACTIVE_BATCH_NAME === "SETT INN NAVN PÅ AKTIVT PARTI HER") {
+        showMessage("Du må sette riktig ACTIVE_BATCH_NAME i HTML-filen før siden kan brukes.");
+        return;
+      }
+
+      const access_code = document.getElementById("access_code").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const phone = document.getElementById("phone").value.trim();
+      const children = collectChildren();
+
+      if (!access_code) {
+        showMessage("Du må fylle inn kode.");
+        return;
+      }
+
+      if (!email) {
+        showMessage("Du må fylle inn e-post.");
+        return;
+      }
+
+      if (!phone) {
+        showMessage("Du må fylle inn telefon.");
+        return;
+      }
+
+      const childError = validateChildren(children);
+      if (childError) {
+        showMessage(childError);
+        return;
+      }
+
+      try {
+        form.classList.add("loading");
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Sender...";
+
+        const response = await fetch("/.netlify/functions/create-school-signup-code", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            access_code,
+            email,
+            phone,
+            batch_name: ACTIVE_BATCH_NAME,
+            children
+          })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Kunne ikke sende påmeldingen.");
+        }
+
+        showMessage("Påmeldingen ble registrert. Sender videre...", "success");
+
+        window.location.href = data.redirect_url || "/betaling-fullfort-tkk.html";
+      } catch (error) {
+        showMessage(error.message || "Noe gikk galt. Prøv igjen.");
+      } finally {
+        form.classList.remove("loading");
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Send påmelding";
+      }
+    });
+
+    addChildBtn.addEventListener("click", addChild);
+
+    addChild();
+  </script>
+</body>
+</html>
