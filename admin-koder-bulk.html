@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin – Koder</title>
+  <style>
+    body{font-family:Arial,sans-serif;margin:0;background:#f6f8fb;color:#1f2937}
+    .wrap{max-width:1200px;margin:0 auto;padding:24px 16px 48px}
+    .card{background:#fff;border:1px solid #d1d5db;border-radius:16px;padding:20px;margin-bottom:20px;box-shadow:0 8px 24px rgba(0,0,0,.05)}
+    h1,h2{margin-top:0} .muted{color:#6b7280}
+    .grid{display:grid;gap:16px}.g3{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+    label{display:block;font-weight:700;margin-bottom:6px}
+    input,select,button{font:inherit} input,select{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:10px}
+    .actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:18px}
+    button{border:none;border-radius:10px;padding:11px 16px;cursor:pointer;font-weight:700}
+    .primary{background:#0f766e;color:#fff}.secondary{background:#e5e7eb;color:#111827}.danger{background:#fef2f2;color:#b91c1c}
+    .msg{display:none;margin-top:16px;padding:12px 14px;border-radius:10px;font-weight:600}.show{display:block}
+    .ok{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}.err{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}
+    .filters{display:flex;gap:12px;flex-wrap:wrap;align-items:end}.filters>div{min-width:180px;flex:1}
+    table{width:100%;border-collapse:collapse;min-width:900px} th,td{text-align:left;padding:12px 10px;border-bottom:1px solid #d1d5db;vertical-align:top} th{font-size:14px;color:#6b7280}
+    .table-wrap{overflow-x:auto}.pill{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700}.active{background:#f0fdf4;color:#166534}.inactive{background:#fef2f2;color:#b91c1c}
+    .inline{display:flex;gap:8px;flex-wrap:wrap}.small{font-size:13px}
+    .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px}.box{border:1px solid #d1d5db;border-radius:12px;padding:14px;background:#fcfcfd}.label{color:#6b7280;font-size:14px}.value{font-size:28px;font-weight:700}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Administrer koder</h1>
+  <p class="muted">Opprett mange koder samtidig for gratis påmelding til skøyteskolen.</p>
+
+  <div class="card">
+    <h2>Generer nye koder</h2>
+    <form id="createCodeForm">
+      <div class="grid g3">
+        <div>
+          <label for="description">Beskrivelse</label>
+          <input id="description" type="text" placeholder="Friplass høst 2026">
+          <div class="small muted">Samme beskrivelse brukes på alle genererte koder.</div>
+        </div>
+
+        <div>
+          <label for="quantity">Antall koder</label>
+          <input id="quantity" type="number" min="1" value="1">
+        </div>
+
+        <div>
+          <label for="department_id">Avdeling</label>
+          <select id="department_id"><option value="">Alle avdelinger</option></select>
+        </div>
+
+        <div>
+          <label for="batch_id">Parti</label>
+          <select id="batch_id"><option value="">Alle partier</option></select>
+        </div>
+
+        <div>
+          <label for="expires_at">Utløpsdato</label>
+          <input id="expires_at" type="datetime-local">
+          <div class="small muted">Tomt felt gir standard utløpsdato 3 år frem i tid.</div>
+        </div>
+      </div>
+
+      <div style="margin-top:16px">
+        <label><input id="is_active" type="checkbox" checked style="width:auto;margin-right:8px">Aktiv kode</label>
+      </div>
+
+      <div class="actions">
+        <button class="primary" type="submit">Generer koder</button>
+      </div>
+
+      <div id="createMessage" class="msg"></div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Oversikt</h2>
+    <div class="summary">
+      <div class="box"><div class="label">Totalt</div><div class="value" id="statTotal">0</div></div>
+      <div class="box"><div class="label">Aktive</div><div class="value" id="statActive">0</div></div>
+      <div class="box"><div class="label">Inaktive</div><div class="value" id="statInactive">0</div></div>
+      <div class="box"><div class="label">Brukt minst én gang</div><div class="value" id="statUsed">0</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Eksisterende koder</h2>
+    <div class="filters">
+      <div><label for="filterText">Søk</label><input id="filterText" type="text" placeholder="Kode eller beskrivelse"></div>
+      <div><label for="filterStatus">Status</label><select id="filterStatus"><option value="all">Alle</option><option value="active">Aktive</option><option value="inactive">Inaktive</option></select></div>
+      <div><label for="filterUsage">Bruk</label><select id="filterUsage"><option value="all">Alle</option><option value="unused">Ubrukte</option><option value="used">Brukt minst én gang</option></select></div>
+      <div style="flex:0 0 auto"><button class="secondary" id="reloadBtn" type="button">Oppdater</button></div>
+    </div>
+    <div id="listMessage" class="msg"></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Kode</th><th>Beskrivelse</th><th>Avdeling / parti</th><th>Status</th><th>Bruk</th><th>Utløper</th><th>Opprettet</th><th>Handlinger</th></tr></thead>
+        <tbody id="codesTableBody"><tr><td colspan="8" class="muted">Laster koder…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const createCodeForm=document.getElementById("createCodeForm");
+const createMessage=document.getElementById("createMessage");
+const listMessage=document.getElementById("listMessage");
+const codesTableBody=document.getElementById("codesTableBody");
+const reloadBtn=document.getElementById("reloadBtn");
+const filterText=document.getElementById("filterText");
+const filterStatus=document.getElementById("filterStatus");
+const filterUsage=document.getElementById("filterUsage");
+const departmentSelect=document.getElementById("department_id");
+const batchSelect=document.getElementById("batch_id");
+let allCodes=[];
+
+function showMessage(el,text,type){el.textContent=text;el.className=`msg show ${type==="success"?"ok":"err"}`;}
+function clearMessage(el){el.textContent="";el.className="msg";}
+function formatDate(v){if(!v)return "—";const d=new Date(v);return Number.isNaN(d.getTime())?"—":d.toLocaleString("no-NO");}
+function esc(v){return String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#39;");}
+function updateSummary(codes){document.getElementById("statTotal").textContent=codes.length;document.getElementById("statActive").textContent=codes.filter(c=>c.is_active).length;document.getElementById("statInactive").textContent=codes.filter(c=>!c.is_active).length;document.getElementById("statUsed").textContent=codes.filter(c=>Number(c.used_count||0)>0).length;}
+function applyFilters(codes){const text=filterText.value.trim().toLowerCase();const status=filterStatus.value;const usage=filterUsage.value;return codes.filter(code=>{const hay=(code.code+" "+(code.description||"")).toLowerCase();if(text&&!hay.includes(text))return false;if(status==="active"&&!code.is_active)return false;if(status==="inactive"&&code.is_active)return false;const used=Number(code.used_count||0);if(usage==="used"&&used<1)return false;if(usage==="unused"&&used>0)return false;return true;});}
+function renderTable(){const filtered=applyFilters(allCodes);updateSummary(allCodes);if(!filtered.length){codesTableBody.innerHTML='<tr><td colspan="8" class="muted">Ingen koder funnet.</td></tr>';return;}
+codesTableBody.innerHTML=filtered.map(code=>{const used=Number(code.used_count||0);return `<tr>
+<td><strong>${esc(code.code)}</strong></td>
+<td>${esc(code.description||"—")}</td>
+<td class="small">${esc(code.department_name||"Alle avdelinger")}<br>${esc(code.batch_name||"Alle partier")}</td>
+<td>${code.is_active?'<span class="pill active">Aktiv</span>':'<span class="pill inactive">Inaktiv</span>'}</td>
+<td>${used}</td>
+<td>${formatDate(code.expires_at)}</td>
+<td>${formatDate(code.created_at)}</td>
+<td><div class="inline">
+<button type="button" class="secondary" onclick="copyCode('${esc(code.code)}')">Kopier</button>
+<button type="button" class="${code.is_active?'danger':'primary'}" onclick="toggleCodeStatus('${code.id}', ${code.is_active?'false':'true'})">${code.is_active?'Deaktiver':'Aktiver'}</button>
+</div></td></tr>`;}).join("");}
+async function loadLookups(){try{const response=await fetch("/.netlify/functions/list-school-code-lookups");const data=await response.json();if(!response.ok)throw new Error(data.error||"Kunne ikke hente oppslagsdata.");
+(data.departments||[]).forEach(item=>{const o=document.createElement("option");o.value=item.id;o.textContent=item.name;departmentSelect.appendChild(o);});
+(data.batches||[]).forEach(item=>{const o=document.createElement("option");o.value=item.id;o.textContent=item.name;batchSelect.appendChild(o);});
+}catch(error){showMessage(listMessage,error.message||"Kunne ikke hente oppslagsdata.","error");}}
+async function loadCodes(){clearMessage(listMessage);codesTableBody.innerHTML='<tr><td colspan="8" class="muted">Laster koder…</td></tr>';try{const response=await fetch("/.netlify/functions/list-school-access-codes");const data=await response.json();if(!response.ok)throw new Error(data.error||"Kunne ikke hente koder.");allCodes=Array.isArray(data.codes)?data.codes:[];renderTable();}catch(error){codesTableBody.innerHTML='<tr><td colspan="8" class="muted">Kunne ikke laste koder.</td></tr>';showMessage(listMessage,error.message||"Kunne ikke hente koder.","error");}}
+async function toggleCodeStatus(id,is_active){clearMessage(listMessage);try{const response=await fetch("/.netlify/functions/update-school-access-code",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id,is_active})});const data=await response.json();if(!response.ok)throw new Error(data.error||"Kunne ikke oppdatere koden.");showMessage(listMessage,is_active?"Koden ble aktivert.":"Koden ble deaktivert.","success");await loadCodes();}catch(error){showMessage(listMessage,error.message||"Kunne ikke oppdatere koden.","error");}}
+async function copyCode(code){try{await navigator.clipboard.writeText(code);showMessage(listMessage,`Kopierte kode: ${code}`,"success");}catch{showMessage(listMessage,"Kunne ikke kopiere koden automatisk.","error");}}
+window.toggleCodeStatus=toggleCodeStatus;window.copyCode=copyCode;
+createCodeForm.addEventListener("submit",async(event)=>{event.preventDefault();clearMessage(createMessage);
+const quantity=Number(document.getElementById("quantity").value||0);
+if(!Number.isInteger(quantity)||quantity<1){showMessage(createMessage,"Antall koder må være minst 1.","error");return;}
+const payload={description:document.getElementById("description").value.trim()||null,quantity,department_id:departmentSelect.value||null,batch_id:batchSelect.value||null,expires_at:document.getElementById("expires_at").value?new Date(document.getElementById("expires_at").value).toISOString():null,is_active:document.getElementById("is_active").checked};
+try{const response=await fetch("/.netlify/functions/create-school-access-code",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});const data=await response.json();if(!response.ok)throw new Error(data.error||"Kunne ikke opprette koder.");createCodeForm.reset();document.getElementById("quantity").value="1";document.getElementById("is_active").checked=true;showMessage(createMessage,`${data.codes?.length||quantity} koder ble opprettet.`,"success");await loadCodes();}catch(error){showMessage(createMessage,error.message||"Kunne ikke opprette koder.","error");}});
+filterText.addEventListener("input",renderTable);filterStatus.addEventListener("change",renderTable);filterUsage.addEventListener("change",renderTable);reloadBtn.addEventListener("click",loadCodes);
+loadLookups();loadCodes();
+</script>
+</body></html>
