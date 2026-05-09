@@ -1947,6 +1947,102 @@ function attachSortHandlers() {
   });
 }
 
+    function generateNfcTagIdForSkate(skate) {
+      const base = String((skate && skate.skate_code) || "")
+        .trim()
+        .replace(/[^a-zA-Z0-9_-]/g, "")
+        .toUpperCase();
+
+      if (base) return "TKK-" + base;
+
+      return "TKK-" + Date.now().toString(36).toUpperCase();
+    }
+
+    function buildSkateNfcUrl(nfcTagId) {
+      const origin = window.location.origin || "";
+      return origin + "/skoyte.html?nfc=" + encodeURIComponent(nfcTagId);
+    }
+
+    async function generateNfcForSkate(skateId) {
+      if (!supabaseClient) return;
+
+      const skate = (state.skates || []).find((s) => String(s.id) === String(skateId));
+      if (!skate) {
+        alert("Fant ikke skøyten.");
+        return;
+      }
+
+      const existingTag = String(skate.nfc_tag_id || "").trim();
+      const nfcTagId = existingTag || generateNfcTagIdForSkate(skate);
+      const nfcUrl = buildSkateNfcUrl(nfcTagId);
+
+      const confirmText = existingTag
+        ? "Denne skøyten har allerede NFC-ID:\\n\\n" + existingTag + "\\n\\nVil du oppdatere NFC-URL og registreringsdato?"
+        : "Generere NFC for skøyte " + skate.skate_code + "?\\n\\nNFC-ID: " + nfcTagId + "\\nURL: " + nfcUrl;
+
+      if (!confirm(confirmText)) return;
+
+      try {
+        const payload = {
+          nfc_tag_id: nfcTagId,
+          nfc_url: nfcUrl,
+          nfc_registered_at: new Date().toISOString(),
+        };
+
+        const { error } = await supabaseClient
+          .from("skates")
+          .update(payload)
+          .eq("id", skate.id);
+
+        if (error) throw error;
+
+        await loadAll();
+
+        const copyText =
+          "Skriv denne URL-en til NTAG213-brikken:\\n\\n" +
+          nfcUrl +
+          "\\n\\nNFC-ID:\\n" +
+          nfcTagId;
+
+        alert(copyText);
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          try {
+            await navigator.clipboard.writeText(nfcUrl);
+          } catch (copyError) {
+            console.warn("Kunne ikke kopiere NFC-URL automatisk", copyError);
+          }
+        }
+      } catch (error) {
+        console.error(error);
+        alert("Kunne ikke generere NFC for skøyten.\\n\\n" + (error.message || error));
+      }
+    }
+
+    async function copySkateNfcUrl(skateId) {
+      const skate = (state.skates || []).find((s) => String(s.id) === String(skateId));
+      if (!skate) {
+        alert("Fant ikke skøyten.");
+        return;
+      }
+
+      const nfcTagId = String(skate.nfc_tag_id || "").trim();
+      if (!nfcTagId) {
+        alert("Skøyten har ikke NFC-ID ennå. Trykk først på Generer NFC.");
+        return;
+      }
+
+      const nfcUrl = String(skate.nfc_url || "").trim() || buildSkateNfcUrl(nfcTagId);
+
+      try {
+        await navigator.clipboard.writeText(nfcUrl);
+        alert("NFC-URL kopiert:\\n\\n" + nfcUrl);
+      } catch (error) {
+        alert("Kopier denne URL-en manuelt:\\n\\n" + nfcUrl);
+      }
+    }
+
+
 function renderSkates() {
       const wrap = byId("skatesWrap");
       const search = byId("searchSkates").value.trim().toLowerCase();
@@ -1987,14 +2083,14 @@ function renderSkates() {
       }
 
       const table = document.createElement("table");
-      table.innerHTML = '<thead><tr><th data-sort="skate_code" data-section="skates">Skøyte-ID</th><th data-sort="model" data-section="skates">Modell</th><th data-sort="size" data-section="skates">Størrelse</th><th data-sort="type" data-section="skates">Type</th><th data-sort="status" data-section="skates">Status</th><th data-sort="member_name" data-section="skates">Navn</th><th>Handling</th></tr></thead>';
+      table.innerHTML = '<thead><tr><th data-sort="skate_code" data-section="skates">Skøyte-ID</th><th data-sort="model" data-section="skates">Modell</th><th data-sort="size" data-section="skates">Størrelse</th><th data-sort="type" data-section="skates">Type</th><th data-sort="status" data-section="skates">Status</th><th data-sort="member_name" data-section="skates">Navn</th><th>NFC</th><th>Handling</th></tr></thead>';
       const tbody = document.createElement("tbody");
       if (sortState.skates.key) {
         rows = sortArray(rows, sortState.skates.key, sortState.skates.asc);
       }
       for (const skate of rows) {
         const tr = document.createElement("tr");
-        tr.innerHTML = "<td data-label='Skøyte-ID'></td><td data-label='Modell'></td><td data-label='Størrelse'></td><td data-label='Type'></td><td data-label='Status'></td><td data-label='Navn'></td><td data-label='Handling'></td>";
+        tr.innerHTML = "<td data-label='Skøyte-ID'></td><td data-label='Modell'></td><td data-label='Størrelse'></td><td data-label='Type'></td><td data-label='Status'></td><td data-label='Navn'></td><td data-label='NFC'></td><td data-label='Handling'></td>";
         tr.children[0].textContent = safeText(skate.skate_code);
         tr.children[1].textContent = safeText(skate.model);
         tr.children[2].textContent = safeText(skate.size);
@@ -2006,6 +2102,35 @@ function renderSkates() {
         span.textContent = activeLoan ? "Utlånt" : "Ledig";
         tr.children[4].appendChild(span);
         tr.children[5].textContent = activeLoan && activeLoan.members ? safeText(activeLoan.members.name) : "";
+
+        const nfcTag = String(skate.nfc_tag_id || "").trim();
+        if (nfcTag) {
+          const nfcWrap = document.createElement("div");
+          const nfcCode = document.createElement("div");
+          nfcCode.textContent = nfcTag;
+          nfcCode.style.fontFamily = "monospace";
+          nfcCode.style.fontSize = "12px";
+          nfcCode.style.marginBottom = "6px";
+
+          const copyNfcBtn = document.createElement("button");
+          copyNfcBtn.className = "btn-secondary btn-small";
+          copyNfcBtn.textContent = "Kopier URL";
+          copyNfcBtn.addEventListener("click", function () {
+            copySkateNfcUrl(skate.id);
+          });
+
+          nfcWrap.appendChild(nfcCode);
+          nfcWrap.appendChild(copyNfcBtn);
+          tr.children[6].appendChild(nfcWrap);
+        } else {
+          const generateNfcBtn = document.createElement("button");
+          generateNfcBtn.className = "btn-secondary btn-small";
+          generateNfcBtn.textContent = "Generer NFC";
+          generateNfcBtn.addEventListener("click", function () {
+            generateNfcForSkate(skate.id);
+          });
+          tr.children[6].appendChild(generateNfcBtn);
+        }
 
         const editBtn = document.createElement("button");
         editBtn.className = "btn-secondary btn-small";
@@ -2020,7 +2145,7 @@ function renderSkates() {
           showSection("adminTab");
           byId("skateCode").focus();
         });
-        tr.children[6].appendChild(editBtn);
+        tr.children[7].appendChild(editBtn);
 
         const archiveBtn = document.createElement("button");
         archiveBtn.className = "btn-secondary btn-small";
@@ -2032,7 +2157,7 @@ function renderSkates() {
           if (!confirmArchive) return;
           await archiveSkate(skate.id, skate.skate_code);
         });
-        tr.children[6].appendChild(archiveBtn);
+        tr.children[7].appendChild(archiveBtn);
 
         tbody.appendChild(tr);
       }
