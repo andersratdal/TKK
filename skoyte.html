@@ -155,7 +155,7 @@
         `}
 
         <div class="actions">
-          <a class="button primary" href="/index.html?skate=${encodeURIComponent(skate.skate_code || "")}">Åpne i admin</a>
+          <a class="button primary" href="/index.html?mode=loan&nfc=${encodeURIComponent(skate.nfc_tag_id || "")}">Bruk i Utlån</a>\n          <a class="button primary" href="/index.html?mode=return&nfc=${encodeURIComponent(skate.nfc_tag_id || "")}">Lever inn</a>\n          <a class="button secondary" href="/index.html?skate=${encodeURIComponent(skate.skate_code || "")}">Åpne i admin</a>
           <a class="button secondary" href="/index.html">Gå til hovedappen</a>
         </div>
 

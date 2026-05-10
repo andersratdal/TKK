@@ -809,6 +809,7 @@
 <div class="scan-row">
 <button class="btn-secondary btn-small" id="btnStartQrLoan" type="button">Skann skøyte</button>
 <button class="btn-secondary btn-small hidden" id="btnStopQrLoan" type="button">Stopp skanning</button>
+<button class="btn-secondary btn-small" id="btnStartNfcLoan" type="button">NFC-skann</button>
 </div>
 <div class="help qr-inline-help" id="loanQrStatus"></div>
 <div class="qr-panel hidden" id="loanQrPanel">
@@ -846,6 +847,7 @@
 <input id="searchActiveLoans" placeholder="Søk på skøyte-ID eller navn..."/>
 <button class="btn-secondary btn-small" id="btnStartQrReturn" type="button">Skann skøyte</button>
 <button class="btn-secondary btn-small hidden" id="btnStopQrReturn" type="button">Stopp skanning</button>
+<button class="btn-secondary btn-small" id="btnStartNfcReturn" type="button">NFC-skann</button>
 </div>
 <div class="help qr-inline-help" id="returnQrStatus"></div>
 <div class="qr-panel hidden" id="returnQrPanel">
@@ -5257,6 +5259,134 @@ async function loadAll() {
       }
     }
 
+
+    function extractNfcTagFromText(rawText) {
+      const value = String(rawText || "").trim();
+      if (!value) return "";
+
+      try {
+        const url = new URL(value, window.location.origin);
+        const nfc = url.searchParams.get("nfc") || url.searchParams.get("code") || url.searchParams.get("skate");
+        if (nfc) return String(nfc).trim();
+      } catch (e) {}
+
+      return value;
+    }
+
+    function findSkateByNfcText(rawText, availableOnly) {
+      const nfcTag = extractNfcTagFromText(rawText);
+      if (!nfcTag) return null;
+
+      const normalized = String(nfcTag).trim().toLowerCase();
+      const rawLower = String(rawText || "").trim().toLowerCase();
+
+      return (state.skates || []).find((skate) => {
+        if (!skate || skate.is_active === false) return false;
+        if (availableOnly && getActiveLoanForSkate(skate.id)) return false;
+
+        const tag = String(skate.nfc_tag_id || "").trim().toLowerCase();
+        const url = String(skate.nfc_url || "").trim().toLowerCase();
+        const code = String(skate.skate_code || "").trim().toLowerCase();
+
+        return (
+          tag === normalized ||
+          code === normalized ||
+          url === rawLower ||
+          (url && url.includes("nfc=" + encodeURIComponent(nfcTag).toLowerCase()))
+        );
+      }) || null;
+    }
+
+    async function handleLoanNfcText(rawText) {
+      const nfcTag = extractNfcTagFromText(rawText);
+      if (!nfcTag) {
+        setQrStatus("loanQrStatus", "Fant ingen NFC-kode.", true);
+        return;
+      }
+
+      const skate = findSkateByNfcText(nfcTag, true);
+      if (!skate) {
+        setQrStatus("loanQrStatus", "Fant ingen ledig skøyte med NFC-kode " + nfcTag + ".", true);
+        return;
+      }
+
+      await showSection("loanTab");
+      byId("loanSkateSearch").value = String(skate.skate_code || "");
+      byId("loanSkate").value = skate.id;
+      syncLoanSkateSelection();
+      setQrStatus("loanQrStatus", "NFC fant skøyte " + skate.skate_code + ". Klar for utlån.", false);
+    }
+
+    async function handleReturnNfcText(rawText) {
+      const nfcTag = extractNfcTagFromText(rawText);
+      if (!nfcTag) {
+        setQrStatus("returnQrStatus", "Fant ingen NFC-kode.", true);
+        return;
+      }
+
+      const skate = findSkateByNfcText(nfcTag, false);
+      await showSection("returnTab");
+
+      if (!skate) {
+        setQrStatus("returnQrStatus", "Fant ingen skøyte med NFC-kode " + nfcTag + ".", true);
+        return;
+      }
+
+      const loan = state.loans.find((item) => item.skate_id === skate.id && !item.returned_at);
+
+      if (!loan) {
+        byId("searchActiveLoans").value = String(skate.skate_code || "");
+        renderActiveLoans();
+        setQrStatus("returnQrStatus", "Skøyte " + skate.skate_code + " er ikke registrert som utlånt.", true);
+        return;
+      }
+
+      setQrStatus("returnQrStatus", "NFC fant aktivt utlån på " + skate.skate_code + ". Registrerer innlevering ...", false);
+      await returnLoan(loan.id);
+      byId("searchActiveLoans").value = String(skate.skate_code || "");
+      renderActiveLoans();
+      setQrStatus("returnQrStatus", "Innlevering registrert for " + skate.skate_code + ".", false);
+    }
+
+    async function handleNfcNavigationFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const nfc = params.get("nfc") || params.get("code") || params.get("skate");
+      const mode = String(params.get("mode") || params.get("action") || "").toLowerCase();
+
+      if (!nfc) return;
+
+      if (mode === "return" || mode === "innlevering") {
+        await handleReturnNfcText(nfc);
+        return;
+      }
+
+      if (mode === "loan" || mode === "utlan" || mode === "utlån") {
+        await handleLoanNfcText(nfc);
+        return;
+      }
+
+      await showSection("reportsTab");
+      if (byId("searchSkates")) byId("searchSkates").value = nfc;
+      renderSkates();
+    }
+
+    function startLoanNfcFlow() {
+      setQrStatus(
+        "loanQrStatus",
+        "NFC på iPhone åpnes via brikken. Hold telefonen mot brikken og velg «Bruk i Utlån» på skøytesiden.",
+        false
+      );
+    }
+
+    function startReturnNfcFlow() {
+      setQrStatus(
+        "returnQrStatus",
+        "NFC på iPhone åpnes via brikken. Hold telefonen mot brikken og velg «Lever inn» på skøytesiden.",
+        false
+      );
+    }
+
+
     async function handleLoanQrScan(decodedText) {
       const normalized = normalizeQrText(decodedText);
       if (!normalized || normalized === loanQrLastText) return;
@@ -5864,8 +5994,10 @@ attachSortHandlers();
     if (byId("btnExportMembersReport")) byId("btnExportMembersReport").addEventListener("click", exportMembersReportCsv);
     if (byId("btnStartQrLoan")) byId("btnStartQrLoan").addEventListener("click", async function () { await startLoanQrScanner(); });
     if (byId("btnStopQrLoan")) byId("btnStopQrLoan").addEventListener("click", async function () { await stopLoanQrScanner(); setQrStatus("loanQrStatus", "QR-skanning stoppet.", false); });
+    if (byId("btnStartNfcLoan")) byId("btnStartNfcLoan").addEventListener("click", startLoanNfcFlow);
     if (byId("btnStartQrReturn")) byId("btnStartQrReturn").addEventListener("click", async function () { await startReturnQrScanner(); });
     if (byId("btnStopQrReturn")) byId("btnStopQrReturn").addEventListener("click", async function () { await stopReturnQrScanner(); setQrStatus("returnQrStatus", "QR-skanning stoppet.", false); });
+    if (byId("btnStartNfcReturn")) byId("btnStartNfcReturn").addEventListener("click", startReturnNfcFlow);
     if (byId("btnStartQrMember")) byId("btnStartQrMember").addEventListener("click", async function () { await startLoanMemberQrScanner(); });
     if (byId("btnStopQrMember")) byId("btnStopQrMember").addEventListener("click", async function () { await stopLoanMemberQrScanner(); setQrStatus("loanMemberQrStatus", "Medlemsskanning stoppet.", false); });
     if (byId("btnGenerateQrLabels")) byId("btnGenerateQrLabels").addEventListener("click", generateQrLabels);
@@ -5885,7 +6017,7 @@ attachSortHandlers();
     if (byId("existingLoansDate")) byId("existingLoansDate").value = "2025-01-01";
     const started = initFromSavedConfig();
     if (started) {
-      loadAll();
+      loadAll().then(handleNfcNavigationFromUrl).catch(function (error) { console.error(error); });
       startAutoRefresh();
     }
   </script>
