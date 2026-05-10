@@ -6,29 +6,21 @@
   <title>Skøyte – NFC</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    body { margin:0; font-family:Arial,sans-serif; background:#f6f8fb; color:#1f2937; }
-    .container { max-width:760px; margin:0 auto; padding:24px 16px 48px; }
-    .card { background:#fff; border:1px solid #d1d5db; border-radius:18px; padding:22px; box-shadow:0 8px 24px rgba(0,0,0,.06); margin-bottom:16px; }
-    h1,h2 { margin-top:0; }
-    .muted { color:#6b7280; }
-    .code { font-family:monospace; background:#f3f4f6; padding:3px 7px; border-radius:8px; }
-    .status { display:inline-block; border-radius:999px; padding:6px 11px; font-size:14px; font-weight:700; }
-    .available { background:#f0fdf4; color:#166534; }
-    .loaned { background:#fffbeb; color:#92400e; }
-    .inactive { background:#fef2f2; color:#b91c1c; }
-    .row { display:grid; grid-template-columns:140px 1fr; gap:10px; border-bottom:1px solid #eef0f3; padding:10px 0; }
-    .label { color:#6b7280; font-weight:700; }
-    .value { word-break:break-word; }
-    .actions { display:grid; gap:10px; margin-top:18px; }
-    a.button { display:block; width:100%; text-align:center; text-decoration:none; border-radius:12px; padding:13px 16px; font-weight:700; box-sizing:border-box; }
-    .primary { background:#0f766e; color:#fff; }
-    .secondary { background:#e5e7eb; color:#111827; }
-    .message { border-radius:12px; padding:13px 15px; margin-top:14px; font-weight:600; }
-    .error { background:#fef2f2; color:#b91c1c; border:1px solid #fecaca; }
-    .info { background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; }
-    .success { background:#f0fdf4; color:#166534; border:1px solid #bbf7d0; }
-    .small { font-size:14px; }
-    @media (max-width:520px) { .row { grid-template-columns:1fr; gap:4px; } }
+    body{font-family:Arial,sans-serif;background:#f6f8fb;color:#1f2937;margin:0}
+    .container{max-width:760px;margin:0 auto;padding:24px 16px 48px}
+    .card{background:#fff;border:1px solid #d1d5db;border-radius:18px;padding:22px;margin-bottom:16px;box-shadow:0 8px 24px rgba(0,0,0,.06)}
+    .muted{color:#6b7280}.code{font-family:monospace;background:#f3f4f6;padding:3px 7px;border-radius:8px}
+    .message{border-radius:12px;padding:13px 15px;margin-top:14px;font-weight:600}
+    .error{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}
+    .info{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
+    .success{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}
+    .warning{background:#fffbeb;color:#92400e;border:1px solid #fde68a}
+    .row{display:grid;grid-template-columns:140px 1fr;gap:10px;border-bottom:1px solid #eef0f3;padding:10px 0}
+    .label{color:#6b7280;font-weight:700}.value{word-break:break-word}
+    .actions{display:grid;gap:10px;margin-top:18px}
+    a.button{display:block;text-align:center;text-decoration:none;border-radius:12px;padding:13px 16px;font-weight:700}
+    .primary{background:#0f766e;color:#fff}.secondary{background:#e5e7eb;color:#111827}
+    @media(max-width:520px){.row{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
@@ -38,135 +30,134 @@
       <p class="muted">Denne siden åpnes fra NFC-brikken på skøyten.</p>
       <div id="content"><div class="message info">Laster skøyteinformasjon …</div></div>
     </div>
-
-    <div class="card">
-      <h2>iPhone-flyt</h2>
-      <p class="muted">
-        Skriv URL-en til NTAG213-brikken, for eksempel
-        <span class="code">https://din-side.netlify.app/skoyte.html?nfc=TKK-000123</span>.
-        Når iPhone leser brikken, åpnes denne siden.
-      </p>
-    </div>
   </div>
 
-  <script>
-    const SUPABASE_URL = "https://dcfhisxyiuatftzjtuwz.supabase.co";
-    const SUPABASE_ANON_KEY = "sb_publishable_W_3O4m4r0aZ3ukSOJVTcHw_Gy6W6uj9";
+<script>
+(function () {
+  const CONFIG_KEY = "skoyteutleie_supabase_config_v7";
 
-    const content = document.getElementById("content");
+  const content = document.getElementById("content");
 
-    if (
-      !SUPABASE_URL ||
-      !SUPABASE_ANON_KEY ||
-      SUPABASE_URL === "SETT_INN_SUPABASE_URL" ||
-      SUPABASE_ANON_KEY === "SETT_INN_SUPABASE_ANON_KEY"
-    ) {
-      content.innerHTML = '<div class="message error">Supabase-konfigurasjon mangler. Sett inn SUPABASE_URL og SUPABASE_ANON_KEY i skoyte.html.</div>';
-      throw new Error("Supabase-konfigurasjon mangler.");
+  function show(type, html) {
+    content.innerHTML = '<div class="message ' + type + '">' + html + '</div>';
+  }
+
+  function esc(value) {
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
+  }
+
+  function getConfig() {
+    try {
+      const raw = localStorage.getItem(CONFIG_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function getParam(name) {
+    return new URLSearchParams(window.location.search).get(name);
+  }
+
+  function formatDate(value) {
+    if (!value) return "—";
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? "—" : d.toLocaleString("no-NO");
+  }
+
+  window.addEventListener("error", function (event) {
+    show("error", "JavaScript-feil: " + esc(event.message || "ukjent feil"));
+  });
+
+  async function main() {
+    if (!window.supabase || !window.supabase.createClient) {
+      show("error", "Supabase-biblioteket ble ikke lastet. Sjekk internett/CDN.");
+      return;
     }
 
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const config = getConfig();
+    const SUPABASE_URL = config.url || "";
+    const SUPABASE_ANON_KEY = config.anonKey || "";
 
-    function param(name) {
-      return new URLSearchParams(window.location.search).get(name);
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      show("error",
+        "Supabase-oppsett mangler på denne enheten.<br><br>" +
+        "Åpne <strong>index.html</strong> på samme mobil først, gå til <strong>Admin → Oppsett</strong>, " +
+        "lim inn Supabase URL og anon public key, og trykk <strong>Lagre innstillinger</strong>.<br><br>" +
+        "Deretter åpner du NFC-lenken igjen."
+      );
+      return;
     }
 
-    function esc(value) {
-      return String(value ?? "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#39;");
+    const nfc = getParam("nfc") || getParam("code") || getParam("skate");
+    if (!nfc) {
+      show("error", "Mangler NFC-kode i URL-en. Eksempel: <span class='code'>skoyte.html?nfc=TKK-001</span>");
+      return;
     }
 
-    function formatDate(value) {
-      if (!value) return "—";
-      const d = new Date(value);
-      return Number.isNaN(d.getTime()) ? "—" : d.toLocaleString("no-NO");
+    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const skateResult = await client
+      .from("skates")
+      .select("id, skate_code, model, size, type, is_active, nfc_tag_id, nfc_url, nfc_registered_at")
+      .eq("nfc_tag_id", nfc)
+      .maybeSingle();
+
+    if (skateResult.error) {
+      show("error", "Feil ved henting fra Supabase:<br><br>" + esc(skateResult.error.message));
+      return;
     }
 
-    function badge(skate, loan) {
-      if (skate.is_active === false) return '<span class="status inactive">Inaktiv</span>';
-      if (loan) return '<span class="status loaned">Utlånt</span>';
-      return '<span class="status available">Tilgjengelig</span>';
+    const skate = skateResult.data;
+    if (!skate) {
+      show("warning", "Fant ingen skøyte med NFC-kode <span class='code'>" + esc(nfc) + "</span>.");
+      return;
     }
 
-    async function loadSkate() {
-      const nfc = param("nfc") || param("code") || param("skate");
+    const loanResult = await client
+      .from("loans")
+      .select("id, loaned_at, returned_at, member_id, members:member_id(id, name, phone, email)")
+      .eq("skate_id", skate.id)
+      .is("returned_at", null)
+      .order("loaned_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-      if (!nfc) {
-        content.innerHTML = '<div class="message error">Mangler NFC-kode i URL-en. Bruk for eksempel <span class="code">skoyte.html?nfc=TKK-000123</span>.</div>';
-        return;
-      }
+    const loan = loanResult.error ? null : loanResult.data;
+    const member = loan && loan.members ? loan.members : null;
 
-      const { data: skate, error: skateError } = await supabase
-        .from("skates")
-        .select("id, skate_code, model, size, type, is_active, nfc_tag_id, nfc_url, nfc_registered_at")
-        .eq("nfc_tag_id", nfc)
-        .maybeSingle();
+    content.innerHTML = `
+      <div class="message ${loan ? "info" : "success"}">
+        ${loan ? "Skøyten er utlånt" : "Skøyten er tilgjengelig"}
+      </div>
 
-      if (skateError) {
-        console.error(skateError);
-        content.innerHTML = '<div class="message error">Klarte ikke å hente skøyten fra databasen.</div>';
-        return;
-      }
+      <div style="margin-top:16px">
+        <div class="row"><div class="label">Skøytekode</div><div class="value"><strong>${esc(skate.skate_code)}</strong></div></div>
+        <div class="row"><div class="label">NFC-kode</div><div class="value"><span class="code">${esc(skate.nfc_tag_id)}</span></div></div>
+        <div class="row"><div class="label">Størrelse</div><div class="value">${esc(skate.size || "—")}</div></div>
+        <div class="row"><div class="label">Modell</div><div class="value">${esc(skate.model || "—")}</div></div>
+        <div class="row"><div class="label">Type</div><div class="value">${esc(skate.type || "—")}</div></div>
+        <div class="row"><div class="label">Registrert NFC</div><div class="value">${formatDate(skate.nfc_registered_at)}</div></div>
+        ${loan ? `<div class="row"><div class="label">Utlånt til</div><div class="value">${esc(member ? member.name : "Ukjent")}</div></div>` : ""}
+      </div>
 
-      if (!skate) {
-        content.innerHTML = `
-          <div class="message error">Fant ingen skøyte med NFC-kode <span class="code">${esc(nfc)}</span>.</div>
-          <div class="actions"><a class="button secondary" href="/index.html">Åpne admin</a></div>
-        `;
-        return;
-      }
+      <div class="actions">
+        <a class="button primary" href="/index.html?mode=loan&nfc=${encodeURIComponent(skate.nfc_tag_id || "")}">Bruk i Utlån</a>
+        <a class="button primary" href="/index.html?mode=return&nfc=${encodeURIComponent(skate.nfc_tag_id || "")}">Lever inn</a>
+        <a class="button secondary" href="/index.html">Gå til hovedappen</a>
+      </div>
+    `;
+  }
 
-      const { data: loan, error: loanError } = await supabase
-        .from("loans")
-        .select("id, loaned_at, returned_at, member_id, members:member_id(id, name, phone, email)")
-        .eq("skate_id", skate.id)
-        .is("returned_at", null)
-        .order("loaned_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (loanError) console.error(loanError);
-
-      const member = loan && loan.members ? loan.members : null;
-
-      content.innerHTML = `
-        <div>${badge(skate, loan)}</div>
-
-        <div style="margin-top:16px">
-          <div class="row"><div class="label">Skøytekode</div><div class="value"><strong>${esc(skate.skate_code)}</strong></div></div>
-          <div class="row"><div class="label">NFC-kode</div><div class="value"><span class="code">${esc(skate.nfc_tag_id)}</span></div></div>
-          <div class="row"><div class="label">Størrelse</div><div class="value">${esc(skate.size || "—")}</div></div>
-          <div class="row"><div class="label">Modell</div><div class="value">${esc(skate.model || "—")}</div></div>
-          <div class="row"><div class="label">Type</div><div class="value">${esc(skate.type || "—")}</div></div>
-          <div class="row"><div class="label">Registrert NFC</div><div class="value">${formatDate(skate.nfc_registered_at)}</div></div>
-        </div>
-
-        ${loan ? `
-          <div class="message info">
-            Denne skøyten er utlånt${member ? ` til <strong>${esc(member.name)}</strong>` : ""}.
-            <br>Utlånt: ${formatDate(loan.loaned_at)}
-          </div>
-        ` : `
-          <div class="message success">Denne skøyten ser ut til å være tilgjengelig.</div>
-        `}
-
-        <div class="actions">
-          <a class="button primary" href="/index.html?mode=loan&nfc=${encodeURIComponent(skate.nfc_tag_id || "")}">Bruk i Utlån</a>\n          <a class="button primary" href="/index.html?mode=return&nfc=${encodeURIComponent(skate.nfc_tag_id || "")}">Lever inn</a>\n          <a class="button secondary" href="/index.html?skate=${encodeURIComponent(skate.skate_code || "")}">Åpne i admin</a>
-          <a class="button secondary" href="/index.html">Gå til hovedappen</a>
-        </div>
-
-        <p class="muted small">
-          Neste steg kan være at hovedappen automatisk åpner/skroller til denne skøyten når URL-en inneholder
-          <span class="code">?skate=${esc(skate.skate_code)}</span>.
-        </p>
-      `;
-    }
-
-    loadSkate();
-  </script>
+  main().catch(function (error) {
+    show("error", "Uventet feil:<br><br>" + esc(error.message || error));
+  });
+})();
+</script>
 </body>
 </html>
