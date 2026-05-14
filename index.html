@@ -688,6 +688,130 @@
       flex: 1 1 auto;
     }
 
+
+.main-menu {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.section-button {
+  padding: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 12px;
+  min-height: 52px;
+}
+
+
+/* Kompakt hovedmeny */
+.app-menu {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.app-menu-card {
+  border: 1px solid rgba(16,35,63,0.08);
+  background: #ffffff;
+  color: var(--text);
+  border-radius: 18px;
+  box-shadow: 0 8px 22px rgba(16,35,63,0.10);
+  padding: 12px 10px;
+  min-height: 82px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.app-menu-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(31,79,255,0.22);
+}
+
+.app-menu-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.app-menu-title {
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.app-menu-card:nth-child(5) {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 600px) {
+  .brand {
+    margin-bottom: 10px;
+  }
+
+  .brand img {
+    height: 34px;
+  }
+
+  .brand-title {
+    font-size: 22px;
+  }
+
+  .brand-subtitle,
+  .eyebrow {
+    display: none;
+  }
+
+  .app-menu {
+    gap: 8px;
+  }
+
+  .app-menu-card {
+    min-height: 72px;
+    padding: 10px 8px;
+    border-radius: 16px;
+  }
+
+  .app-menu-icon {
+    width: 30px;
+    height: 30px;
+    font-size: 18px;
+  }
+
+  .app-menu-title {
+    font-size: 14px;
+  }
+}
+
+
+/* Bildeikon for utlånsknappen */
+.app-menu-image-icon {
+  width: 56px;
+  height: 42px;
+  object-fit: contain;
+  display: block;
+}
+
+@media (max-width: 600px) {
+  .app-menu-image-icon {
+    width: 50px;
+    height: 38px;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -701,64 +825,33 @@
 <div class="brand-subtitle">Velg arbeidsflate for å gå videre i appen.</div>
 </div>
 </div>
-<div class="landing-grid">
-<div class="card landing-card" data-target="loanTab">
-<div>
-<div class="landing-top">
-<div>
-<div class="landing-title">Utlån</div>
+<div class="landing-grid app-menu">
+  <button class="app-menu-card" data-target="loanTab" type="button">
+    <span class="app-menu-icon"><img src="utlan-skoyte-ikon.png" alt="" class="app-menu-image-icon"></span>
+    <span class="app-menu-title">Utlån</span>
+  </button>
+
+  <button class="app-menu-card" data-target="returnTab" type="button">
+    <span class="app-menu-icon">📥</span>
+    <span class="app-menu-title">Innlevering</span>
+  </button>
+
+  <button class="app-menu-card" data-target="skatingSchoolTab" type="button">
+    <span class="app-menu-icon">🎓</span>
+    <span class="app-menu-title">Skøyteskole</span>
+  </button>
+
+  <button class="app-menu-card" data-target="adminTab" type="button">
+    <span class="app-menu-icon">⚙️</span>
+    <span class="app-menu-title">Admin</span>
+  </button>
+
+  <button class="app-menu-card" data-target="reportsTab" type="button">
+    <span class="app-menu-icon">📊</span>
+    <span class="app-menu-title">Rapporter</span>
+  </button>
 </div>
-<div class="landing-icon">⛸️</div>
-</div>
-</div>
-<div class="landing-link">Åpne utlån</div>
-</div>
-<div class="card landing-card" data-target="returnTab">
-<div>
-<div class="landing-top">
-<div>
-<div class="landing-title">Innlevering</div>
-</div>
-<div class="landing-icon">📥</div>
-</div>
-</div>
-<div class="landing-link">Åpne innlevering</div>
-</div>
-<div class="card landing-card" data-target="adminTab">
-<div>
-<div class="landing-top">
-<div>
-<div class="landing-title">Admin</div>
-</div>
-<div class="landing-icon">⚙️</div>
-</div>
-</div>
-<div class="landing-link">Åpne admin</div>
-</div>
-<div class="card landing-card" data-target="reportsTab">
-<div>
-<div class="landing-top">
-<div>
-<div class="landing-title">Rapporter</div>
-</div>
-<div class="landing-icon">📊</div>
-</div>
-</div>
-<div class="landing-link">Åpne rapporter</div>
-</div>
-<div class="card landing-card" data-target="skatingSchoolTab">
-<div>
-<div class="landing-top">
-<div>
-<div class="landing-title">Skøyteskole</div>
-</div>
-<div class="landing-icon">🎓</div>
-</div>
-</div>
-<div class="landing-link">Åpne skøyteskole</div>
-</div>
-</div>
-<div style="display:flex; justify-content:center; margin-top:18px;">
+<div style="display:flex; justify-content:center; margin-top:12px;">
   <a href="pamelding.html" target="_blank" style="display:inline-block; padding:10px 16px; background:#1f4fff; color:#ffffff; border-radius:10px; text-decoration:none; font-weight:700; box-shadow:0 8px 18px rgba(31,79,255,0.18);">
     ➕ Åpne påmeldingsskjema for skøyteskole
   </a>
@@ -1104,7 +1197,6 @@
 <div class="toolbar" style="margin-top: 12px;">
 <button class="btn-primary" id="btnGenerateQrLabels" type="button">Lag QR-etiketter</button>
 <button class="btn-secondary" id="btnPrintQrLabels" type="button">Skriv ut etiketter</button>
-<button class="btn-secondary" id="btnGenerateMissingNfc" type="button">Generer NFC for alle manglende</button>
 </div>
 <div class="help" id="qrLabelsStatus" style="margin-top: 10px;"></div>
 <div class="qr-label-grid" id="qrPrintArea"></div>
@@ -2040,119 +2132,6 @@ function attachSortHandlers() {
         alert("NFC-URL kopiert:\\n\\n" + nfcUrl);
       } catch (error) {
         alert("Kopier denne URL-en manuelt:\\n\\n" + nfcUrl);
-      }
-    }
-
-
-
-    async function generateMissingNfcForAllSkates() {
-      if (!supabaseClient) {
-        alert("Lagre Supabase-innstillinger først.");
-        return;
-      }
-
-      const missing = (state.skates || [])
-        .filter((skate) => skate && skate.is_active !== false)
-        .filter((skate) => !String(skate.nfc_tag_id || "").trim());
-
-      if (!missing.length) {
-        alert("Alle aktive skøyter har allerede NFC-ID.");
-        return;
-      }
-
-      const ok = confirm(
-        "Generere NFC-ID og NFC-URL for " +
-        missing.length +
-        " aktive skøyter som mangler NFC?\n\n" +
-        "Dette endrer ikke skøyter som allerede har NFC."
-      );
-
-      if (!ok) return;
-
-      const usedTags = new Set(
-        (state.skates || [])
-          .map((skate) => String(skate.nfc_tag_id || "").trim().toUpperCase())
-          .filter(Boolean)
-      );
-
-      const updates = [];
-      const failed = [];
-
-      function makeUniqueNfcTag(skate) {
-        const base = String(generateNfcTagIdForSkate(skate) || "").trim().toUpperCase();
-        let candidate = base;
-        let counter = 2;
-
-        while (usedTags.has(candidate)) {
-          candidate = base + "-" + counter;
-          counter += 1;
-        }
-
-        usedTags.add(candidate);
-        return candidate;
-      }
-
-      try {
-        for (const skate of missing) {
-          const nfcTagId = makeUniqueNfcTag(skate);
-          const nfcUrl = buildSkateNfcUrl(nfcTagId);
-
-          const payload = {
-            nfc_tag_id: nfcTagId,
-            nfc_url: nfcUrl,
-            nfc_registered_at: new Date().toISOString(),
-          };
-
-          const result = await supabaseClient
-            .from("skates")
-            .update(payload)
-            .eq("id", skate.id);
-
-          if (result.error) {
-            failed.push(String(skate.skate_code || skate.id) + ": " + result.error.message);
-          } else {
-            updates.push({
-              skate_code: skate.skate_code,
-              nfc_tag_id: nfcTagId,
-              nfc_url: nfcUrl,
-            });
-          }
-        }
-
-        await loadAll();
-
-        if (updates.length) {
-          const csvText = "skate_code,nfc_tag_id,nfc_url\n" +
-            updates.map((item) =>
-              [
-                '"' + String(item.skate_code || "").replaceAll('"', '""') + '"',
-                '"' + String(item.nfc_tag_id || "").replaceAll('"', '""') + '"',
-                '"' + String(item.nfc_url || "").replaceAll('"', '""') + '"'
-              ].join(",")
-            ).join("\n");
-
-          try {
-            await navigator.clipboard.writeText(csvText);
-          } catch (copyError) {
-            console.warn("Kunne ikke kopiere NFC-liste automatisk", copyError);
-          }
-
-          alert(
-            "Genererte NFC for " +
-            updates.length +
-            " skøyter.\n\n" +
-            "Listen er forsøkt kopiert som CSV til utklippstavlen.\n\n" +
-            "Første koder:\n" +
-            updates.slice(0, 10).map((item) => String(item.skate_code || "") + " | " + item.nfc_tag_id).join("\n") +
-            (updates.length > 10 ? "\n..." : "") +
-            (failed.length ? "\n\nFeil:\n" + failed.join("\n") : "")
-          );
-        } else {
-          alert("Ingen NFC-koder ble generert." + (failed.length ? "\n\nFeil:\n" + failed.join("\n") : ""));
-        }
-      } catch (error) {
-        console.error(error);
-        alert("Kunne ikke generere NFC-koder.\n\n" + (error.message || error));
       }
     }
 
@@ -5887,7 +5866,7 @@ async function loadAll() {
     if (byId("memberCardModal")) byId("memberCardModal").addEventListener("click", function (e) {
       if (e.target === this) closeMemberCard();
     });
-    document.querySelectorAll(".landing-card").forEach((card) => {
+    document.querySelectorAll(".landing-card, .app-menu-card").forEach((card) => {
       card.addEventListener("click", function () { showSection(this.dataset.target); });
     });
 
@@ -5982,7 +5961,6 @@ attachSortHandlers();
     if (byId("btnStopQrReturn")) byId("btnStopQrReturn").addEventListener("click", async function () { await stopReturnQrScanner(); setQrStatus("returnQrStatus", "QR-skanning stoppet.", false); });
     if (byId("btnStartQrMember")) byId("btnStartQrMember").addEventListener("click", async function () { await startLoanMemberQrScanner(); });
     if (byId("btnStopQrMember")) byId("btnStopQrMember").addEventListener("click", async function () { await stopLoanMemberQrScanner(); setQrStatus("loanMemberQrStatus", "Medlemsskanning stoppet.", false); });
-    if (byId("btnGenerateMissingNfc")) byId("btnGenerateMissingNfc").addEventListener("click", generateMissingNfcForAllSkates);
     if (byId("btnGenerateQrLabels")) byId("btnGenerateQrLabels").addEventListener("click", generateQrLabels);
     if (byId("btnPrintQrLabels")) byId("btnPrintQrLabels").addEventListener("click", printQrLabels);
     if (byId("btnGenerateMemberQrLabels")) byId("btnGenerateMemberQrLabels").addEventListener("click", generateMemberQrLabels);
