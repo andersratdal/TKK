@@ -5,7 +5,9 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>TKK Skøyteutleie</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+    setupAdminTabs();
+</script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -812,6 +814,60 @@
   }
 }
 
+
+/* Ryddigere Admin med underfaner */
+.admin-tabs-card {
+  background: var(--card);
+  border: 1px solid rgba(16,35,63,0.06);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 12px;
+  margin-bottom: 14px;
+}
+
+.admin-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.admin-tab {
+  background: #e7edf5;
+  color: var(--text);
+  border-radius: 999px;
+  padding: 9px 13px;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.admin-tab.active {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.admin-section-hidden {
+  display: none !important;
+}
+
+@media (max-width: 600px) {
+  .admin-tabs-card {
+    padding: 10px;
+    border-radius: 16px;
+  }
+
+  .admin-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .admin-tab {
+    border-radius: 12px;
+    padding: 10px 8px;
+    font-size: 13px;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -1010,6 +1066,18 @@
 </div>
 
 <div class="hidden" id="adminTab">
+
+<div class="admin-tabs-card">
+  <div class="admin-tabs" role="tablist" aria-label="Admin faner">
+    <button type="button" class="admin-tab active" data-admin-tab="skates">Skøyter</button>
+    <button type="button" class="admin-tab" data-admin-tab="members">Medlemmer</button>
+    <button type="button" class="admin-tab" data-admin-tab="departments">Avdelinger</button>
+    <button type="button" class="admin-tab" data-admin-tab="import">Import</button>
+    <button type="button" class="admin-tab" data-admin-tab="labels">QR / NFC</button>
+    <button type="button" class="admin-tab" data-admin-tab="settings">Innstillinger</button>
+  </div>
+</div>
+
 
 <div class="section-card">
 <h2>Avdelinger</h2>
@@ -2133,6 +2201,74 @@ function attachSortHandlers() {
       } catch (error) {
         alert("Kopier denne URL-en manuelt:\\n\\n" + nfcUrl);
       }
+    }
+
+
+
+    function getAdminSectionKey(card) {
+      const heading = card.querySelector("h2");
+      const title = String((heading && heading.textContent) || "").trim().toLowerCase();
+
+      if (title.includes("oppsett")) return "settings";
+
+      if (
+        title.includes("spond") ||
+        title.includes("import av eksisterende") ||
+        title.includes("import av skøyter")
+      ) return "import";
+
+      if (
+        title.includes("qr-koder for skøyter") ||
+        title.includes("qr-koder for medlemmer")
+      ) return "labels";
+
+      if (title.includes("avdelinger")) return "departments";
+
+      if (title.includes("medlem")) return "members";
+
+      if (title.includes("skøyte")) return "skates";
+
+      return "skates";
+    }
+
+    function showAdminSubtab(tabName) {
+      const admin = byId("adminTab");
+      if (!admin) return;
+
+      const target = String(tabName || "skates");
+
+      admin.querySelectorAll(".admin-tab").forEach((btn) => {
+        btn.classList.toggle("active", String(btn.dataset.adminTab || "") === target);
+      });
+
+      admin.querySelectorAll(":scope > .section-card").forEach((card) => {
+        const key = card.dataset.adminSection || getAdminSectionKey(card);
+        card.dataset.adminSection = key;
+        card.classList.toggle("admin-section-hidden", key !== target);
+      });
+
+      setUiPref("adminSubtab", target);
+    }
+
+    function setupAdminTabs() {
+      const admin = byId("adminTab");
+      if (!admin) return;
+
+      admin.querySelectorAll(":scope > .section-card").forEach((card) => {
+        if (!card.dataset.adminSection) {
+          card.dataset.adminSection = getAdminSectionKey(card);
+        }
+      });
+
+      admin.querySelectorAll(".admin-tab").forEach((btn) => {
+        if (btn.dataset.bound === "1") return;
+        btn.dataset.bound = "1";
+        btn.addEventListener("click", function () {
+          showAdminSubtab(this.dataset.adminTab || "skates");
+        });
+      });
+
+      showAdminSubtab(getUiPref("adminSubtab", "skates"));
     }
 
 
