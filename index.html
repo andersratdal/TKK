@@ -5,9 +5,7 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>TKK Skøyteutleie</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
-    setupAdminTabs();
-</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -751,7 +749,7 @@
 
 .app-menu-title {
   font-size: 15px;
-  font-weight: 800;
+  font-weight: 500;
   line-height: 1.1;
 }
 
@@ -837,7 +835,7 @@
   border-radius: 999px;
   padding: 9px 13px;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 500;
 }
 
 .admin-tab.active {
@@ -865,6 +863,24 @@
     border-radius: 12px;
     padding: 10px 8px;
     font-size: 13px;
+  }
+}
+
+
+/* Kompakt utlånsflyt */
+#loanTab .scan-row {
+  align-items: stretch;
+}
+
+#loanTab .scan-row button {
+  min-height: 42px;
+}
+
+@media (max-width: 600px) {
+  #loanTab .scan-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
   }
 }
 
@@ -922,10 +938,12 @@
 <div class="help" style="margin-top:8px;">Velg gruppe, medlem og ledig skøyte.</div>
 <form class="form-grid" id="loanForm" style="margin-top: 14px;">
 <div class="col-12">
-<label>Skann medlem</label>
 <div class="scan-row">
 <button class="btn-secondary btn-small" id="btnStartQrMember" type="button">Skann medlem</button>
 <button class="btn-secondary btn-small hidden" id="btnStopQrMember" type="button">Stopp medlemsskann</button>
+<button class="btn-secondary btn-small" id="btnStartQrLoan" type="button">Skann skøyte</button>
+<button class="btn-secondary btn-small hidden" id="btnStopQrLoan" type="button">Stopp skanning</button>
+<button class="btn-secondary btn-small" id="btnStartNfcLoan" type="button">NFC-skann</button>
 </div>
 <div class="help qr-inline-help" id="loanMemberQrStatus"></div>
 <div class="qr-panel hidden" id="loanMemberQrPanel">
@@ -956,8 +974,7 @@
 <label for="loanSkateSearch">Skøyte</label>
 <input autocomplete="off" id="loanSkateSearch" list="loanSkateList" placeholder="Skriv skøyte-ID eller skann QR..."/>
 <div class="scan-row">
-<button class="btn-secondary btn-small" id="btnStartQrLoan" type="button">Skann skøyte</button>
-<button class="btn-secondary btn-small hidden" id="btnStopQrLoan" type="button">Stopp skanning</button>
+
 </div>
 <div class="help qr-inline-help" id="loanQrStatus"></div>
 <div class="qr-panel hidden" id="loanQrPanel">
@@ -1415,6 +1432,21 @@
 </div>
 </div>
 
+
+<div class="modal-backdrop hidden" id="loanSuccessModal">
+  <div class="modal-card" style="max-width:520px;">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title">✅ Utlån registrert</h2>
+        <div class="help" id="loanSuccessDetails" style="margin-top:8px;"></div>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:flex-end; margin-top:16px;">
+      <button class="btn-primary" id="btnCloseLoanSuccess" type="button">OK</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-backdrop hidden" id="memberCardModal">
   <div class="modal-card">
     <div class="modal-header">
@@ -1591,6 +1623,38 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
       supabaseClient = window.supabase.createClient(config.url, config.anonKey);
       return true;
     }
+
+
+    function showLoanSuccessModal(memberLabel, skateLabel) {
+      const modal = byId("loanSuccessModal");
+      const details = byId("loanSuccessDetails");
+      if (!modal || !details) {
+        alert("Utlån registrert: " + safeText(skateLabel) + " → " + safeText(memberLabel));
+        return;
+      }
+
+      details.innerHTML =
+        "<strong>" + escapeHtml(safeText(skateLabel)) + "</strong>" +
+        "<br>→ " +
+        "<strong>" + escapeHtml(safeText(memberLabel)) + "</strong>";
+
+      modal.classList.remove("hidden");
+    }
+
+    function closeLoanSuccessModal() {
+      const modal = byId("loanSuccessModal");
+      if (modal) modal.classList.add("hidden");
+
+      if (byId("loanForm")) byId("loanForm").reset();
+      if (byId("loanMember")) byId("loanMember").value = "";
+      if (byId("loanSkate")) byId("loanSkate").value = "";
+      if (byId("loanMemberSearch")) byId("loanMemberSearch").value = "";
+      if (byId("loanSkateSearch")) byId("loanSkateSearch").value = "";
+      if (byId("loanDate")) byId("loanDate").value = nowLocalInputValue();
+
+      updateLoanSelectors();
+    }
+
 
     async function testConnection() {
       if (!supabaseClient) { alert("Lagre innstillinger først."); return; }
@@ -5872,7 +5936,10 @@ async function loadAll() {
         if (check.error) throw check.error;
 
         if ((check.data || []).length > 0) {
-          await loadAll();
+                  const memberLabel = byId("loanMemberSearch") ? byId("loanMemberSearch").value : "";
+        const skateLabel = byId("loanSkateSearch") ? byId("loanSkateSearch").value : "";
+        await loadAll();
+        showLoanSuccessModal(memberLabel, skateLabel);
           alert("Denne skøyten ble nettopp utlånt av en annen bruker. Listen er oppdatert.");
           return;
         }
@@ -6117,7 +6184,11 @@ attachSortHandlers();
       loadAll();
       startAutoRefresh();
     }
-  </script>
+  
+    setupAdminTabs();
+
+    if (byId("btnCloseLoanSuccess")) byId("btnCloseLoanSuccess").addEventListener("click", closeLoanSuccessModal);
+</script>
 
 <div class="school-mobile-modal hidden" id="schoolMobileModal">
   <div class="school-mobile-sheet">
