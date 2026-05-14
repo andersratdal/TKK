@@ -1625,11 +1625,17 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
     }
 
 
-    function showLoanSuccessModal(memberLabel, skateLabel) {
+    let pendingLoanSuccessReset = null;
+
+    function showLoanSuccessModal(memberLabel, skateLabel, resetState) {
+      pendingLoanSuccessReset = resetState || null;
+
       const modal = byId("loanSuccessModal");
       const details = byId("loanSuccessDetails");
+
       if (!modal || !details) {
-        alert("Utlån registrert: " + safeText(skateLabel) + " → " + safeText(memberLabel));
+        alert("Utlån registrert:\n\n" + safeText(skateLabel) + " → " + safeText(memberLabel));
+        closeLoanSuccessModal();
         return;
       }
 
@@ -1645,11 +1651,25 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
       const modal = byId("loanSuccessModal");
       if (modal) modal.classList.add("hidden");
 
+      const resetState = pendingLoanSuccessReset || {};
+      pendingLoanSuccessReset = null;
+
       if (byId("loanForm")) byId("loanForm").reset();
+
+      if (byId("loanDepartment")) byId("loanDepartment").value = resetState.departmentId || "";
+      if (byId("loanGroupFilter")) byId("loanGroupFilter").value = resetState.groupFilter || "";
+
+      setUiPref("loanDepartment", resetState.departmentId || "");
+      setUiPref("loanGroupFilter", resetState.groupFilter || "");
+
       if (byId("loanMember")) byId("loanMember").value = "";
-      if (byId("loanSkate")) byId("loanSkate").value = "";
       if (byId("loanMemberSearch")) byId("loanMemberSearch").value = "";
+      if (byId("loanSkate")) byId("loanSkate").value = "";
       if (byId("loanSkateSearch")) byId("loanSkateSearch").value = "";
+
+      setQrStatus("loanQrStatus", "", false);
+      setQrStatus("loanMemberQrStatus", "", false);
+
       if (byId("loanDate")) byId("loanDate").value = nowLocalInputValue();
 
       updateLoanSelectors();
@@ -1923,9 +1943,7 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
           resetSkateForm();
         }
         await loadAll();
-      
-        showLoanSuccessModal(memberLabel, skateLabel);
-} catch (error) {
+      } catch (error) {
         console.error(error);
         alert("Kunne ikke arkivere skøyte.\n\n" + error.message);
       }
@@ -5922,11 +5940,18 @@ async function loadAll() {
       e.preventDefault();
       if (!supabaseClient) return;
 
+      syncLoanMemberSelection();
       syncLoanSkateSelection();
+
       const department_id = byId("loanDepartment").value;
       const member_id = byId("loanMember").value;
       const skate_id = byId("loanSkate").value;
       const loaned_at = byId("loanDate").value;
+
+      const memberLabel = byId("loanMemberSearch") ? byId("loanMemberSearch").value : "";
+      const skateLabel = byId("loanSkateSearch") ? byId("loanSkateSearch").value : "";
+      const savedDepartmentId = byId("loanDepartment").value || "";
+      const savedGroupFilter = byId("loanGroupFilter").value || "";
 
       if (!department_id || !member_id || !skate_id || !loaned_at) {
         alert("Du må velge avdeling, medlem, skøyte og tidspunkt.");
@@ -5934,38 +5959,38 @@ async function loadAll() {
       }
 
       try {
-        const check = await supabaseClient.from("loans").select("id").eq("skate_id", skate_id).is("returned_at", null).limit(1);
+        const check = await supabaseClient
+          .from("loans")
+          .select("id")
+          .eq("skate_id", skate_id)
+          .is("returned_at", null)
+          .limit(1);
+
         if (check.error) throw check.error;
 
         if ((check.data || []).length > 0) {
-                  const memberLabel = byId("loanMemberSearch") ? byId("loanMemberSearch").value : "";
-        const skateLabel = byId("loanSkateSearch") ? byId("loanSkateSearch").value : "";
-        await loadAll();
-        showLoanSuccessModal(memberLabel, skateLabel);
+          await loadAll();
           alert("Denne skøyten ble nettopp utlånt av en annen bruker. Listen er oppdatert.");
           return;
         }
 
-        const result = await supabaseClient.from("loans").insert([{ department_id, member_id, skate_id, loaned_at }]);
+        const result = await supabaseClient
+          .from("loans")
+          .insert([{ department_id, member_id, skate_id, loaned_at }]);
+
         if (result.error) throw result.error;
-        const savedDepartmentId = byId("loanDepartment").value || "";
-        const savedGroupFilter = byId("loanGroupFilter").value || "";
-        this.reset();
-        byId("loanDepartment").value = savedDepartmentId;
-        byId("loanGroupFilter").value = savedGroupFilter;
-        setUiPref("loanDepartment", savedDepartmentId);
-        setUiPref("loanGroupFilter", savedGroupFilter);
-        byId("loanMember").value = "";
-        byId("loanMemberSearch").value = "";
-        byId("loanSkate").value = "";
-        byId("loanSkateSearch").value = "";
-        setQrStatus("loanQrStatus", "", false);
-        setQrStatus("loanMemberQrStatus", "", false);
-        byId("loanDate").value = nowLocalInputValue();
+
         await loadAll();
+
+        showLoanSuccessModal(memberLabel, skateLabel, {
+          departmentId: savedDepartmentId,
+          groupFilter: savedGroupFilter
+        });
       } catch (error) {
         console.error(error);
-        alert("Kunne ikke registrere utlån.\n\n" + error.message);
+        alert("Kunne ikke registrere utlån.
+
+" + error.message);
       }
     });
 
@@ -6160,6 +6185,7 @@ attachSortHandlers();
     if (byId("btnExportSkatesReport")) byId("btnExportSkatesReport").addEventListener("click", exportSkatesReportCsv);
     if (byId("btnExportArchivedSkatesReport")) byId("btnExportArchivedSkatesReport").addEventListener("click", exportArchivedSkatesReportCsv);
     if (byId("btnExportMembersReport")) byId("btnExportMembersReport").addEventListener("click", exportMembersReportCsv);
+    if (byId("btnCloseLoanSuccess")) byId("btnCloseLoanSuccess").addEventListener("click", closeLoanSuccessModal);
     if (byId("btnStartQrLoan")) byId("btnStartQrLoan").addEventListener("click", async function () { await startLoanQrScanner(); });
     if (byId("btnStopQrLoan")) byId("btnStopQrLoan").addEventListener("click", async function () { await stopLoanQrScanner(); setQrStatus("loanQrStatus", "QR-skanning stoppet.", false); });
     if (byId("btnStartQrReturn")) byId("btnStartQrReturn").addEventListener("click", async function () { await startReturnQrScanner(); });
@@ -6188,8 +6214,6 @@ attachSortHandlers();
     }
   
     setupAdminTabs();
-
-    if (byId("btnCloseLoanSuccess")) byId("btnCloseLoanSuccess").addEventListener("click", closeLoanSuccessModal);
 </script>
 
 <div class="school-mobile-modal hidden" id="schoolMobileModal">
