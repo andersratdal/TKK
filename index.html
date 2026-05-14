@@ -5959,26 +5959,22 @@ async function loadAll() {
       }
 
       try {
-        const check = await supabaseClient
-          .from("loans")
-          .select("id")
-          .eq("skate_id", skate_id)
-          .is("returned_at", null)
-          .limit(1);
+        const response = await fetch("/api/create-loan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ department_id, member_id, skate_id, loaned_at })
+        });
 
-        if (check.error) throw check.error;
+        const result = await response.json().catch(() => ({}));
 
-        if ((check.data || []).length > 0) {
-          await loadAll();
-          alert("Denne skøyten ble nettopp utlånt av en annen bruker. Listen er oppdatert.");
-          return;
+        if (!response.ok || !result.success) {
+          if (response.status === 409) {
+            await loadAll();
+            alert((result && result.error) || "Denne skøyten ble nettopp utlånt av en annen bruker. Listen er oppdatert.");
+            return;
+          }
+          throw new Error((result && result.error) || "Kunne ikke registrere utlån.");
         }
-
-        const result = await supabaseClient
-          .from("loans")
-          .insert([{ department_id, member_id, skate_id, loaned_at }]);
-
-        if (result.error) throw result.error;
 
         await loadAll();
 

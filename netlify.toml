@@ -10,3 +10,8 @@
   from = "/api/stripe-webhook"
   to = "/.netlify/functions/stripe-webhook"
   status = 200
+
+[[redirects]]
+  from = "/api/create-loan"
+  to = "/.netlify/functions/create-loan"
+  status = 200
