@@ -1923,7 +1923,9 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
           resetSkateForm();
         }
         await loadAll();
-      } catch (error) {
+      
+        showLoanSuccessModal(memberLabel, skateLabel);
+} catch (error) {
         console.error(error);
         alert("Kunne ikke arkivere skøyte.\n\n" + error.message);
       }
