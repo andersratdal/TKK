@@ -1700,6 +1700,15 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
       return state.groups.filter((g) => groupIds.includes(g.id)).map((g) => g.name).sort();
     }
 
+    function memberMatchesDepartment(member, departmentId) {
+      if (!departmentId) return true;
+      if (member && sameId(member.department_id, departmentId)) return true;
+      const memberGroupIds = state.memberGroups
+        .filter((mg) => sameId(mg.member_id, member && member.id))
+        .map((mg) => mg.group_id);
+      return state.groups.some((g) => sameId(g.department_id, departmentId) && memberGroupIds.some((groupId) => sameId(groupId, g.id)));
+    }
+
     function updateStats() {
       const total = state.skates.length;
       let rented = 0;
@@ -1827,12 +1836,7 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
       let members = state.members.slice();
 
       if (currentDepartmentId) {
-        members = members.filter((m) => {
-          const memberGroupIds = state.memberGroups
-            .filter((mg) => sameId(mg.member_id, m.id))
-            .map((mg) => mg.group_id);
-          return state.groups.some((g) => sameId(g.department_id, currentDepartmentId) && memberGroupIds.includes(g.id));
-        });
+        members = members.filter((m) => memberMatchesDepartment(m, currentDepartmentId));
       }
 
       if (selectedGroupId) {
@@ -4831,7 +4835,8 @@ function parseBirthYearFromSpondValue(rawValue) {
           .map((group) => String(group.department_id || ""))
           .filter(Boolean)
       ));
-      if (byId("memberDepartment")) byId("memberDepartment").value = memberDepartmentIds.length === 1 ? memberDepartmentIds[0] : "";
+      const savedDepartmentId = member.department_id || (memberDepartmentIds.length === 1 ? memberDepartmentIds[0] : "");
+      if (byId("memberDepartment")) byId("memberDepartment").value = savedDepartmentId;
       if (byId("memberRole")) byId("memberRole").value = member.role || "Aktiv";
       byId("memberPhone").value = member.phone || "";
       byId("memberEmail").value = member.email || "";
@@ -5915,24 +5920,54 @@ async function loadAll() {
 
       try {
         let memberId;
+        const memberPayload = {
+          name,
+          phone,
+          email,
+          role,
+          department_id: selectedDepartmentId || null,
+        };
+
         if (editingMemberId) {
-          const upd = await supabaseClient.from("members").update({ name, phone, email, role }).eq("id", editingMemberId).select().single();
+          const upd = await supabaseClient
+            .from("members")
+            .update(memberPayload)
+            .eq("id", editingMemberId)
+            .select()
+            .single();
           if (upd.error) throw upd.error;
           memberId = editingMemberId;
         } else {
-          const ins = await supabaseClient.from("members").insert([{ name, phone, email, role }]).select().single();
+          const ins = await supabaseClient
+            .from("members")
+            .insert([memberPayload])
+            .select()
+            .single();
           if (ins.error) throw ins.error;
           memberId = ins.data.id;
         }
 
-        const groupNames = groupsText ? groupsText.split(",").map((x) => x.trim()).filter(Boolean) : [];
+        let groupNames = groupsText ? groupsText.split(",").map((x) => x.trim()).filter(Boolean) : [];
+
+        // Hvis en avdeling er valgt, men ingen gruppe er skrevet inn,
+        // kobles medlemmet automatisk til en standardgruppe i avdelingen.
+        // Dette gjør at medlemmet faktisk dukker opp under valgt avdeling.
+        if (selectedDepartmentId && groupNames.length === 0) {
+          groupNames = ["Alle medlemmer"];
+        }
+
         await setMemberGroups(memberId, groupNames, selectedDepartmentId);
 
         resetMemberForm();
         await loadAll();
       } catch (error) {
         console.error(error);
-        alert("Kunne ikke lagre medlem.\n\n" + error.message);
+        const message = String(error && error.message || "");
+        if (message.includes("department_id")) {
+          alert("Kunne ikke lagre avdeling på medlem. Kjør SQL-filen member-department.sql i Supabase først.\n\n" + message);
+        } else {
+          alert("Kunne ikke lagre medlem.\n\n" + message);
+        }
       }
     });
 
@@ -5959,22 +5994,26 @@ async function loadAll() {
       }
 
       try {
-        const response = await fetch("/api/create-loan", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ department_id, member_id, skate_id, loaned_at })
-        });
+        const check = await supabaseClient
+          .from("loans")
+          .select("id")
+          .eq("skate_id", skate_id)
+          .is("returned_at", null)
+          .limit(1);
 
-        const result = await response.json().catch(() => ({}));
+        if (check.error) throw check.error;
 
-        if (!response.ok || !result.success) {
-          if (response.status === 409) {
-            await loadAll();
-            alert((result && result.error) || "Denne skøyten ble nettopp utlånt av en annen bruker. Listen er oppdatert.");
-            return;
-          }
-          throw new Error((result && result.error) || "Kunne ikke registrere utlån.");
+        if ((check.data || []).length > 0) {
+          await loadAll();
+          alert("Denne skøyten ble nettopp utlånt av en annen bruker. Listen er oppdatert.");
+          return;
         }
+
+        const result = await supabaseClient
+          .from("loans")
+          .insert([{ department_id, member_id, skate_id, loaned_at }]);
+
+        if (result.error) throw result.error;
 
         await loadAll();
 
