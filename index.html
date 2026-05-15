@@ -4093,12 +4093,21 @@ function renderAll() {
     async function returnLoan(loanId) {
       if (!supabaseClient) return;
       try {
-        const result = await supabaseClient
-          .from("loans")
-          .update({ returned_at: new Date().toISOString() })
-          .eq("id", loanId)
-          .is("returned_at", null);
-        if (result.error) throw result.error;
+        const response = await fetch("/api/return-loan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            loan_id: loanId,
+            returned_at: new Date().toISOString()
+          })
+        });
+
+        const payload = await response.json().catch(() => ({}));
+
+        if (!response.ok || payload.error) {
+          throw new Error(payload.error || "Kunne ikke registrere innlevering.");
+        }
+
         await loadAll();
       } catch (error) {
         console.error(error);
