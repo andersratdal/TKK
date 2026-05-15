@@ -33,6 +33,43 @@ function buildSkateInfo(skate) {
   return parts.length ? parts.join(" - ") : "Skøyter";
 }
 
+function getBearerToken(event) {
+  const header = event.headers.authorization || event.headers.Authorization || "";
+  const match = String(header).match(/^Bearer\s+(.+)$/i);
+  return match ? match[1] : null;
+}
+
+async function requireRole(supabase, event, allowedRoles) {
+  const token = getBearerToken(event);
+  if (!token) {
+    return { error: json(401, { error: "Du må være logget inn." }) };
+  }
+
+  const { data: userData, error: userError } = await supabase.auth.getUser(token);
+  if (userError || !userData || !userData.user || !userData.user.email) {
+    return { error: json(401, { error: "Ugyldig eller utløpt innlogging." }) };
+  }
+
+  const email = String(userData.user.email).trim().toLowerCase();
+  const { data: roleRow, error: roleError } = await supabase
+    .from("app_user_roles")
+    .select("role")
+    .eq("email", email)
+    .maybeSingle();
+
+  if (roleError) {
+    console.error("Role lookup error:", roleError);
+    return { error: json(500, { error: "Kunne ikke sjekke tilgang." }) };
+  }
+
+  const role = roleRow && roleRow.role;
+  if (!role || !allowedRoles.includes(role)) {
+    return { error: json(403, { error: "Du har ikke tilgang til denne handlingen." }) };
+  }
+
+  return { user: userData.user, role };
+}
+
 async function sendReturnEmail({ member, skate }) {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.EMAIL_FROM || process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
@@ -58,7 +95,7 @@ async function sendReturnEmail({ member, skate }) {
 
       <p>Vennlig hilsen<br>Trondheim Kortbaneklubb</p>
     `,
-    text: `Hei ${memberName},\n\nVi bekrefter at skøytene du lånte fra Trondheim Kortbaneklubb nå er registrert som levert inn.\n\nInnleverte skøyter: ${skateInfo}\n\nTakk for at du leverte dem tilbake.\n\nVennlig hilsen\nTrondheim Kortbaneklubb`,
+    text: `Hei ${memberName}\n\nVi bekrefter at skøytene du lånte fra Trondheim Kortbaneklubb nå er registrert som levert inn.\n\nInnleverte skøyter: ${skateInfo}\n\nTakk for at du leverte dem tilbake.\n\nVennlig hilsen\nTrondheim Kortbaneklubb`,
   });
 }
 
@@ -72,6 +109,9 @@ exports.handler = async (event) => {
       process.env.SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY
     );
+
+    const auth = await requireRole(supabase, event, ["admin", "utlan"]);
+    if (auth.error) return auth.error;
 
     const body = JSON.parse(event.body || "{}");
     const loan_id = normalizeValue(body.loan_id);
