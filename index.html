@@ -1727,11 +1727,11 @@ function byId(id) { return document.getElementById(id); }
     function looksLikePasswordRecoveryUrl() {
       const hash = new URLSearchParams((window.location.hash || "").replace(/^#/, ""));
       const search = new URLSearchParams(window.location.search || "");
-      return hash.get("type") === "recovery" || search.get("type") === "recovery" || search.has("code");
+      return hash.get("type") === "recovery" || search.get("type") === "recovery" || search.get("reset") === "1" || search.has("code");
     }
 
     function getAuthRedirectUrl() {
-      return "https://tkkskoyteutleie.netlify.app/index.html";
+      return "https://tkkskoyteutleie.netlify.app/index.html?reset=1";
     }
 
     function getRoleLabel(role) {
@@ -6847,10 +6847,26 @@ attachSortHandlers();
       });
 
       supabaseClient.auth.getSession().then(async function (sessionResult) {
-        const session = sessionResult && sessionResult.data ? sessionResult.data.session : null;
+        let session = sessionResult && sessionResult.data ? sessionResult.data.session : null;
 
         if (recoveryUrlDetected) {
+          const search = new URLSearchParams(window.location.search || "");
+          const code = search.get("code");
+
+          if (code && !session && supabaseClient.auth.exchangeCodeForSession) {
+            try {
+              const exchanged = await supabaseClient.auth.exchangeCodeForSession(code);
+              session = exchanged && exchanged.data ? exchanged.data.session : session;
+            } catch (error) {
+              console.error("Password recovery code exchange failed", error);
+              setLoginMessage(error.message || "Passordlenken kunne ikke åpnes. Prøv å sende ny lenke.", true);
+            }
+          }
+
           enterPasswordRecoveryMode(session);
+          try {
+            window.history.replaceState({}, document.title, "/index.html?reset=1");
+          } catch (e) {}
           return;
         }
 
