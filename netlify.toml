@@ -10,3 +10,8 @@
   from = "/api/stripe-webhook"
   to = "/.netlify/functions/stripe-webhook"
   status = 200
+
+[[redirects]]
+  from = "/api/create-app-user"
+  to = "/.netlify/functions/create-app-user"
+  status = 200

@@ -1192,11 +1192,15 @@
 
 <div class="section-card" data-admin-section="access">
   <h2>Tilgangsstyring</h2>
-  <div class="help" style="margin-top:8px;">Legg inn e-postadressen til brukere som er opprettet i Supabase Auth, og velg hvilken rolle de skal ha.</div>
+  <div class="help" style="margin-top:8px;">Opprett nye innloggingsbrukere med midlertidig passord, og velg hvilken rolle de skal ha.</div>
   <form class="form-grid" id="accessRoleForm" style="margin-top:14px;">
-    <div class="col-6">
+    <div class="col-4">
       <label for="accessEmail">E-post</label>
       <input id="accessEmail" type="email" placeholder="navn@epost.no" required />
+    </div>
+    <div class="col-3">
+      <label for="accessPassword">Midlertidig passord</label>
+      <input id="accessPassword" type="text" placeholder="Minst 8 tegn" autocomplete="new-password" />
     </div>
     <div class="col-3">
       <label for="accessRole">Rolle</label>
@@ -1206,9 +1210,9 @@
         <option value="skoyteskole">Skøyteskole</option>
       </select>
     </div>
-    <div class="col-3">
+    <div class="col-2">
       <label>&nbsp;</label>
-      <button class="btn-primary" type="submit">Lagre tilgang</button>
+      <button class="btn-primary" type="submit">Opprett bruker</button>
     </div>
   </form>
   <div class="help" id="accessRoleMessage" style="margin-top:10px;"></div>
@@ -2695,12 +2699,26 @@ async function loadAccessRoles() {
       });
     }
 
+    async function createAppUser(email, role, password) {
+      const response = await fetch("/.netlify/functions/create-app-user", {
+        method: "POST",
+        headers: await getFunctionAuthHeaders(),
+        body: JSON.stringify({ email: normalizeEmail(email), role, password })
+      });
+
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "Kunne ikke opprette bruker.");
+      }
+      return result;
+    }
+
     async function saveAccessRole(email, role) {
       const payload = { email: normalizeEmail(email), role };
       const existing = (state.accessRoles || []).find((r) => r.email === payload.email);
       let result;
       if (existing) {
-        result = await supabaseClient.from("app_user_roles").update({ role: payload.role }).eq("email", payload.email);
+        result = await supabaseClient.from("app_user_roles").update({ role: payload.role, updated_at: new Date().toISOString() }).eq("email", payload.email);
       } else {
         result = await supabaseClient.from("app_user_roles").insert([payload]);
       }
@@ -6211,19 +6229,24 @@ async function loadAll() {
       if (currentRole !== "admin") return;
       const email = byId("accessEmail").value.trim();
       const role = byId("accessRole").value;
-      if (!email || !role) {
-        setAccessRoleMessage("Fyll inn e-post og rolle.", true);
+      const password = byId("accessPassword") ? byId("accessPassword").value : "";
+      if (!email || !role || !password) {
+        setAccessRoleMessage("Fyll inn e-post, midlertidig passord og rolle.", true);
+        return;
+      }
+      if (password.length < 8) {
+        setAccessRoleMessage("Midlertidig passord må være minst 8 tegn.", true);
         return;
       }
       try {
-        await saveAccessRole(email, role);
+        await createAppUser(email, role, password);
         byId("accessRoleForm").reset();
         byId("accessRole").value = "utlan";
-        setAccessRoleMessage("Tilgang lagret.", false);
+        setAccessRoleMessage("Bruker opprettet. Send e-post og midlertidig passord til brukeren manuelt.", false);
         await loadAccessRoles();
       } catch (error) {
         console.error(error);
-        setAccessRoleMessage("Kunne ikke lagre tilgang.\n\n" + error.message, true);
+        setAccessRoleMessage("Kunne ikke opprette bruker.\n\n" + error.message, true);
       }
     });
 
