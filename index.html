@@ -4093,7 +4093,7 @@ function renderAll() {
     async function returnLoan(loanId) {
       if (!supabaseClient) return;
       try {
-        const response = await fetch("/api/return-loan", {
+        const response = await fetch("/.netlify/functions/return-loan", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -6003,7 +6003,7 @@ async function loadAll() {
       }
 
       try {
-        const response = await fetch("/api/create-loan", {
+        const response = await fetch("/.netlify/functions/create-loan", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ department_id, member_id, skate_id, loaned_at })
