@@ -945,9 +945,9 @@
   <div class="auth-card">
     <div class="eyebrow">Trondheim Kortbaneklubb</div>
     <h1>Logg inn</h1>
-    <div class="auth-subtitle">Logg inn for å bruke skøyteutleie, rapporter eller skøyteskole.</div>
+    <div class="auth-subtitle">Logg inn med e-post og passord for å bruke appen.</div>
 
-    <div class="auth-grid" id="authConfigBox">
+    <div class="auth-grid hidden" id="authConfigBox">
       <div class="notice">Første gang på denne enheten: lim inn Supabase URL og anon public key.</div>
       <div>
         <label for="authSupabaseUrl">Supabase URL</label>
@@ -1237,7 +1237,7 @@
 </div>
 <div class="section-card">
 <h2>Oppsett</h2>
-<div class="notice">Lim inn Supabase URL og anon public key. Trykk deretter <strong>Lagre innstillinger</strong>.</div>
+<div class="notice">Supabase-oppsettet er lagt inn i appen. Vanlige brukere trenger ikke fylle inn URL eller nøkkel.</div>
 <form class="form-grid" id="configForm" style="margin-top: 14px;">
 <div class="col-6">
 <label for="supabaseUrl">Supabase URL</label>
@@ -1248,7 +1248,7 @@
 <input id="supabaseAnonKey" placeholder="eyJ..."/>
 </div>
 <div class="col-12">
-<button class="btn-primary" type="submit">Lagre innstillinger</button>
+<button class="btn-primary" type="submit">Test / lagre oppsett</button>
 <span class="help" id="configMessage"></span>
 </div>
 </form>
@@ -1592,6 +1592,8 @@
 
 <script>
     const CONFIG_KEY = "skoyteutleie_supabase_config_v7";
+    const HARDCODED_SUPABASE_URL = "https://dcfhisxyiuatftzjtuwz.supabase.co";
+    const HARDCODED_SUPABASE_ANON_KEY = "sb_publishable_W_3O4m4r0aZ3ukSOJVTcHw_Gy6W6uj9";
     const UI_PREFS_KEY = "skoyteutleie_ui_prefs_v1";
     let supabaseClient = null;
     let sortState = { skates: { key: null, asc: true }, members: { key: null, asc: true } };
@@ -1800,15 +1802,12 @@ function byId(id) { return document.getElementById(id); }
     }
 
     function loadConfig() {
-      try {
-        const raw = localStorage.getItem(CONFIG_KEY);
-        return raw ? JSON.parse(raw) : {};
-      } catch (e) {
-        console.error(e);
-        return {};
-      }
+      return { url: HARDCODED_SUPABASE_URL, anonKey: HARDCODED_SUPABASE_ANON_KEY };
     }
-    function saveConfig(config) { localStorage.setItem(CONFIG_KEY, JSON.stringify(config)); }
+    function saveConfig(config) {
+      // Supabase-oppsett er hardkodet i appen. Beholder funksjonen for bakoverkompatibilitet.
+      try { localStorage.setItem(CONFIG_KEY, JSON.stringify(loadConfig())); } catch (e) { console.error(e); }
+    }
     function setConfigMessage(message, isError) {
       const el = byId("configMessage");
       if (!el) return;
@@ -1874,12 +1873,9 @@ function byId(id) { return document.getElementById(id); }
 
     function initFromSavedConfig() {
       const config = loadConfig();
-      byId("supabaseUrl").value = config.url || "";
-      byId("supabaseAnonKey").value = config.anonKey || "";
+      if (byId("supabaseUrl")) byId("supabaseUrl").value = config.url || "";
+      if (byId("supabaseAnonKey")) byId("supabaseAnonKey").value = config.anonKey || "";
 
-      if (!config.url || !config.anonKey) {
-        return false;
-      }
       if (!window.supabase || !window.supabase.createClient) {
         setConfigMessage("Supabase-biblioteket ble ikke lastet.", true);
         return false;
@@ -6192,15 +6188,8 @@ async function loadAll() {
     if (byId("authSupabaseAnonKey")) byId("authSupabaseAnonKey").value = (loadConfig().anonKey || "");
 
     if (byId("btnSaveAuthConfig")) byId("btnSaveAuthConfig").addEventListener("click", function () {
-      const url = byId("authSupabaseUrl").value.trim();
-      const anonKey = byId("authSupabaseAnonKey").value.trim();
-      if (!url || !anonKey) {
-        setLoginMessage("Du må fylle inn både Supabase URL og anon public key.", true);
-        return;
-      }
-      saveConfig({ url, anonKey });
       const ok = initFromSavedConfig();
-      setLoginMessage(ok ? "Supabase-oppsett lagret. Du kan logge inn." : "Oppsett lagret, men Supabase kunne ikke startes.", !ok);
+      setLoginMessage(ok ? "Supabase-oppsett er klart. Du kan logge inn." : "Supabase kunne ikke startes.", !ok);
     });
 
     if (byId("loginForm")) byId("loginForm").addEventListener("submit", async function (e) {
@@ -6208,7 +6197,7 @@ async function loadAll() {
       try {
         if (!supabaseClient) {
           const ok = initFromSavedConfig();
-          if (!ok) throw new Error("Lagre Supabase-oppsett først.");
+          if (!ok) throw new Error("Supabase kunne ikke startes. Sjekk at siden er deployet riktig.");
         }
         const email = byId("loginEmail").value.trim();
         const password = byId("loginPassword").value;
@@ -6282,18 +6271,14 @@ async function loadAll() {
 
     byId("configForm").addEventListener("submit", async function (e) {
       e.preventDefault();
-      const url = byId("supabaseUrl").value.trim();
-      const anonKey = byId("supabaseAnonKey").value.trim();
-
-      if (!url || !anonKey) {
-        setConfigMessage("Du må fylle inn både URL og anon key.", true);
-        return;
-      }
+      const config = loadConfig();
 
       try {
-        saveConfig({ url: url, anonKey: anonKey });
-        if (byId("authSupabaseUrl")) byId("authSupabaseUrl").value = url;
-        if (byId("authSupabaseAnonKey")) byId("authSupabaseAnonKey").value = anonKey;
+        saveConfig(config);
+        if (byId("supabaseUrl")) byId("supabaseUrl").value = config.url;
+        if (byId("supabaseAnonKey")) byId("supabaseAnonKey").value = config.anonKey;
+        if (byId("authSupabaseUrl")) byId("authSupabaseUrl").value = config.url;
+        if (byId("authSupabaseAnonKey")) byId("authSupabaseAnonKey").value = config.anonKey;
       } catch (error) {
         console.error(error);
         setConfigMessage("Kunne ikke lagre innstillinger i nettleseren.", true);
