@@ -884,10 +884,104 @@
   }
 }
 
+
+
+/* Tilgangsstyring */
+.auth-gate {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+  background:
+    radial-gradient(circle at top left, rgba(31,79,255,0.10), transparent 32%),
+    linear-gradient(180deg, #f7faff 0%, #edf3fb 100%);
+}
+.auth-card {
+  width: min(100%, 520px);
+  background: #fff;
+  border: 1px solid rgba(16,35,63,0.08);
+  border-radius: 24px;
+  box-shadow: var(--shadow, 0 18px 40px rgba(16,35,63,0.12));
+  padding: 24px;
+}
+.auth-card h1 { margin: 0; font-size: 28px; }
+.auth-card .auth-subtitle { margin-top: 8px; color: var(--muted); line-height: 1.5; }
+.auth-grid { display: grid; gap: 12px; margin-top: 18px; }
+.auth-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; align-items: center; }
+.auth-message { margin-top: 14px; white-space: pre-wrap; }
+.auth-topbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.auth-user-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  background: #eef4ff;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 700;
+}
+.access-table-wrap { overflow-x: auto; }
+.access-role-badge {
+  display: inline-block;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #3730a3;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 </style>
 </head>
 <body>
-<div class="container">
+<div class="auth-gate" id="authGate">
+  <div class="auth-card">
+    <div class="eyebrow">Trondheim Kortbaneklubb</div>
+    <h1>Logg inn</h1>
+    <div class="auth-subtitle">Logg inn for å bruke skøyteutleie, rapporter eller skøyteskole.</div>
+
+    <div class="auth-grid" id="authConfigBox">
+      <div class="notice">Første gang på denne enheten: lim inn Supabase URL og anon public key.</div>
+      <div>
+        <label for="authSupabaseUrl">Supabase URL</label>
+        <input id="authSupabaseUrl" placeholder="https://xxxxx.supabase.co" />
+      </div>
+      <div>
+        <label for="authSupabaseAnonKey">Supabase anon public key</label>
+        <input id="authSupabaseAnonKey" placeholder="eyJ..." />
+      </div>
+      <button class="btn-secondary" id="btnSaveAuthConfig" type="button">Lagre Supabase-oppsett</button>
+    </div>
+
+    <form id="loginForm" class="auth-grid">
+      <div>
+        <label for="loginEmail">E-post</label>
+        <input id="loginEmail" type="email" autocomplete="email" required />
+      </div>
+      <div>
+        <label for="loginPassword">Passord</label>
+        <input id="loginPassword" type="password" autocomplete="current-password" required />
+      </div>
+      <div class="auth-actions">
+        <button class="btn-primary" type="submit">Logg inn</button>
+      </div>
+      <div class="help auth-message" id="loginMessage"></div>
+    </form>
+  </div>
+</div>
+
+<div class="container hidden" id="appShell">
+<div class="auth-topbar" id="authTopbar">
+  <div class="auth-user-pill" id="authUserPill">Ikke innlogget</div>
+  <button class="btn-secondary btn-small" id="btnLogout" type="button">Logg ut</button>
+</div>
 <div id="homeView">
 <div class="brand">
 <img alt="Trondheim Kortbaneklubb" src="logo.png"/>
@@ -1092,9 +1186,34 @@
     <button type="button" class="admin-tab" data-admin-tab="import">Import</button>
     <button type="button" class="admin-tab" data-admin-tab="labels">QR / NFC</button>
     <button type="button" class="admin-tab" data-admin-tab="settings">Innstillinger</button>
+    <button type="button" class="admin-tab" data-admin-tab="access">Tilgang</button>
   </div>
 </div>
 
+<div class="section-card" data-admin-section="access">
+  <h2>Tilgangsstyring</h2>
+  <div class="help" style="margin-top:8px;">Legg inn e-postadressen til brukere som er opprettet i Supabase Auth, og velg hvilken rolle de skal ha.</div>
+  <form class="form-grid" id="accessRoleForm" style="margin-top:14px;">
+    <div class="col-6">
+      <label for="accessEmail">E-post</label>
+      <input id="accessEmail" type="email" placeholder="navn@epost.no" required />
+    </div>
+    <div class="col-3">
+      <label for="accessRole">Rolle</label>
+      <select id="accessRole">
+        <option value="admin">Admin</option>
+        <option value="utlan">Utlån</option>
+        <option value="skoyteskole">Skøyteskole</option>
+      </select>
+    </div>
+    <div class="col-3">
+      <label>&nbsp;</label>
+      <button class="btn-primary" type="submit">Lagre tilgang</button>
+    </div>
+  </form>
+  <div class="help" id="accessRoleMessage" style="margin-top:10px;"></div>
+  <div class="access-table-wrap" id="accessRolesWrap"></div>
+</div>
 
 <div class="section-card">
 <h2>Avdelinger</h2>
@@ -1472,7 +1591,9 @@
     const UI_PREFS_KEY = "skoyteutleie_ui_prefs_v1";
     let supabaseClient = null;
     let sortState = { skates: { key: null, asc: true }, members: { key: null, asc: true } };
-let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], departments: [], schoolBatches: [], schoolGroups: [], schoolEnrollments: [], schoolSignups: [], schoolSignupsLoadError: "", selectedSchoolSignupIds: [] };
+let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], departments: [], schoolBatches: [], schoolGroups: [], schoolEnrollments: [], schoolSignups: [], schoolSignupsLoadError: "", selectedSchoolSignupIds: [], accessRoles: [] };
+    let currentUser = null;
+    let currentRole = null;
     let missingContactOnly = false;
     let editingMemberId = null;
     let editingSkateId = null;
@@ -1488,7 +1609,142 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
     let returnQrLastText = "";
     let loanMemberQrLastText = "";
 
-    function byId(id) { return document.getElementById(id); }
+    
+function byId(id) { return document.getElementById(id); }
+
+    function normalizeEmail(value) {
+      return String(value || "").trim().toLowerCase();
+    }
+
+    function setLoginMessage(message, isError) {
+      const el = byId("loginMessage");
+      if (!el) return;
+      el.textContent = message || "";
+      el.className = isError ? "help auth-message msg-error" : "help auth-message msg-ok";
+    }
+
+    function getRoleLabel(role) {
+      if (role === "admin") return "Admin";
+      if (role === "utlan") return "Utlån";
+      if (role === "skoyteskole") return "Skøyteskole";
+      return "Ukjent";
+    }
+
+    function roleCanOpen(sectionId) {
+      if (currentRole === "admin") return true;
+      if (currentRole === "utlan") return ["loanTab", "returnTab", "reportsTab", "adminTab"].includes(sectionId);
+      if (currentRole === "skoyteskole") return sectionId === "skatingSchoolTab";
+      return false;
+    }
+
+    function roleDefaultSection() {
+      if (currentRole === "skoyteskole") return "skatingSchoolTab";
+      return "loanTab";
+    }
+
+    function applyAccessControl() {
+      const appShell = byId("appShell");
+      const authGate = byId("authGate");
+      if (authGate) authGate.classList.toggle("hidden", !!currentUser && !!currentRole);
+      if (appShell) appShell.classList.toggle("hidden", !currentUser || !currentRole);
+
+      const pill = byId("authUserPill");
+      if (pill) {
+        const email = currentUser && currentUser.email ? currentUser.email : "Ikke innlogget";
+        pill.textContent = currentRole ? email + " · " + getRoleLabel(currentRole) : email;
+      }
+
+      document.querySelectorAll("[data-target]").forEach((el) => {
+        const target = el.getAttribute("data-target");
+        const allowed = roleCanOpen(target);
+        el.classList.toggle("hidden", !allowed);
+      });
+
+      const signupLink = document.querySelector('a[href="pamelding.html"]');
+      if (signupLink && signupLink.parentElement) signupLink.parentElement.classList.toggle("hidden", currentRole !== "admin");
+
+      const admin = byId("adminTab");
+      if (admin) {
+        admin.querySelectorAll(".admin-tab").forEach((btn) => {
+          const key = btn.dataset.adminTab || "";
+          let allowed = currentRole === "admin";
+          if (currentRole === "utlan") allowed = ["skates", "members"].includes(key);
+          btn.classList.toggle("hidden", !allowed);
+        });
+
+        admin.querySelectorAll(":scope > .section-card").forEach((card) => {
+          const key = card.dataset.adminSection || getAdminSectionKey(card);
+          let allowed = currentRole === "admin";
+          if (currentRole === "utlan") allowed = ["skates", "members"].includes(key);
+          card.classList.toggle("hidden", !allowed);
+        });
+      }
+    }
+
+    async function loadCurrentRole() {
+      if (!supabaseClient) throw new Error("Supabase er ikke konfigurert.");
+      const userResult = await supabaseClient.auth.getUser();
+      if (userResult.error) throw userResult.error;
+      const user = userResult.data && userResult.data.user;
+      currentUser = user || null;
+      currentRole = null;
+
+      if (!currentUser || !currentUser.email) return false;
+
+      const { data, error } = await supabaseClient
+        .from("app_user_roles")
+        .select("role")
+        .eq("email", normalizeEmail(currentUser.email))
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!data || !data.role) {
+        await supabaseClient.auth.signOut();
+        currentUser = null;
+        currentRole = null;
+        throw new Error("Brukeren er innlogget, men har ikke fått tilgangsrolle. Be en admin legge til e-postadressen i Tilgangsstyring.");
+      }
+
+      currentRole = data.role;
+      return true;
+    }
+
+    async function completeLoginFlow() {
+      const ok = await loadCurrentRole();
+      applyAccessControl();
+      if (ok) {
+        setupAdminTabs();
+        applyAccessControl();
+        await loadAll();
+        startAutoRefresh();
+        goHome();
+      }
+      return ok;
+    }
+
+    async function handleLogout() {
+      try {
+        await stopLoanQrScanner();
+        await stopReturnQrScanner();
+        await stopLoanMemberQrScanner();
+      } catch (e) {}
+      if (supabaseClient && supabaseClient.auth) await supabaseClient.auth.signOut();
+      currentUser = null;
+      currentRole = null;
+      applyAccessControl();
+      setLoginMessage("Du er logget ut.", false);
+    }
+
+
+    async function getFunctionAuthHeaders() {
+      const headers = { "Content-Type": "application/json" };
+      if (!supabaseClient || !supabaseClient.auth) return headers;
+      const { data } = await supabaseClient.auth.getSession();
+      const token = data && data.session && data.session.access_token;
+      if (token) headers.Authorization = "Bearer " + token;
+      return headers;
+    }
+
     function safeText(value) { return value === null || value === undefined || value === "" ? "-" : String(value); }
     function escapeHtml(value) {
       return String(value)
@@ -1581,6 +1837,10 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
     }
 
     async function showSection(sectionId) {
+      if (!roleCanOpen(sectionId)) {
+        alert("Du har ikke tilgang til denne delen av appen.");
+        return;
+      }
       await stopLoanQrScanner();
       await stopReturnQrScanner();
       await stopLoanMemberQrScanner();
@@ -2297,6 +2557,8 @@ function attachSortHandlers() {
       const heading = card.querySelector("h2");
       const title = String((heading && heading.textContent) || "").trim().toLowerCase();
 
+      if (title.includes("tilgangsstyring")) return "access";
+
       if (title.includes("oppsett")) return "settings";
 
       if (
@@ -2323,7 +2585,9 @@ function attachSortHandlers() {
       const admin = byId("adminTab");
       if (!admin) return;
 
-      const target = String(tabName || "skates");
+      let target = String(tabName || "skates");
+      if (currentRole === "utlan" && !["skates", "members"].includes(target)) target = "skates";
+      if (currentRole === "skoyteskole") return;
 
       admin.querySelectorAll(".admin-tab").forEach((btn) => {
         btn.classList.toggle("active", String(btn.dataset.adminTab || "") === target);
@@ -2360,7 +2624,90 @@ function attachSortHandlers() {
     }
 
 
-function renderSkates() {
+
+async function loadAccessRoles() {
+      if (!supabaseClient || currentRole !== "admin") return;
+      const { data, error } = await supabaseClient
+        .from("app_user_roles")
+        .select("id, email, role, created_at")
+        .order("email", { ascending: true });
+      if (error) throw error;
+      state.accessRoles = data || [];
+      renderAccessRoles();
+    }
+
+    function setAccessRoleMessage(message, isError) {
+      const el = byId("accessRoleMessage");
+      if (!el) return;
+      el.textContent = message || "";
+      el.className = isError ? "help msg-error" : "help msg-ok";
+    }
+
+    function renderAccessRoles() {
+      const wrap = byId("accessRolesWrap");
+      if (!wrap) return;
+      if (currentRole !== "admin") {
+        wrap.innerHTML = '<div class="empty">Kun admin kan administrere tilganger.</div>';
+        return;
+      }
+      const rows = state.accessRoles || [];
+      if (!rows.length) {
+        wrap.innerHTML = '<div class="empty">Ingen brukere er lagt til ennå.</div>';
+        return;
+      }
+      wrap.innerHTML = '<table><thead><tr><th>E-post</th><th>Rolle</th><th>Opprettet</th><th>Handlinger</th></tr></thead><tbody>' +
+        rows.map((row) => {
+          return '<tr>' +
+            '<td data-label="E-post">' + escapeHtml(row.email) + '</td>' +
+            '<td data-label="Rolle"><span class="access-role-badge">' + escapeHtml(getRoleLabel(row.role)) + '</span></td>' +
+            '<td data-label="Opprettet">' + escapeHtml(formatDate(row.created_at)) + '</td>' +
+            '<td data-label="Handlinger"><div class="member-actions">' +
+              '<button class="btn-secondary btn-small" type="button" data-access-edit="' + escapeHtml(row.email) + '">Rediger</button>' +
+              '<button class="btn-secondary btn-small" type="button" data-access-delete="' + escapeHtml(row.email) + '">Slett</button>' +
+            '</div></td>' +
+          '</tr>';
+        }).join('') + '</tbody></table>';
+
+      wrap.querySelectorAll("[data-access-edit]").forEach((btn) => {
+        btn.addEventListener("click", function () {
+          const email = this.getAttribute("data-access-edit");
+          const row = (state.accessRoles || []).find((r) => r.email === email);
+          if (!row) return;
+          byId("accessEmail").value = row.email;
+          byId("accessRole").value = row.role;
+        });
+      });
+
+      wrap.querySelectorAll("[data-access-delete]").forEach((btn) => {
+        btn.addEventListener("click", async function () {
+          const email = this.getAttribute("data-access-delete");
+          if (!confirm("Slette tilgang for " + email + "?")) return;
+          try {
+            const { error } = await supabaseClient.from("app_user_roles").delete().eq("email", email);
+            if (error) throw error;
+            setAccessRoleMessage("Tilgang slettet.", false);
+            await loadAccessRoles();
+          } catch (error) {
+            console.error(error);
+            setAccessRoleMessage("Kunne ikke slette tilgang.\n\n" + error.message, true);
+          }
+        });
+      });
+    }
+
+    async function saveAccessRole(email, role) {
+      const payload = { email: normalizeEmail(email), role };
+      const existing = (state.accessRoles || []).find((r) => r.email === payload.email);
+      let result;
+      if (existing) {
+        result = await supabaseClient.from("app_user_roles").update({ role: payload.role }).eq("email", payload.email);
+      } else {
+        result = await supabaseClient.from("app_user_roles").insert([payload]);
+      }
+      if (result.error) throw result.error;
+    }
+
+    function renderSkates() {
       const wrap = byId("skatesWrap");
       const search = byId("searchSkates").value.trim().toLowerCase();
       const sizeFilter = byId("filterSkateSize").value.trim().toLowerCase();
@@ -4095,7 +4442,7 @@ function renderAll() {
       try {
         const response = await fetch("/.netlify/functions/return-loan", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: await getFunctionAuthHeaders(),
           body: JSON.stringify({
             loan_id: loanId,
             returned_at: new Date().toISOString()
@@ -5368,6 +5715,10 @@ async function loadAll() {
         state.schoolSignupsLoadError = schoolSignupsLoadError;
 
         renderAll();
+        if (currentRole === "admin") {
+          try { await loadAccessRoles(); } catch (accessError) { console.error(accessError); }
+        }
+        applyAccessControl();
       } catch (error) {
         console.error(error);
         alert("Kunne ikke laste data.\n\n" + error.message);
@@ -5819,6 +6170,63 @@ async function loadAll() {
       setTimeout(function () { window.print(); setTimeout(function () { document.body.classList.remove("printing-member-qr"); }, 300); }, 50);
     }
 
+    if (byId("authSupabaseUrl")) byId("authSupabaseUrl").value = (loadConfig().url || "");
+    if (byId("authSupabaseAnonKey")) byId("authSupabaseAnonKey").value = (loadConfig().anonKey || "");
+
+    if (byId("btnSaveAuthConfig")) byId("btnSaveAuthConfig").addEventListener("click", function () {
+      const url = byId("authSupabaseUrl").value.trim();
+      const anonKey = byId("authSupabaseAnonKey").value.trim();
+      if (!url || !anonKey) {
+        setLoginMessage("Du må fylle inn både Supabase URL og anon public key.", true);
+        return;
+      }
+      saveConfig({ url, anonKey });
+      const ok = initFromSavedConfig();
+      setLoginMessage(ok ? "Supabase-oppsett lagret. Du kan logge inn." : "Oppsett lagret, men Supabase kunne ikke startes.", !ok);
+    });
+
+    if (byId("loginForm")) byId("loginForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      try {
+        if (!supabaseClient) {
+          const ok = initFromSavedConfig();
+          if (!ok) throw new Error("Lagre Supabase-oppsett først.");
+        }
+        const email = byId("loginEmail").value.trim();
+        const password = byId("loginPassword").value;
+        const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        setLoginMessage("Logget inn. Laster tilgang...", false);
+        await completeLoginFlow();
+      } catch (error) {
+        console.error(error);
+        setLoginMessage(error.message || "Innlogging feilet.", true);
+      }
+    });
+
+    if (byId("btnLogout")) byId("btnLogout").addEventListener("click", handleLogout);
+
+    if (byId("accessRoleForm")) byId("accessRoleForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      if (currentRole !== "admin") return;
+      const email = byId("accessEmail").value.trim();
+      const role = byId("accessRole").value;
+      if (!email || !role) {
+        setAccessRoleMessage("Fyll inn e-post og rolle.", true);
+        return;
+      }
+      try {
+        await saveAccessRole(email, role);
+        byId("accessRoleForm").reset();
+        byId("accessRole").value = "utlan";
+        setAccessRoleMessage("Tilgang lagret.", false);
+        await loadAccessRoles();
+      } catch (error) {
+        console.error(error);
+        setAccessRoleMessage("Kunne ikke lagre tilgang.\n\n" + error.message, true);
+      }
+    });
+
     byId("departmentForm").addEventListener("submit", async function (e) {
       e.preventDefault();
       if (!supabaseClient) { alert("Lagre innstillinger først."); return; }
@@ -5861,6 +6269,8 @@ async function loadAll() {
 
       try {
         saveConfig({ url: url, anonKey: anonKey });
+        if (byId("authSupabaseUrl")) byId("authSupabaseUrl").value = url;
+        if (byId("authSupabaseAnonKey")) byId("authSupabaseAnonKey").value = anonKey;
       } catch (error) {
         console.error(error);
         setConfigMessage("Kunne ikke lagre innstillinger i nettleseren.", true);
@@ -6005,7 +6415,7 @@ async function loadAll() {
       try {
         const response = await fetch("/.netlify/functions/create-loan", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: await getFunctionAuthHeaders(),
           body: JSON.stringify({ department_id, member_id, skate_id, loaned_at })
         });
 
@@ -6247,12 +6657,23 @@ attachSortHandlers();
     byId("loanDate").value = nowLocalInputValue();
     if (byId("existingLoansDate")) byId("existingLoansDate").value = "2025-01-01";
     const started = initFromSavedConfig();
-    if (started) {
-      loadAll();
-      startAutoRefresh();
+    applyAccessControl();
+    if (started && supabaseClient && supabaseClient.auth) {
+      supabaseClient.auth.getSession().then(async function (sessionResult) {
+        if (sessionResult && sessionResult.data && sessionResult.data.session) {
+          try {
+            await completeLoginFlow();
+          } catch (error) {
+            console.error(error);
+            setLoginMessage(error.message || "Kunne ikke hente tilgang.", true);
+            applyAccessControl();
+          }
+        }
+      });
     }
   
     setupAdminTabs();
+    applyAccessControl();
 </script>
 
 <div class="school-mobile-modal hidden" id="schoolMobileModal">
