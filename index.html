@@ -971,8 +971,48 @@
       </div>
       <div class="auth-actions">
         <button class="btn-primary" type="submit">Logg inn</button>
+        <button class="btn-secondary" id="btnShowForgotPassword" type="button">Glemt passord</button>
       </div>
       <div class="help auth-message" id="loginMessage"></div>
+    </form>
+
+    <form id="forgotPasswordForm" class="auth-grid hidden">
+      <div class="notice">Skriv inn e-postadressen din, så sender vi en lenke for å lage nytt passord.</div>
+      <div>
+        <label for="forgotPasswordEmail">E-post</label>
+        <input id="forgotPasswordEmail" type="email" autocomplete="email" required />
+      </div>
+      <div class="auth-actions">
+        <button class="btn-primary" type="submit">Send passordlenke</button>
+        <button class="btn-secondary" id="btnCancelForgotPassword" type="button">Tilbake</button>
+      </div>
+      <div class="help auth-message" id="forgotPasswordMessage"></div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-backdrop hidden" id="passwordModal">
+  <div class="modal-card" style="max-width:520px;">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title" id="passwordModalTitle">Endre passord</h2>
+        <div class="help" id="passwordModalHelp" style="margin-top:8px;">Velg et nytt passord på minst 8 tegn.</div>
+      </div>
+      <button class="btn-secondary" id="btnClosePasswordModal" type="button">Lukk</button>
+    </div>
+    <form id="changePasswordForm" class="form-grid">
+      <div class="col-12">
+        <label for="newPassword">Nytt passord</label>
+        <input id="newPassword" type="password" autocomplete="new-password" required />
+      </div>
+      <div class="col-12">
+        <label for="newPasswordConfirm">Gjenta nytt passord</label>
+        <input id="newPasswordConfirm" type="password" autocomplete="new-password" required />
+      </div>
+      <div class="col-12">
+        <button class="btn-primary" type="submit">Lagre nytt passord</button>
+      </div>
+      <div class="col-12 help auth-message" id="passwordMessage"></div>
     </form>
   </div>
 </div>
@@ -980,6 +1020,7 @@
 <div class="container hidden" id="appShell">
 <div class="auth-topbar" id="authTopbar">
   <div class="auth-user-pill" id="authUserPill">Ikke innlogget</div>
+  <button class="btn-secondary btn-small" id="btnChangePassword" type="button">Endre passord</button>
   <button class="btn-secondary btn-small" id="btnLogout" type="button">Logg ut</button>
 </div>
 <div id="homeView">
@@ -1627,6 +1668,54 @@ function byId(id) { return document.getElementById(id); }
       if (!el) return;
       el.textContent = message || "";
       el.className = isError ? "help auth-message msg-error" : "help auth-message msg-ok";
+    }
+
+    function setForgotPasswordMessage(message, isError) {
+      const el = byId("forgotPasswordMessage");
+      if (!el) return;
+      el.textContent = message || "";
+      el.className = isError ? "help auth-message msg-error" : "help auth-message msg-ok";
+    }
+
+    function setPasswordMessage(message, isError) {
+      const el = byId("passwordMessage");
+      if (!el) return;
+      el.textContent = message || "";
+      el.className = isError ? "help auth-message msg-error" : "help auth-message msg-ok";
+    }
+
+    function showForgotPasswordForm(show) {
+      const loginForm = byId("loginForm");
+      const forgotForm = byId("forgotPasswordForm");
+      if (loginForm) loginForm.classList.toggle("hidden", !!show);
+      if (forgotForm) forgotForm.classList.toggle("hidden", !show);
+      setForgotPasswordMessage("", false);
+      if (show && byId("forgotPasswordEmail")) {
+        const loginEmail = byId("loginEmail") ? byId("loginEmail").value : "";
+        byId("forgotPasswordEmail").value = loginEmail || "";
+        byId("forgotPasswordEmail").focus();
+      }
+    }
+
+    function showPasswordModal(title, helpText) {
+      const modal = byId("passwordModal");
+      if (!modal) return;
+      if (byId("passwordModalTitle")) byId("passwordModalTitle").textContent = title || "Endre passord";
+      if (byId("passwordModalHelp")) byId("passwordModalHelp").textContent = helpText || "Velg et nytt passord på minst 8 tegn.";
+      if (byId("changePasswordForm")) byId("changePasswordForm").reset();
+      setPasswordMessage("", false);
+      modal.classList.remove("hidden");
+      setTimeout(function () { if (byId("newPassword")) byId("newPassword").focus(); }, 50);
+    }
+
+    function hidePasswordModal() {
+      const modal = byId("passwordModal");
+      if (modal) modal.classList.add("hidden");
+      setPasswordMessage("", false);
+    }
+
+    function getAuthRedirectUrl() {
+      return window.location.origin + window.location.pathname;
     }
 
     function getRoleLabel(role) {
@@ -6211,6 +6300,58 @@ async function loadAll() {
       }
     });
 
+    if (byId("btnShowForgotPassword")) byId("btnShowForgotPassword").addEventListener("click", function () {
+      showForgotPasswordForm(true);
+    });
+
+    if (byId("btnCancelForgotPassword")) byId("btnCancelForgotPassword").addEventListener("click", function () {
+      showForgotPasswordForm(false);
+    });
+
+    if (byId("forgotPasswordForm")) byId("forgotPasswordForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      try {
+        if (!supabaseClient) {
+          const ok = initFromSavedConfig();
+          if (!ok) throw new Error("Supabase kunne ikke startes. Sjekk at siden er deployet riktig.");
+        }
+        const email = normalizeEmail(byId("forgotPasswordEmail").value);
+        if (!email) throw new Error("Skriv inn e-postadressen din.");
+        const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+          redirectTo: getAuthRedirectUrl()
+        });
+        if (error) throw error;
+        setForgotPasswordMessage("Hvis e-postadressen finnes som bruker, er passordlenke sendt. Sjekk innboksen din.", false);
+      } catch (error) {
+        console.error(error);
+        setForgotPasswordMessage(error.message || "Kunne ikke sende passordlenke.", true);
+      }
+    });
+
+    if (byId("btnChangePassword")) byId("btnChangePassword").addEventListener("click", function () {
+      showPasswordModal("Endre passord", "Velg et nytt passord på minst 8 tegn.");
+    });
+
+    if (byId("btnClosePasswordModal")) byId("btnClosePasswordModal").addEventListener("click", hidePasswordModal);
+
+    if (byId("changePasswordForm")) byId("changePasswordForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      try {
+        if (!supabaseClient || !supabaseClient.auth) throw new Error("Supabase er ikke klart.");
+        const password = byId("newPassword").value || "";
+        const confirm = byId("newPasswordConfirm").value || "";
+        if (password.length < 8) throw new Error("Passordet må være minst 8 tegn.");
+        if (password !== confirm) throw new Error("Passordene er ikke like.");
+        const { error } = await supabaseClient.auth.updateUser({ password });
+        if (error) throw error;
+        setPasswordMessage("Passordet er endret.", false);
+        setTimeout(hidePasswordModal, 700);
+      } catch (error) {
+        console.error(error);
+        setPasswordMessage(error.message || "Kunne ikke endre passord.", true);
+      }
+    });
+
     if (byId("btnLogout")) byId("btnLogout").addEventListener("click", handleLogout);
 
     if (byId("accessRoleForm")) byId("accessRoleForm").addEventListener("submit", async function (e) {
@@ -6676,6 +6817,14 @@ attachSortHandlers();
             setLoginMessage(error.message || "Kunne ikke hente tilgang.", true);
             applyAccessControl();
           }
+        }
+      });
+
+      supabaseClient.auth.onAuthStateChange(async function (event, session) {
+        if (event === "PASSWORD_RECOVERY") {
+          currentUser = session && session.user ? session.user : null;
+          applyAccessControl();
+          showPasswordModal("Lag nytt passord", "Skriv inn nytt passord for brukeren din.");
         }
       });
     }
