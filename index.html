@@ -1714,8 +1714,24 @@ function byId(id) { return document.getElementById(id); }
       setPasswordMessage("", false);
     }
 
+    let isPasswordRecoveryMode = false;
+
+    function enterPasswordRecoveryMode(session) {
+      isPasswordRecoveryMode = true;
+      currentUser = session && session.user ? session.user : currentUser;
+      if (byId("authGate")) byId("authGate").classList.add("hidden");
+      if (byId("appShell")) byId("appShell").classList.add("hidden");
+      showPasswordModal("Lag nytt passord", "Skriv inn et nytt passord på minst 8 tegn.");
+    }
+
+    function looksLikePasswordRecoveryUrl() {
+      const hash = new URLSearchParams((window.location.hash || "").replace(/^#/, ""));
+      const search = new URLSearchParams(window.location.search || "");
+      return hash.get("type") === "recovery" || search.get("type") === "recovery" || search.has("code");
+    }
+
     function getAuthRedirectUrl() {
-      return window.location.origin + window.location.pathname;
+      return "https://tkkskoyteutleie.netlify.app/index.html";
     }
 
     function getRoleLabel(role) {
@@ -6344,8 +6360,21 @@ async function loadAll() {
         if (password !== confirm) throw new Error("Passordene er ikke like.");
         const { error } = await supabaseClient.auth.updateUser({ password });
         if (error) throw error;
-        setPasswordMessage("Passordet er endret.", false);
-        setTimeout(hidePasswordModal, 700);
+        setPasswordMessage("Passordet er endret. Du kan nå logge inn med det nye passordet.", false);
+        if (isPasswordRecoveryMode) {
+          isPasswordRecoveryMode = false;
+          await supabaseClient.auth.signOut();
+          window.history.replaceState({}, document.title, window.location.pathname);
+          setTimeout(function () {
+            hidePasswordModal();
+            if (byId("authGate")) byId("authGate").classList.remove("hidden");
+            if (byId("appShell")) byId("appShell").classList.add("hidden");
+            showForgotPasswordForm(false);
+            setLoginMessage("Passordet er endret. Logg inn med nytt passord.", false);
+          }, 900);
+        } else {
+          setTimeout(hidePasswordModal, 700);
+        }
       } catch (error) {
         console.error(error);
         setPasswordMessage(error.message || "Kunne ikke endre passord.", true);
@@ -6808,8 +6837,24 @@ attachSortHandlers();
     const started = initFromSavedConfig();
     applyAccessControl();
     if (started && supabaseClient && supabaseClient.auth) {
+      const recoveryUrlDetected = looksLikePasswordRecoveryUrl();
+
+      supabaseClient.auth.onAuthStateChange(async function (event, session) {
+        if (event === "PASSWORD_RECOVERY") {
+          enterPasswordRecoveryMode(session);
+          return;
+        }
+      });
+
       supabaseClient.auth.getSession().then(async function (sessionResult) {
-        if (sessionResult && sessionResult.data && sessionResult.data.session) {
+        const session = sessionResult && sessionResult.data ? sessionResult.data.session : null;
+
+        if (recoveryUrlDetected) {
+          enterPasswordRecoveryMode(session);
+          return;
+        }
+
+        if (session) {
           try {
             await completeLoginFlow();
           } catch (error) {
@@ -6817,14 +6862,6 @@ attachSortHandlers();
             setLoginMessage(error.message || "Kunne ikke hente tilgang.", true);
             applyAccessControl();
           }
-        }
-      });
-
-      supabaseClient.auth.onAuthStateChange(async function (event, session) {
-        if (event === "PASSWORD_RECOVERY") {
-          currentUser = session && session.user ? session.user : null;
-          applyAccessControl();
-          showPasswordModal("Lag nytt passord", "Skriv inn nytt passord for brukeren din.");
         }
       });
     }
