@@ -939,17 +939,16 @@
 }
 
 
-/* Fast hovedmeny inne i appen */
-.app-fixed-nav {
+/* Hamburgermeny inne i appen - tekstbasert overlay */
+.app-header {
   position: sticky;
   top: 0;
-  z-index: 900;
+  z-index: 950;
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
-  background: rgba(245, 248, 252, 0.94);
+  justify-content: space-between;
+  gap: 10px;
+  background: rgba(245, 248, 252, 0.95);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(16,35,63,0.08);
   border-radius: 18px;
@@ -958,44 +957,93 @@
   margin: 10px 0 14px;
 }
 
+.hamburger-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--accent);
+  color: #ffffff;
+  border-radius: 14px;
+  padding: 10px 12px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.hamburger-icon { font-size: 20px; line-height: 1; }
+.app-header-title { color: var(--muted); font-size: 14px; font-weight: 700; text-align: right; }
+
+.app-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15,23,42,0.38);
+  z-index: 1300;
+}
+
+.app-menu-backdrop.hidden { display: none !important; }
+
+.app-side-menu {
+  position: fixed;
+  top: 78px;
+  left: 50%;
+  width: min(92vw, 420px);
+  max-height: calc(100vh - 100px);
+  background: #ffffff;
+  z-index: 1301;
+  box-shadow: 0 24px 70px rgba(16,35,63,0.30);
+  border: 1px solid rgba(16,35,63,0.10);
+  border-radius: 22px;
+  padding: 18px;
+  transform: translate(-50%, -12px) scale(0.98);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.16s ease, transform 0.16s ease;
+  overflow-y: auto;
+}
+
+.app-side-menu.open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, 0) scale(1);
+}
+
+.app-side-menu-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.app-side-menu-title { font-size: 20px; font-weight: 700; color: var(--text); }
+.app-side-menu-subtitle { margin-top: 4px; font-size: 13px; color: var(--muted); }
+.app-menu-close { background: #e7edf5; color: var(--text); border-radius: 12px; padding: 8px 10px; }
+
 .app-nav-button {
+  width: 100%;
+  display: block;
   background: #ffffff;
   color: var(--text);
   border: 1px solid #dbe4f0;
-  border-radius: 999px;
-  padding: 9px 12px;
-  font-size: 14px;
-  font-weight: 600;
-  min-height: 38px;
+  border-radius: 14px;
+  padding: 13px 14px;
+  font-size: 16px;
+  font-weight: 700;
+  min-height: 48px;
+  margin-top: 8px;
+  text-align: left;
 }
 
-.app-nav-button:hover {
-  border-color: rgba(31,79,255,0.25);
-  background: var(--accent-soft);
-}
+.app-nav-button:hover { border-color: rgba(31,79,255,0.25); background: var(--accent-soft); }
+.app-nav-button.active { background: var(--accent); color: #ffffff; border-color: var(--accent); }
 
-.app-nav-button.active {
-  background: var(--accent);
-  color: #ffffff;
-  border-color: var(--accent);
-}
+.app-menu-divider { height: 1px; background: var(--line); margin: 14px 0; }
+.app-menu-actions { display: grid; gap: 8px; }
 
 @media (max-width: 600px) {
-  .app-fixed-nav {
-    position: sticky;
-    top: 0;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-    border-radius: 16px;
-    padding: 8px;
-  }
-
-  .app-nav-button {
-    border-radius: 12px;
-    padding: 10px 8px;
-    font-size: 13px;
-  }
+  .app-header { margin: 6px 0 12px; border-radius: 16px; }
+  .app-header-title { font-size: 12px; }
+  .hamburger-button { flex: 1 1 auto; justify-content: center; }
+  .app-side-menu { top: 64px; width: calc(100vw - 24px); max-height: calc(100vh - 82px); border-radius: 18px; }
 }
 
 </style>
@@ -1078,18 +1126,33 @@
 </div>
 
 <div class="container hidden" id="appShell">
-<div class="auth-topbar" id="authTopbar">
+<div class="app-header" id="appHeader">
+  <button class="hamburger-button" id="btnOpenAppMenu" type="button" aria-label="Åpne meny">
+    <span class="hamburger-icon">☰</span> Meny
+  </button>
   <div class="auth-user-pill" id="authUserPill">Ikke innlogget</div>
-  <button class="btn-secondary btn-small" id="btnChangePassword" type="button">Endre passord</button>
-  <button class="btn-secondary btn-small" id="btnLogout" type="button">Logg ut</button>
 </div>
-<nav class="app-fixed-nav" id="appFixedNav" aria-label="Hovedmeny">
-  <button class="app-nav-button" data-target="loanTab" type="button">⛸️ Utlån</button>
-  <button class="app-nav-button" data-target="returnTab" type="button">📥 Innlevering</button>
-  <button class="app-nav-button" data-target="skatingSchoolTab" type="button">🎓 Skøyteskole</button>
-  <button class="app-nav-button" data-target="adminTab" type="button">⚙️ Admin</button>
-  <button class="app-nav-button" data-target="reportsTab" type="button">📊 Rapporter</button>
-</nav>
+
+<div class="app-menu-backdrop hidden" id="appMenuBackdrop"></div>
+<aside class="app-side-menu" id="appSideMenu" aria-label="Hovedmeny">
+  <div class="app-side-menu-header">
+    <div>
+      <div class="app-side-menu-title">Trondheim Kortbaneklubb</div>
+      <div class="app-side-menu-subtitle">Velg hvor du vil gå i appen.</div>
+    </div>
+    <button class="app-menu-close" id="btnCloseAppMenu" type="button" aria-label="Lukk meny">✕</button>
+  </div>
+  <button class="app-nav-button" data-target="loanTab" type="button">Utlån</button>
+  <button class="app-nav-button" data-target="returnTab" type="button">Innlevering</button>
+  <button class="app-nav-button" data-target="skatingSchoolTab" type="button">Skøyteskole</button>
+  <button class="app-nav-button" data-target="adminTab" type="button">Admin</button>
+  <button class="app-nav-button" data-target="reportsTab" type="button">Rapporter</button>
+  <div class="app-menu-divider"></div>
+  <div class="app-menu-actions">
+    <button class="btn-secondary" id="btnChangePassword" type="button">Endre passord</button>
+    <button class="btn-secondary" id="btnLogout" type="button">Logg ut</button>
+  </div>
+</aside>
 <div id="homeView">
 <div class="brand">
 <img alt="Trondheim Kortbaneklubb" src="logo.png"/>
@@ -1610,6 +1673,15 @@
 </div>
 </div>
 <div class="section-card">
+<div class="section-header">
+<div>
+<h2>Arkiverte medlemmer</h2>
+<div class="help" style="margin-top:8px;">Viser medlemmer som er arkivert. De skjules fra utlån, vanlige medlemslister og QR-kort, men historikken beholdes.</div>
+</div>
+</div>
+<div id="archivedMembersWrap"></div>
+</div>
+<div class="section-card">
 <h2>System &amp; oversikt</h2>
 <div class="toolbar" style="margin-top: 12px;">
 <button class="btn-secondary btn-small" id="btnTest" type="button">Test tilkobling</button>
@@ -2017,6 +2089,20 @@ function byId(id) { return document.getElementById(id); }
       });
     }
 
+    function openAppMenu() {
+      const menu = byId("appSideMenu");
+      const backdrop = byId("appMenuBackdrop");
+      if (menu) menu.classList.add("open");
+      if (backdrop) backdrop.classList.remove("hidden");
+    }
+
+    function closeAppMenu() {
+      const menu = byId("appSideMenu");
+      const backdrop = byId("appMenuBackdrop");
+      if (menu) menu.classList.remove("open");
+      if (backdrop) backdrop.classList.add("hidden");
+    }
+
     async function showSection(sectionId) {
       if (!roleCanOpen(sectionId)) {
         alert("Du har ikke tilgang til denne delen av appen.");
@@ -2036,6 +2122,7 @@ function byId(id) { return document.getElementById(id); }
       const target = byId(sectionId);
       if (target) target.classList.remove("hidden");
       updateFixedNavActive(sectionId);
+      closeAppMenu();
       if (sectionId === "adminTab") setupAdminTabs();
     }
 
@@ -2050,6 +2137,7 @@ function byId(id) { return document.getElementById(id); }
         if (el) el.classList.add("hidden");
       });
       updateFixedNavActive("");
+      closeAppMenu();
     }
 
     function initFromSavedConfig() {
@@ -2189,6 +2277,14 @@ function byId(id) { return document.getElementById(id); }
       return String(a || "") === String(b || "");
     }
 
+    function isActiveMember(member) {
+      return !member || member.is_active !== false;
+    }
+
+    function getActiveMembers() {
+      return state.members.filter(isActiveMember);
+    }
+
     function uniqueGroupsByName(groups) {
       const seen = new Set();
       return groups.filter((group) => {
@@ -2274,7 +2370,7 @@ function byId(id) { return document.getElementById(id); }
       const currentSkateSearch = loanSkateSearchEl.value;
 
       const selectedGroupId = String(currentGroupFilter || "");
-      let members = state.members.slice();
+      let members = getActiveMembers();
 
       if (currentDepartmentId) {
         members = members.filter((m) => memberMatchesDepartment(m, currentDepartmentId));
@@ -2395,6 +2491,39 @@ function byId(id) { return document.getElementById(id); }
     }
 
 
+    async function archiveMember(memberId, memberName) {
+      if (!supabaseClient) return;
+      try {
+        const activeLoan = getActiveLoanForMember(memberId);
+        if (activeLoan) {
+          alert("Kan ikke arkivere " + memberName + " fordi medlemmet har en aktiv skøyte utlånt.");
+          return;
+        }
+        const result = await supabaseClient.from("members").update({ is_active: false }).eq("id", memberId);
+        if (result.error) throw result.error;
+        if (editingMemberId === memberId) {
+          resetMemberForm();
+        }
+        await loadAll();
+      } catch (error) {
+        console.error(error);
+        alert("Kunne ikke arkivere medlem.\n\n" + error.message);
+      }
+    }
+
+    async function restoreMember(memberId) {
+      if (!supabaseClient) return;
+      try {
+        const result = await supabaseClient.from("members").update({ is_active: true }).eq("id", memberId);
+        if (result.error) throw result.error;
+        await loadAll();
+      } catch (error) {
+        console.error(error);
+        alert("Kunne ikke gjenopprette medlem.\n\n" + error.message);
+      }
+    }
+
+
     function syncLoanMemberSelection() {
       const searchEl = byId("loanMemberSearch");
       const hiddenEl = byId("loanMember");
@@ -2406,7 +2535,7 @@ function byId(id) { return document.getElementById(id); }
         return;
       }
 
-      const members = state.members.slice().sort((a, b) => compareBatchNames(a.name, b.name));
+      const members = getActiveMembers().sort((a, b) => compareBatchNames(a.name, b.name));
       const found = members.find((member) => {
         let label = String(member.name || "");
         const details = [];
@@ -3131,7 +3260,7 @@ async function loadAccessRoles() {
     function getFilteredMemberQrRows() {
       const departmentFilter = byId("memberQrDepartmentFilter") ? byId("memberQrDepartmentFilter").value : "";
       const selectedGroupId = byId("memberQrGroupFilter") ? String(byId("memberQrGroupFilter").value || "") : "";
-      let rows = state.members.slice();
+      let rows = getActiveMembers();
 
       if (departmentFilter) {
         rows = rows.filter((member) => {
@@ -3204,7 +3333,7 @@ function renderMembers() {
       const departmentFilter = byId("filterMemberDepartment") ? byId("filterMemberDepartment").value : "";
       const selectedGroupId = byId("filterMemberGroup") ? String(byId("filterMemberGroup").value || "") : "";
       const roleFilter = byId("filterMemberRole") ? byId("filterMemberRole").value : "";
-      let rows = state.members.slice();
+      let rows = getActiveMembers();
 
       if (departmentFilter) {
         rows = rows.filter((member) => {
@@ -3293,6 +3422,18 @@ function renderMembers() {
         });
         actions.appendChild(editBtn);
 
+        const archiveBtn = document.createElement("button");
+        archiveBtn.className = "btn-secondary btn-small";
+        archiveBtn.type = "button";
+        archiveBtn.textContent = "Arkiver";
+        archiveBtn.disabled = !!activeLoan;
+        archiveBtn.addEventListener("click", async function () {
+          const confirmArchive = confirm("Arkivere medlem " + safeText(member.name) + "?");
+          if (!confirmArchive) return;
+          await archiveMember(member.id, safeText(member.name));
+        });
+        actions.appendChild(archiveBtn);
+
         tr.children[4].appendChild(actions);
         tbody.appendChild(tr);
       }
@@ -3300,6 +3441,48 @@ function renderMembers() {
       wrap.innerHTML = "";
       wrap.appendChild(table);
       attachSortHandlers();
+    }
+
+    function renderArchivedMembers() {
+      const wrap = byId("archivedMembersWrap");
+      if (!wrap) return;
+
+      let rows = state.members.filter((m) => m.is_active === false);
+
+      if (!rows.length) {
+        wrap.innerHTML = '<div class="empty">Ingen arkiverte medlemmer.</div>';
+        return;
+      }
+
+      rows = rows.slice().sort((a, b) => compareBatchNames(a.name, b.name));
+
+      const table = document.createElement("table");
+      table.innerHTML = '<thead><tr><th>Navn</th><th>Rolle</th><th>Telefon</th><th>E-post</th><th>Handling</th></tr></thead>';
+      const tbody = document.createElement("tbody");
+
+      rows.forEach((member) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = "<td data-label='Navn'></td><td data-label='Rolle'></td><td data-label='Telefon'></td><td data-label='E-post'></td><td data-label='Handling'></td>";
+        tr.children[0].textContent = safeText(member.name);
+        tr.children[1].textContent = safeText(member.role || "Aktiv");
+        tr.children[2].textContent = safeText(member.phone);
+        tr.children[3].textContent = safeText(member.email);
+
+        const restoreBtn = document.createElement("button");
+        restoreBtn.className = "btn-secondary btn-small";
+        restoreBtn.type = "button";
+        restoreBtn.textContent = "Gjenopprett";
+        restoreBtn.addEventListener("click", async function () {
+          await restoreMember(member.id);
+        });
+        tr.children[4].appendChild(restoreBtn);
+
+        tbody.appendChild(tr);
+      });
+
+      table.appendChild(tbody);
+      wrap.innerHTML = "";
+      wrap.appendChild(table);
     }
 
     function renderActiveLoans() {
@@ -3670,7 +3853,7 @@ function updateSchoolParticipantMemberPicker() {
   const search = byId("schoolParticipantSearch") ? byId("schoolParticipantSearch").value.trim().toLowerCase() : "";
   const alreadyEnrolled = new Set(getSchoolEnrollmentsForBatch(batchId).map((e) => String(e.member_id)));
 
-  let rows = state.members.slice();
+  let rows = getActiveMembers();
   if (search) {
     rows = rows.filter((member) =>
       String(member.name || "").toLowerCase().includes(search) ||
@@ -4575,6 +4758,7 @@ function renderAll() {
       renderSkates();
       renderArchivedSkates();
       renderMembers();
+      renderArchivedMembers();
       renderActiveLoans();
       renderHistory();
       renderReportLoansByGroup();
@@ -5484,8 +5668,7 @@ function populateMemberEditList() {
       const list = byId("memberEditList");
       if (!list) return;
       list.innerHTML = "";
-      state.members
-        .slice()
+      getActiveMembers()
         .sort((a, b) => compareBatchNames(a.name, b.name))
         .forEach((member) => {
           const option = document.createElement("option");
@@ -5539,7 +5722,7 @@ function populateMemberEditList() {
       const departmentFilter = byId("filterMemberDepartment") ? byId("filterMemberDepartment").value : "";
       const selectedGroupId = byId("filterMemberGroup") ? String(byId("filterMemberGroup").value || "") : "";
       const roleFilter = byId("filterMemberRole") ? byId("filterMemberRole").value : "";
-      let rows = state.members.slice();
+      let rows = getActiveMembers();
 
       if (departmentFilter) {
         rows = rows.filter((member) => {
@@ -6602,6 +6785,7 @@ async function loadAll() {
           email,
           role,
           department_id: selectedDepartmentId || null,
+          is_active: true,
         };
 
         if (editingMemberId) {
@@ -6802,6 +6986,11 @@ async function loadAll() {
     if (byId("memberCardModal")) byId("memberCardModal").addEventListener("click", function (e) {
       if (e.target === this) closeMemberCard();
     });
+    if (byId("btnOpenAppMenu")) byId("btnOpenAppMenu").addEventListener("click", openAppMenu);
+    if (byId("btnCloseAppMenu")) byId("btnCloseAppMenu").addEventListener("click", closeAppMenu);
+    if (byId("appMenuBackdrop")) byId("appMenuBackdrop").addEventListener("click", closeAppMenu);
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeAppMenu(); });
+
     document.querySelectorAll(".landing-card, .app-menu-card, .app-nav-button").forEach((card) => {
       card.addEventListener("click", function () { showSection(this.dataset.target); });
     });
