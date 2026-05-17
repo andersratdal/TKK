@@ -938,6 +938,66 @@
   font-weight: 700;
 }
 
+
+/* Fast hovedmeny inne i appen */
+.app-fixed-nav {
+  position: sticky;
+  top: 0;
+  z-index: 900;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  background: rgba(245, 248, 252, 0.94);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(16,35,63,0.08);
+  border-radius: 18px;
+  box-shadow: 0 10px 26px rgba(16,35,63,0.10);
+  padding: 10px;
+  margin: 10px 0 14px;
+}
+
+.app-nav-button {
+  background: #ffffff;
+  color: var(--text);
+  border: 1px solid #dbe4f0;
+  border-radius: 999px;
+  padding: 9px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  min-height: 38px;
+}
+
+.app-nav-button:hover {
+  border-color: rgba(31,79,255,0.25);
+  background: var(--accent-soft);
+}
+
+.app-nav-button.active {
+  background: var(--accent);
+  color: #ffffff;
+  border-color: var(--accent);
+}
+
+@media (max-width: 600px) {
+  .app-fixed-nav {
+    position: sticky;
+    top: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    border-radius: 16px;
+    padding: 8px;
+  }
+
+  .app-nav-button {
+    border-radius: 12px;
+    padding: 10px 8px;
+    font-size: 13px;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -1023,6 +1083,13 @@
   <button class="btn-secondary btn-small" id="btnChangePassword" type="button">Endre passord</button>
   <button class="btn-secondary btn-small" id="btnLogout" type="button">Logg ut</button>
 </div>
+<nav class="app-fixed-nav" id="appFixedNav" aria-label="Hovedmeny">
+  <button class="app-nav-button" data-target="loanTab" type="button">⛸️ Utlån</button>
+  <button class="app-nav-button" data-target="returnTab" type="button">📥 Innlevering</button>
+  <button class="app-nav-button" data-target="skatingSchoolTab" type="button">🎓 Skøyteskole</button>
+  <button class="app-nav-button" data-target="adminTab" type="button">⚙️ Admin</button>
+  <button class="app-nav-button" data-target="reportsTab" type="button">📊 Rapporter</button>
+</nav>
 <div id="homeView">
 <div class="brand">
 <img alt="Trondheim Kortbaneklubb" src="logo.png"/>
@@ -1944,6 +2011,12 @@ function byId(id) { return document.getElementById(id); }
       el.className = isError ? "help msg-error" : "help msg-ok";
     }
 
+    function updateFixedNavActive(sectionId) {
+      document.querySelectorAll(".app-nav-button[data-target]").forEach((btn) => {
+        btn.classList.toggle("active", String(btn.dataset.target || "") === String(sectionId || ""));
+      });
+    }
+
     async function showSection(sectionId) {
       if (!roleCanOpen(sectionId)) {
         alert("Du har ikke tilgang til denne delen av appen.");
@@ -1962,6 +2035,8 @@ function byId(id) { return document.getElementById(id); }
       });
       const target = byId(sectionId);
       if (target) target.classList.remove("hidden");
+      updateFixedNavActive(sectionId);
+      if (sectionId === "adminTab") setupAdminTabs();
     }
 
     async function goHome() {
@@ -1974,6 +2049,7 @@ function byId(id) { return document.getElementById(id); }
         const el = byId(id);
         if (el) el.classList.add("hidden");
       });
+      updateFixedNavActive("");
     }
 
     function initFromSavedConfig() {
@@ -2926,6 +3002,7 @@ async function loadAccessRoles() {
           byId("skateType").value = skate.type || "";
           byId("skateSubmitBtn").textContent = "Oppdater skøyte";
           showSection("adminTab");
+          showAdminSubtab("skates");
           byId("skateCode").focus();
         });
         tr.children[7].appendChild(editBtn);
@@ -5284,6 +5361,7 @@ function parseBirthYearFromSpondValue(rawValue) {
       byId("memberEmail").value = "";
       byId("memberGroupsText").value = "";
       showSection("adminTab");
+      showAdminSubtab("members");
       byId("memberName").focus();
     }
 
@@ -5322,6 +5400,7 @@ function parseBirthYearFromSpondValue(rawValue) {
         searchInput.value = member.name || "";
       }
       showSection("adminTab");
+      showAdminSubtab("members");
       byId("memberName").focus();
       return true;
     }
@@ -6723,7 +6802,7 @@ async function loadAll() {
     if (byId("memberCardModal")) byId("memberCardModal").addEventListener("click", function (e) {
       if (e.target === this) closeMemberCard();
     });
-    document.querySelectorAll(".landing-card, .app-menu-card").forEach((card) => {
+    document.querySelectorAll(".landing-card, .app-menu-card, .app-nav-button").forEach((card) => {
       card.addEventListener("click", function () { showSection(this.dataset.target); });
     });
 
