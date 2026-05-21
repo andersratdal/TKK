@@ -813,55 +813,65 @@
 }
 
 
-/* Ryddigere Admin med underfaner */
-.admin-tabs-card {
-  background: var(--card);
-  border: 1px solid rgba(16,35,63,0.06);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow);
-  padding: 12px;
-  margin-bottom: 14px;
+/* Minimal tekstfaner for Admin og Rapporter */
+.admin-tabs-card,
+.report-tabs-card {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+  margin: 8px 0 18px;
 }
 
-.admin-tabs {
+.admin-tabs,
+.report-tabs {
   display: flex;
-  gap: 8px;
+  gap: 22px;
   flex-wrap: wrap;
+  align-items: center;
 }
 
-.admin-tab {
-  background: #e7edf5;
-  color: var(--text);
-  border-radius: 999px;
-  padding: 9px 13px;
+.admin-tab,
+.report-tab {
+  background: transparent;
+  color: var(--muted);
+  border-radius: 0;
+  padding: 6px 0;
   font-size: 14px;
   font-weight: 500;
 }
 
-.admin-tab.active {
-  background: var(--accent);
-  color: #ffffff;
+.admin-tab:hover,
+.report-tab:hover {
+  color: var(--accent);
+}
+
+.admin-tab.active,
+.report-tab.active {
+  background: transparent;
+  color: var(--accent);
 }
 
 .admin-section-hidden {
   display: none !important;
 }
 
+.report-anchor {
+  scroll-margin-top: 82px;
+}
+
+.report-section-hidden {
+  display: none !important;
+}
+
 @media (max-width: 600px) {
-  .admin-tabs-card {
-    padding: 10px;
-    border-radius: 16px;
+  .admin-tabs,
+  .report-tabs {
+    gap: 14px;
   }
 
-  .admin-tabs {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-  }
-
-  .admin-tab {
-    border-radius: 12px;
-    padding: 10px 8px;
+  .admin-tab,
+  .report-tab {
     font-size: 13px;
   }
 }
@@ -884,19 +894,70 @@
   }
 }
 
+
+.brand-link {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.brand-link:hover {
+  opacity: 0.9;
+}
+
+
+/* Felles toppheader på alle sider */
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 18px;
+  padding: 4px 0;
+}
+
+.app-brand-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--text);
+}
+
+.app-brand-logo {
+  height: 42px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
+.app-brand-text {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.app-brand-link:hover { opacity: 0.86; }
+
+#backRow { display: none !important; }
+
+@media (max-width: 600px) {
+  .app-header { margin-bottom: 12px; }
+  .app-brand-logo { height: 34px; }
+  .app-brand-text { font-size: 18px; }
+}
+
 </style>
 </head>
 <body>
 <div class="container">
+<header class="app-header">
+  <a class="app-brand-link" href="#" onclick="goHome(); return false;" aria-label="Gå til hovedsiden">
+    <img class="app-brand-logo" alt="Trondheim Kortbaneklubb" src="logo.png"/>
+    <span class="app-brand-text">TKK Glid</span>
+  </a>
+</header>
+
 <div id="homeView">
-<div class="brand">
-<img alt="Trondheim Kortbaneklubb" src="logo.png"/>
-<div class="brand-text">
-<div class="eyebrow">Trondheim Kortbaneklubb</div>
-<h1 class="brand-title">Skøyteutleie</h1>
-<div class="brand-subtitle">Velg arbeidsflate for å gå videre i appen.</div>
-</div>
-</div>
 <div class="landing-grid app-menu">
   <button class="app-menu-card" data-target="loanTab" type="button">
     <span class="app-menu-icon"><img src="utlan-skoyte-ikon.png" alt="" class="app-menu-image-icon"></span>
@@ -931,7 +992,7 @@
 </div>
 <div class="workspace" id="workspace">
 <div class="back-row" id="backRow">
-<button class="btn-secondary" id="backBtn" type="button">← Til forsiden</button>
+<button class="btn-secondary hidden" id="backBtn" type="button" aria-label="Til forsiden"></button>
 </div>
 <div class="section-card hidden" id="loanTab">
 <h2>Registrer utlån</h2>
@@ -1314,7 +1375,18 @@
 <h2>Rapporter</h2>
 <div class="help" style="margin-top:8px;">Her finner du oversikter og eksport for skøyter, arkiverte skøyter og medlemmer.</div>
 </div>
-<div class="section-card">
+<div class="report-tabs-card">
+  <div class="report-tabs" role="navigation" aria-label="Rapportmeny">
+    <button type="button" class="report-tab active" data-report-target="reportSkates">Skøyter</button>
+    <button type="button" class="report-tab" data-report-target="reportArchivedSkates">Arkiverte skøyter</button>
+    <button type="button" class="report-tab" data-report-target="reportMembers">Medlemmer</button>
+    <button type="button" class="report-tab" data-report-target="reportSystem">System</button>
+    <button type="button" class="report-tab" data-report-target="reportLoansByGroup">Utlån per gruppe</button>
+    <button type="button" class="report-tab" data-report-target="reportMissingContact">Mangler kontaktinfo</button>
+    <button type="button" class="report-tab" data-report-target="reportHistory">Historikk</button>
+  </div>
+</div>
+<div class="section-card report-anchor" id="reportSkates">
 <div class="section-header">
 <div>
 <h2>Skøyter</h2>
@@ -1338,7 +1410,7 @@
 </div>
 <div id="skatesWrap"></div>
 </div>
-</div><div class="section-card">
+</div><div class="section-card report-anchor" id="reportArchivedSkates">
 <div class="section-header">
 <div>
 <h2>Arkiverte skøyter</h2>
@@ -1346,7 +1418,7 @@
 </div>
 <div class="toolbar"><button class="btn-secondary btn-small" id="btnExportArchivedSkatesReport" type="button">Eksporter CSV</button></div></div>
 <div id="archivedSkatesWrap"></div>
-</div><div class="section-card">
+</div><div class="section-card report-anchor" id="reportMembers">
 <div class="section-header">
 <div>
 <h2>Medlemmer</h2>
@@ -1378,7 +1450,7 @@
 <div id="membersWrap"></div>
 </div>
 </div>
-<div class="section-card">
+<div class="section-card report-anchor" id="reportSystem">
 <h2>System &amp; oversikt</h2>
 <div class="toolbar" style="margin-top: 12px;">
 <button class="btn-secondary btn-small" id="btnTest" type="button">Test tilkobling</button>
@@ -1404,7 +1476,7 @@
 </div>
 <div class="help" style="margin-top: 10px;">Flerbrukerstøtte er aktivert. Appen oppdaterer data automatisk hvert 5. sekund.</div>
 </div>
-<div class="section-card">
+<div class="section-card report-anchor" id="reportLoansByGroup">
 <div class="section-header">
 <div>
 <h2>Rapport: Utlån per gruppe</h2>
@@ -1418,12 +1490,12 @@
 </div>
 <div id="reportLoansByGroupWrap"></div>
 </div>
-<div class="section-card">
+<div class="section-card report-anchor" id="reportMissingContact">
 <h2>Rapport: Mangler kontaktinfo</h2>
 <div class="help" style="margin-top:8px;">Viser medlemmer som mangler både telefon og e-post.</div>
 <div id="reportMissingContactWrap"></div>
 </div>
-<div class="section-card">
+<div class="section-card report-anchor" id="reportHistory">
 <h2>Historikk</h2>
 <div class="help" style="margin-top:8px;">Viser de siste 50 utlånene.</div>
 <div id="historyWrap"></div>
@@ -1431,7 +1503,6 @@
 </div>
 </div>
 </div>
-
 
 <div class="modal-backdrop hidden" id="loanSuccessModal">
   <div class="modal-card" style="max-width:520px;">
@@ -1587,13 +1658,14 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
       await stopLoanMemberQrScanner();
       byId("homeView").classList.add("hidden");
       byId("workspace").classList.add("active");
-      byId("backRow").classList.add("visible");
+      if (byId("backRow")) if (byId("backRow")) byId("backRow").classList.remove("visible");
       ["loanTab", "returnTab", "adminTab", "reportsTab", "skatingSchoolTab"].forEach((id) => {
         const el = byId(id);
         if (el) el.classList.add("hidden");
       });
       const target = byId(sectionId);
       if (target) target.classList.remove("hidden");
+      if (sectionId === "reportsTab") setupReportTabs();
     }
 
     async function goHome() {
@@ -1601,7 +1673,7 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
       await stopReturnQrScanner();
       byId("homeView").classList.remove("hidden");
       byId("workspace").classList.remove("active");
-      byId("backRow").classList.remove("visible");
+      if (byId("backRow")) byId("backRow").classList.remove("visible");
       ["loanTab", "returnTab", "adminTab", "reportsTab", "skatingSchoolTab"].forEach((id) => {
         const el = byId(id);
         if (el) el.classList.add("hidden");
@@ -2353,6 +2425,40 @@ function attachSortHandlers() {
       });
 
       showAdminSubtab(getUiPref("adminSubtab", "skates"));
+    }
+
+    function showReportSubtab(targetId) {
+      const reports = byId("reportsTab");
+      if (!reports) return;
+
+      const target = String(targetId || getUiPref("reportSubtab", "reportSkates"));
+      let activeTarget = target;
+      if (!byId(activeTarget)) activeTarget = "reportSkates";
+
+      reports.querySelectorAll(".report-tab").forEach((tab) => {
+        tab.classList.toggle("active", String(tab.dataset.reportTarget || "") === activeTarget);
+      });
+
+      reports.querySelectorAll(".report-anchor").forEach((section) => {
+        section.classList.toggle("report-section-hidden", String(section.id || "") !== activeTarget);
+      });
+
+      setUiPref("reportSubtab", activeTarget);
+    }
+
+    function setupReportTabs() {
+      const reports = byId("reportsTab");
+      if (!reports) return;
+
+      reports.querySelectorAll(".report-tab").forEach((btn) => {
+        if (btn.dataset.bound === "1") return;
+        btn.dataset.bound = "1";
+        btn.addEventListener("click", function () {
+          showReportSubtab(this.dataset.reportTarget || "reportSkates");
+        });
+      });
+
+      showReportSubtab(getUiPref("reportSubtab", "reportSkates"));
     }
 
 
@@ -6004,7 +6110,7 @@ async function loadAll() {
       renderMembers();
     });
 
-    byId("backBtn").addEventListener("click", goHome);
+    if (byId("backBtn")) byId("backBtn").addEventListener("click", goHome);
 
     if (byId("schoolBatchForm")) byId("schoolBatchForm").addEventListener("submit", async function (e) {
       e.preventDefault();
@@ -6212,6 +6318,7 @@ attachSortHandlers();
     }
   
     setupAdminTabs();
+    setupReportTabs();
 </script>
 
 <div class="school-mobile-modal hidden" id="schoolMobileModal">
