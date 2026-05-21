@@ -6432,7 +6432,10 @@ attachSortHandlers();
       meta.full_name,
       meta.display_name,
       meta.user_name,
-      meta.username
+      meta.username,
+      meta.fornavn,
+      meta.first_name,
+      meta.given_name
     ];
 
     for (const value of candidates) {
@@ -6454,8 +6457,28 @@ attachSortHandlers();
     if (!btn) return;
 
     let user = null;
+
     try {
-      if (typeof currentUser !== "undefined" && currentUser) user = currentUser;
+      if (typeof currentUser !== "undefined" && currentUser) {
+        user = currentUser;
+      }
+    } catch (e) {}
+
+    try {
+      if (!user && typeof window.currentUser !== "undefined" && window.currentUser) {
+        user = window.currentUser;
+      }
+    } catch (e) {}
+
+    try {
+      if (!user && typeof supabase !== "undefined" && supabase.auth && supabase.auth.getUser) {
+        supabase.auth.getUser().then(function (result) {
+          const authUser = result && result.data ? result.data.user : null;
+          if (authUser) {
+            btn.textContent = getDisplayNameFromUser(authUser);
+          }
+        }).catch(function(){});
+      }
     } catch (e) {}
 
     btn.textContent = getDisplayNameFromUser(user);
