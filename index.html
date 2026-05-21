@@ -1032,7 +1032,7 @@
 
   <div class="app-user-menu">
     <button class="app-user-button" id="appUserButton" type="button" aria-haspopup="true" aria-expanded="false">
-      Bruker
+      Konto
     </button>
     <div class="app-user-dropdown hidden" id="appUserDropdown">
       <button type="button" id="appUserChangePassword">Endre passord</button>
@@ -1645,6 +1645,95 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
     let loanMemberQrLastText = "";
 
     function byId(id) { return document.getElementById(id); }
+
+    function getCurrentUserDisplayName() {
+      let user = null;
+      try {
+        if (typeof currentUser !== "undefined" && currentUser) user = currentUser;
+      } catch (e) {}
+
+      const meta = (user && (user.user_metadata || user.raw_user_meta_data)) || {};
+      const candidates = [
+        meta.name,
+        meta.full_name,
+        meta.display_name,
+        meta.first_name,
+        meta.given_name,
+        meta.fornavn,
+        meta.username
+      ];
+
+      for (const value of candidates) {
+        const clean = String(value || "").trim();
+        if (clean) return clean;
+      }
+
+      const email = String((user && user.email) || "").trim();
+      if (email && email.includes("@")) {
+        const local = email.split("@")[0].replace(/[._-]+/g, " ").trim();
+        if (local) return local.replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+      }
+
+      return "Konto";
+    }
+
+    function updateHeaderUserName() {
+      const btn = byId("appUserButton");
+      if (!btn) return;
+      btn.textContent = getCurrentUserDisplayName();
+    }
+
+    function closeHeaderUserMenu() {
+      const dropdown = byId("appUserDropdown");
+      const btn = byId("appUserButton");
+      if (dropdown) dropdown.classList.add("hidden");
+      if (btn) btn.setAttribute("aria-expanded", "false");
+    }
+
+    function setupHeaderUserMenu() {
+      const btn = byId("appUserButton");
+      const dropdown = byId("appUserDropdown");
+      const changePassword = byId("appUserChangePassword");
+      const logout = byId("appUserLogout");
+
+      if (!btn || !dropdown || btn.dataset.bound === "1") return;
+      btn.dataset.bound = "1";
+
+      btn.addEventListener("click", function (event) {
+        event.stopPropagation();
+        const shouldOpen = dropdown.classList.contains("hidden");
+        dropdown.classList.toggle("hidden", !shouldOpen);
+        btn.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
+        updateHeaderUserName();
+      });
+
+      if (changePassword) {
+        changePassword.addEventListener("click", function () {
+          closeHeaderUserMenu();
+          const existing = byId("btnChangePassword");
+          if (existing) existing.click();
+          else if (typeof showPasswordModal === "function") showPasswordModal("Endre passord", "Velg et nytt passord på minst 8 tegn.");
+        });
+      }
+
+      if (logout) {
+        logout.addEventListener("click", function () {
+          closeHeaderUserMenu();
+          const existing = byId("btnLogout");
+          if (existing) existing.click();
+          else if (typeof handleLogout === "function") handleLogout();
+        });
+      }
+
+      document.addEventListener("click", closeHeaderUserMenu);
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") closeHeaderUserMenu();
+      });
+
+      updateHeaderUserName();
+    }
+
+
     function safeText(value) { return value === null || value === undefined || value === "" ? "-" : String(value); }
     function escapeHtml(value) {
       return String(value)
@@ -6420,134 +6509,6 @@ attachSortHandlers();
   </div>
 </div>
 
-
-<script>
-(function () {
-  function getDisplayNameFromUser(user) {
-    if (!user) return "Bruker";
-
-    const meta = user.user_metadata || user.raw_user_meta_data || {};
-    const candidates = [
-      meta.name,
-      meta.full_name,
-      meta.display_name,
-      meta.user_name,
-      meta.username,
-      meta.fornavn,
-      meta.first_name,
-      meta.given_name
-    ];
-
-    for (const value of candidates) {
-      const clean = String(value || "").trim();
-      if (clean) return clean;
-    }
-
-    const email = String(user.email || "").trim();
-    if (email && email.includes("@")) {
-      const local = email.split("@")[0].replace(/[._-]+/g, " ").trim();
-      if (local) return local.replace(/\b\w/g, function (c) { return c.toUpperCase(); });
-    }
-
-    return "Bruker";
-  }
-
-  function updateHeaderUserName() {
-    const btn = document.getElementById("appUserButton");
-    if (!btn) return;
-
-    let user = null;
-
-    try {
-      if (typeof currentUser !== "undefined" && currentUser) {
-        user = currentUser;
-      }
-    } catch (e) {}
-
-    try {
-      if (!user && typeof window.currentUser !== "undefined" && window.currentUser) {
-        user = window.currentUser;
-      }
-    } catch (e) {}
-
-    try {
-      if (!user && typeof supabase !== "undefined" && supabase.auth && supabase.auth.getUser) {
-        supabase.auth.getUser().then(function (result) {
-          const authUser = result && result.data ? result.data.user : null;
-          if (authUser) {
-            btn.textContent = getDisplayNameFromUser(authUser);
-          }
-        }).catch(function(){});
-      }
-    } catch (e) {}
-
-    btn.textContent = getDisplayNameFromUser(user);
-  }
-
-  function closeUserDropdown() {
-    const dropdown = document.getElementById("appUserDropdown");
-    const btn = document.getElementById("appUserButton");
-    if (dropdown) dropdown.classList.add("hidden");
-    if (btn) btn.setAttribute("aria-expanded", "false");
-  }
-
-  function setupHeaderUserMenu() {
-    const btn = document.getElementById("appUserButton");
-    const dropdown = document.getElementById("appUserDropdown");
-    const changePassword = document.getElementById("appUserChangePassword");
-    const logout = document.getElementById("appUserLogout");
-
-    if (!btn || !dropdown || btn.dataset.bound === "1") return;
-    btn.dataset.bound = "1";
-
-    btn.addEventListener("click", function (event) {
-      event.stopPropagation();
-      const isHidden = dropdown.classList.contains("hidden");
-      dropdown.classList.toggle("hidden", !isHidden);
-      btn.setAttribute("aria-expanded", isHidden ? "true" : "false");
-      updateHeaderUserName();
-    });
-
-    if (changePassword) {
-      changePassword.addEventListener("click", function () {
-        closeUserDropdown();
-        const existing = document.getElementById("btnChangePassword");
-        if (existing) existing.click();
-        else if (typeof showPasswordModal === "function") showPasswordModal("Endre passord", "Velg et nytt passord på minst 8 tegn.");
-      });
-    }
-
-    if (logout) {
-      logout.addEventListener("click", function () {
-        closeUserDropdown();
-        const existing = document.getElementById("btnLogout");
-        if (existing) existing.click();
-        else if (typeof handleLogout === "function") handleLogout();
-      });
-    }
-
-    document.addEventListener("click", closeUserDropdown);
-    document.addEventListener("keydown", function (event) {
-      if (event.key === "Escape") closeUserDropdown();
-    });
-
-    updateHeaderUserName();
-  }
-
-  document.addEventListener("DOMContentLoaded", setupHeaderUserMenu);
-
-  const oldApplyAccessControl = window.applyAccessControl;
-  if (typeof oldApplyAccessControl === "function") {
-    window.applyAccessControl = function () {
-      const result = oldApplyAccessControl.apply(this, arguments);
-      updateHeaderUserName();
-      return result;
-    };
-  }
-
-  window.updateHeaderUserName = updateHeaderUserName;
-})();
-</script>
 
 </body>
 </html>
