@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>TKK Skøyteutleie</title>
+<title>SkateFlow</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode"></script>
@@ -946,16 +946,101 @@
   .app-brand-text { font-size: 18px; }
 }
 
+
+/* Brukermeny i felles header */
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 0 18px;
+  padding: 4px 0;
+}
+
+.app-user-menu {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.app-user-button {
+  background: transparent;
+  color: var(--text);
+  border: 0;
+  border-radius: 0;
+  padding: 6px 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.app-user-button:hover {
+  color: var(--accent);
+}
+
+.app-user-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 170px;
+  background: #ffffff;
+  border: 1px solid rgba(16,35,63,0.10);
+  border-radius: 14px;
+  box-shadow: 0 14px 34px rgba(16,35,63,0.18);
+  padding: 8px;
+  z-index: 1400;
+}
+
+.app-user-dropdown button {
+  width: 100%;
+  display: block;
+  text-align: left;
+  background: transparent;
+  color: var(--text);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.app-user-dropdown button:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+@media (max-width: 600px) {
+  .app-header {
+    gap: 10px;
+  }
+
+  .app-user-button {
+    max-width: 145px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
 </style>
 </head>
 <body>
 <div class="container">
+
 <header class="app-header">
   <a class="app-brand-link" href="#" onclick="goHome(); return false;" aria-label="Gå til hovedsiden">
     <img class="app-brand-logo" alt="Trondheim Kortbaneklubb" src="logo.png"/>
-    <span class="app-brand-text">TKK Glid</span>
+    <span class="app-brand-text">SkateFlow</span>
   </a>
+
+  <div class="app-user-menu">
+    <button class="app-user-button" id="appUserButton" type="button" aria-haspopup="true" aria-expanded="false">
+      Bruker
+    </button>
+    <div class="app-user-dropdown hidden" id="appUserDropdown">
+      <button type="button" id="appUserChangePassword">Endre passord</button>
+      <button type="button" id="appUserLogout">Log ut</button>
+    </div>
+  </div>
 </header>
+
 
 <div id="homeView">
 <div class="landing-grid app-menu">
@@ -6334,6 +6419,112 @@ attachSortHandlers();
     </div>
   </div>
 </div>
+
+
+<script>
+(function () {
+  function getDisplayNameFromUser(user) {
+    if (!user) return "Bruker";
+
+    const meta = user.user_metadata || user.raw_user_meta_data || {};
+    const candidates = [
+      meta.name,
+      meta.full_name,
+      meta.display_name,
+      meta.user_name,
+      meta.username
+    ];
+
+    for (const value of candidates) {
+      const clean = String(value || "").trim();
+      if (clean) return clean;
+    }
+
+    const email = String(user.email || "").trim();
+    if (email && email.includes("@")) {
+      const local = email.split("@")[0].replace(/[._-]+/g, " ").trim();
+      if (local) return local.replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+    }
+
+    return "Bruker";
+  }
+
+  function updateHeaderUserName() {
+    const btn = document.getElementById("appUserButton");
+    if (!btn) return;
+
+    let user = null;
+    try {
+      if (typeof currentUser !== "undefined" && currentUser) user = currentUser;
+    } catch (e) {}
+
+    btn.textContent = getDisplayNameFromUser(user);
+  }
+
+  function closeUserDropdown() {
+    const dropdown = document.getElementById("appUserDropdown");
+    const btn = document.getElementById("appUserButton");
+    if (dropdown) dropdown.classList.add("hidden");
+    if (btn) btn.setAttribute("aria-expanded", "false");
+  }
+
+  function setupHeaderUserMenu() {
+    const btn = document.getElementById("appUserButton");
+    const dropdown = document.getElementById("appUserDropdown");
+    const changePassword = document.getElementById("appUserChangePassword");
+    const logout = document.getElementById("appUserLogout");
+
+    if (!btn || !dropdown || btn.dataset.bound === "1") return;
+    btn.dataset.bound = "1";
+
+    btn.addEventListener("click", function (event) {
+      event.stopPropagation();
+      const isHidden = dropdown.classList.contains("hidden");
+      dropdown.classList.toggle("hidden", !isHidden);
+      btn.setAttribute("aria-expanded", isHidden ? "true" : "false");
+      updateHeaderUserName();
+    });
+
+    if (changePassword) {
+      changePassword.addEventListener("click", function () {
+        closeUserDropdown();
+        const existing = document.getElementById("btnChangePassword");
+        if (existing) existing.click();
+        else if (typeof showPasswordModal === "function") showPasswordModal("Endre passord", "Velg et nytt passord på minst 8 tegn.");
+      });
+    }
+
+    if (logout) {
+      logout.addEventListener("click", function () {
+        closeUserDropdown();
+        const existing = document.getElementById("btnLogout");
+        if (existing) existing.click();
+        else if (typeof handleLogout === "function") handleLogout();
+      });
+    }
+
+    document.addEventListener("click", closeUserDropdown);
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape") closeUserDropdown();
+    });
+
+    updateHeaderUserName();
+  }
+
+  document.addEventListener("DOMContentLoaded", setupHeaderUserMenu);
+
+  const oldApplyAccessControl = window.applyAccessControl;
+  if (typeof oldApplyAccessControl === "function") {
+    window.applyAccessControl = function () {
+      const result = oldApplyAccessControl.apply(this, arguments);
+      updateHeaderUserName();
+      return result;
+    };
+  }
+
+  window.updateHeaderUserName = updateHeaderUserName;
+})();
+</script>
 
 </body>
 </html>
