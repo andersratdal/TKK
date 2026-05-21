@@ -2120,6 +2120,7 @@ return true;
           resetSkateForm();
         }
         await loadAll();
+        if (window.updateHeaderUserName) window.updateHeaderUserName();
       } catch (error) {
         console.error(error);
         alert("Kunne ikke arkivere skøyte.\n\n" + error.message);
@@ -4141,6 +4142,7 @@ function renderSchoolSignups() {
 }
 
 function renderAll() {
+      if (window.updateHeaderUserName) window.updateHeaderUserName();
       updateMemberDepartmentOptions();
       updateMemberGroupListByDepartment(byId("memberDepartment") ? byId("memberDepartment").value : "", byId("memberGroupsText") ? byId("memberGroupsText").value : "");
 
@@ -6486,30 +6488,63 @@ attachSortHandlers();
   }
 
   async function resolveLoggedInName() {
+    let user = null;
+
     try {
       if (window.supabaseClient && window.supabaseClient.auth) {
         const result = await window.supabaseClient.auth.getUser();
-        const user = result && result.data ? result.data.user : null;
-        const name = getNameFromUser(user);
-        if (name) return name;
+        user = result && result.data ? result.data.user : null;
       }
     } catch (e) {}
 
     try {
-      if (typeof supabaseClient !== "undefined" && supabaseClient && supabaseClient.auth) {
+      if (!user && typeof supabaseClient !== "undefined" && supabaseClient && supabaseClient.auth) {
         const result = await supabaseClient.auth.getUser();
-        const user = result && result.data ? result.data.user : null;
-        const name = getNameFromUser(user);
-        if (name) return name;
+        user = result && result.data ? result.data.user : null;
       }
     } catch (e) {}
 
     try {
-      if (typeof currentUser !== "undefined" && currentUser) {
-        const name = getNameFromUser(currentUser);
-        if (name) return name;
+      if (!user && typeof currentUser !== "undefined" && currentUser) {
+        user = currentUser;
       }
     } catch (e) {}
+
+    // 1. Bruk navn fra Supabase Auth metadata hvis det finnes.
+    const metadataName = getNameFromUser(user);
+    const email = String((user && user.email) || "").trim().toLowerCase();
+
+    if (metadataName && metadataName !== nameFromEmail(email)) {
+      return metadataName;
+    }
+
+    // 2. Hvis Auth bare har e-post, slå opp samme e-post i appens medlemsliste.
+    try {
+      if (email && typeof state !== "undefined" && state && Array.isArray(state.members)) {
+        const member = state.members.find(function (m) {
+          return String((m && m.email) || "").trim().toLowerCase() === email;
+        });
+
+        if (member && String(member.name || "").trim()) {
+          return String(member.name).trim();
+        }
+      }
+    } catch (e) {}
+
+    // 3. Hvis app_user_roles senere har navn/display_name, støtt det også.
+    try {
+      if (email && typeof state !== "undefined" && state && Array.isArray(state.accessRoles)) {
+        const access = state.accessRoles.find(function (row) {
+          return String((row && row.email) || "").trim().toLowerCase() === email;
+        });
+
+        const accessName = String((access && (access.name || access.display_name || access.full_name)) || "").trim();
+        if (accessName) return accessName;
+      }
+    } catch (e) {}
+
+    // 4. Siste fallback: pent formatert e-post-prefix, ikke ordet "Konto".
+    if (email) return nameFromEmail(email);
 
     return "Konto";
   }
