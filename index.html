@@ -1631,12 +1631,20 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
     }
 
     function loadConfig() {
+      const fallbackConfig = {
+        url: "https://dcfhisxyiuatftzjtuwz.supabase.co",
+        anonKey: "sb_publishable_W_3O4m4r0aZ3ukSOJVTcHw_Gy6W6uj9"
+      };
       try {
         const raw = localStorage.getItem(CONFIG_KEY);
-        return raw ? JSON.parse(raw) : {};
+        const parsed = raw ? JSON.parse(raw) : {};
+        return {
+          url: parsed.url || fallbackConfig.url,
+          anonKey: parsed.anonKey || fallbackConfig.anonKey
+        };
       } catch (e) {
         console.error(e);
-        return {};
+        return fallbackConfig;
       }
     }
     function saveConfig(config) { localStorage.setItem(CONFIG_KEY, JSON.stringify(config)); }
@@ -6466,11 +6474,14 @@ attachSortHandlers();
             try {
               Object.keys(localStorage).forEach(function (key) {
                 if (
-                  key.startsWith("sb-") ||
-                  key.toLowerCase().includes("supabase") ||
-                  key.toLowerCase().includes("auth") ||
-                  key.toLowerCase().includes("session") ||
-                  key === "skoyteutleie_current_user"
+                  key !== CONFIG_KEY && (
+                    key.startsWith("sb-") ||
+                    key.toLowerCase().includes("supabase.auth") ||
+                    key.toLowerCase().includes("auth-token") ||
+                    key.toLowerCase().includes("auth.session") ||
+                    key.toLowerCase().includes("session") ||
+                    key === "skoyteutleie_current_user"
+                  )
                 ) {
                   localStorage.removeItem(key);
                 }
@@ -6529,11 +6540,19 @@ attachSortHandlers();
   const CONFIG_KEY_AUTH_GUARD = "skoyteutleie_supabase_config_v7";
 
   function readStoredSupabaseConfig() {
+    const fallbackConfig = {
+      url: "https://dcfhisxyiuatftzjtuwz.supabase.co",
+      anonKey: "sb_publishable_W_3O4m4r0aZ3ukSOJVTcHw_Gy6W6uj9"
+    };
     try {
       const raw = localStorage.getItem(CONFIG_KEY_AUTH_GUARD);
-      return raw ? JSON.parse(raw) : {};
+      const parsed = raw ? JSON.parse(raw) : {};
+      return {
+        url: parsed.url || fallbackConfig.url,
+        anonKey: parsed.anonKey || fallbackConfig.anonKey
+      };
     } catch (e) {
-      return {};
+      return fallbackConfig;
     }
   }
 
@@ -6560,12 +6579,14 @@ attachSortHandlers();
       Object.keys(localStorage).forEach(function (key) {
         const lower = key.toLowerCase();
         if (
-          key.startsWith("sb-") ||
-          lower.includes("supabase.auth") ||
-          lower.includes("auth-token") ||
-          lower.includes("auth.session") ||
-          lower.includes("session") ||
-          key === "skoyteutleie_current_user"
+          key !== CONFIG_KEY_AUTH_GUARD && (
+            key.startsWith("sb-") ||
+            lower.includes("supabase.auth") ||
+            lower.includes("auth-token") ||
+            lower.includes("auth.session") ||
+            lower.includes("session") ||
+            key === "skoyteutleie_current_user"
+          )
         ) {
           localStorage.removeItem(key);
         }
