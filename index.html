@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>SkateFlow</title>
+<title>TKK Skøyteutleie</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode"></script>
@@ -813,65 +813,55 @@
 }
 
 
-/* Minimal tekstfaner for Admin og Rapporter */
-.admin-tabs-card,
-.report-tabs-card {
-  background: transparent;
-  border: 0;
-  box-shadow: none;
-  padding: 0;
-  margin: 8px 0 18px;
+/* Ryddigere Admin med underfaner */
+.admin-tabs-card {
+  background: var(--card);
+  border: 1px solid rgba(16,35,63,0.06);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 12px;
+  margin-bottom: 14px;
 }
 
-.admin-tabs,
-.report-tabs {
+.admin-tabs {
   display: flex;
-  gap: 22px;
+  gap: 8px;
   flex-wrap: wrap;
-  align-items: center;
 }
 
-.admin-tab,
-.report-tab {
-  background: transparent;
-  color: var(--muted);
-  border-radius: 0;
-  padding: 6px 0;
+.admin-tab {
+  background: #e7edf5;
+  color: var(--text);
+  border-radius: 999px;
+  padding: 9px 13px;
   font-size: 14px;
   font-weight: 500;
 }
 
-.admin-tab:hover,
-.report-tab:hover {
-  color: var(--accent);
-}
-
-.admin-tab.active,
-.report-tab.active {
-  background: transparent;
-  color: var(--accent);
+.admin-tab.active {
+  background: var(--accent);
+  color: #ffffff;
 }
 
 .admin-section-hidden {
   display: none !important;
 }
 
-.report-anchor {
-  scroll-margin-top: 82px;
-}
-
-.report-section-hidden {
-  display: none !important;
-}
-
 @media (max-width: 600px) {
-  .admin-tabs,
-  .report-tabs {
-    gap: 14px;
+  .admin-tabs-card {
+    padding: 10px;
+    border-radius: 16px;
   }
 
-  .admin-tab,
-  .report-tab {
+  .admin-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .admin-tab {
+    border-radius: 12px;
+    padding: 10px 8px;
     font-size: 13px;
   }
 }
@@ -894,155 +884,19 @@
   }
 }
 
-
-.brand-link {
-  text-decoration: none;
-  color: inherit;
-  cursor: pointer;
-}
-
-.brand-link:hover {
-  opacity: 0.9;
-}
-
-
-/* Felles toppheader på alle sider */
-.app-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin: 0 0 18px;
-  padding: 4px 0;
-}
-
-.app-brand-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  text-decoration: none;
-  color: var(--text);
-}
-
-.app-brand-logo {
-  height: 42px;
-  width: auto;
-  object-fit: contain;
-  display: block;
-}
-
-.app-brand-text {
-  font-size: 20px;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.app-brand-link:hover { opacity: 0.86; }
-
-#backRow { display: none !important; }
-
-@media (max-width: 600px) {
-  .app-header { margin-bottom: 12px; }
-  .app-brand-logo { height: 34px; }
-  .app-brand-text { font-size: 18px; }
-}
-
-
-/* Brukermeny i felles header */
-.app-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin: 0 0 18px;
-  padding: 4px 0;
-}
-
-.app-user-menu {
-  position: relative;
-  flex: 0 0 auto;
-}
-
-.app-user-button {
-  background: transparent;
-  color: var(--text);
-  border: 0;
-  border-radius: 0;
-  padding: 6px 0;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.app-user-button:hover {
-  color: var(--accent);
-}
-
-.app-user-dropdown {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  min-width: 170px;
-  background: #ffffff;
-  border: 1px solid rgba(16,35,63,0.10);
-  border-radius: 14px;
-  box-shadow: 0 14px 34px rgba(16,35,63,0.18);
-  padding: 8px;
-  z-index: 1400;
-}
-
-.app-user-dropdown button {
-  width: 100%;
-  display: block;
-  text-align: left;
-  background: transparent;
-  color: var(--text);
-  border-radius: 10px;
-  padding: 10px 12px;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.app-user-dropdown button:hover {
-  background: var(--accent-soft);
-  color: var(--accent);
-}
-
-@media (max-width: 600px) {
-  .app-header {
-    gap: 10px;
-  }
-
-  .app-user-button {
-    max-width: 145px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-}
-
 </style>
 </head>
 <body>
 <div class="container">
-
-
-<header class="app-header">
-  <a class="app-brand-link" href="#" onclick="goHome(); return false;" aria-label="Gå til hovedsiden">
-    <img class="app-brand-logo" alt="Trondheim Kortbaneklubb" src="logo.png"/>
-    <span class="app-brand-text">SkateFlow</span>
-  </a>
-
-  <div class="app-user-menu">
-    <button class="app-user-button" id="appUserButton" type="button" aria-haspopup="true" aria-expanded="false">Konto</button>
-    <div class="app-user-dropdown hidden" id="appUserDropdown">
-      <button type="button" id="appUserChangePassword">Endre passord</button>
-      <button type="button" id="appUserLogout">Log ut</button>
-    </div>
-  </div>
-</header>
-
-
-
 <div id="homeView">
+<div class="brand">
+<img alt="Trondheim Kortbaneklubb" src="logo.png"/>
+<div class="brand-text">
+<div class="eyebrow">Trondheim Kortbaneklubb</div>
+<h1 class="brand-title">Skøyteutleie</h1>
+<div class="brand-subtitle">Velg arbeidsflate for å gå videre i appen.</div>
+</div>
+</div>
 <div class="landing-grid app-menu">
   <button class="app-menu-card" data-target="loanTab" type="button">
     <span class="app-menu-icon"><img src="utlan-skoyte-ikon.png" alt="" class="app-menu-image-icon"></span>
@@ -1077,7 +931,7 @@
 </div>
 <div class="workspace" id="workspace">
 <div class="back-row" id="backRow">
-<button class="btn-secondary hidden" id="backBtn" type="button" aria-label="Til forsiden"></button>
+<button class="btn-secondary" id="backBtn" type="button">← Til forsiden</button>
 </div>
 <div class="section-card hidden" id="loanTab">
 <h2>Registrer utlån</h2>
@@ -1460,18 +1314,7 @@
 <h2>Rapporter</h2>
 <div class="help" style="margin-top:8px;">Her finner du oversikter og eksport for skøyter, arkiverte skøyter og medlemmer.</div>
 </div>
-<div class="report-tabs-card">
-  <div class="report-tabs" role="navigation" aria-label="Rapportmeny">
-    <button type="button" class="report-tab active" data-report-target="reportSkates">Skøyter</button>
-    <button type="button" class="report-tab" data-report-target="reportArchivedSkates">Arkiverte skøyter</button>
-    <button type="button" class="report-tab" data-report-target="reportMembers">Medlemmer</button>
-    <button type="button" class="report-tab" data-report-target="reportSystem">System</button>
-    <button type="button" class="report-tab" data-report-target="reportLoansByGroup">Utlån per gruppe</button>
-    <button type="button" class="report-tab" data-report-target="reportMissingContact">Mangler kontaktinfo</button>
-    <button type="button" class="report-tab" data-report-target="reportHistory">Historikk</button>
-  </div>
-</div>
-<div class="section-card report-anchor" id="reportSkates">
+<div class="section-card">
 <div class="section-header">
 <div>
 <h2>Skøyter</h2>
@@ -1495,7 +1338,7 @@
 </div>
 <div id="skatesWrap"></div>
 </div>
-</div><div class="section-card report-anchor" id="reportArchivedSkates">
+</div><div class="section-card">
 <div class="section-header">
 <div>
 <h2>Arkiverte skøyter</h2>
@@ -1503,7 +1346,7 @@
 </div>
 <div class="toolbar"><button class="btn-secondary btn-small" id="btnExportArchivedSkatesReport" type="button">Eksporter CSV</button></div></div>
 <div id="archivedSkatesWrap"></div>
-</div><div class="section-card report-anchor" id="reportMembers">
+</div><div class="section-card">
 <div class="section-header">
 <div>
 <h2>Medlemmer</h2>
@@ -1535,7 +1378,7 @@
 <div id="membersWrap"></div>
 </div>
 </div>
-<div class="section-card report-anchor" id="reportSystem">
+<div class="section-card">
 <h2>System &amp; oversikt</h2>
 <div class="toolbar" style="margin-top: 12px;">
 <button class="btn-secondary btn-small" id="btnTest" type="button">Test tilkobling</button>
@@ -1561,7 +1404,7 @@
 </div>
 <div class="help" style="margin-top: 10px;">Flerbrukerstøtte er aktivert. Appen oppdaterer data automatisk hvert 5. sekund.</div>
 </div>
-<div class="section-card report-anchor" id="reportLoansByGroup">
+<div class="section-card">
 <div class="section-header">
 <div>
 <h2>Rapport: Utlån per gruppe</h2>
@@ -1575,12 +1418,12 @@
 </div>
 <div id="reportLoansByGroupWrap"></div>
 </div>
-<div class="section-card report-anchor" id="reportMissingContact">
+<div class="section-card">
 <h2>Rapport: Mangler kontaktinfo</h2>
 <div class="help" style="margin-top:8px;">Viser medlemmer som mangler både telefon og e-post.</div>
 <div id="reportMissingContactWrap"></div>
 </div>
-<div class="section-card report-anchor" id="reportHistory">
+<div class="section-card">
 <h2>Historikk</h2>
 <div class="help" style="margin-top:8px;">Viser de siste 50 utlånene.</div>
 <div id="historyWrap"></div>
@@ -1588,6 +1431,7 @@
 </div>
 </div>
 </div>
+
 
 <div class="modal-backdrop hidden" id="loanSuccessModal">
   <div class="modal-card" style="max-width:520px;">
@@ -1645,24 +1489,6 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
     let loanMemberQrLastText = "";
 
     function byId(id) { return document.getElementById(id); }
-      if (logout) {
-        logout.addEventListener("click", function () {
-          closeHeaderUserMenu();
-          const existing = byId("btnLogout");
-          if (existing) existing.click();
-          else if (typeof handleLogout === "function") handleLogout();
-        });
-      }
-
-      document.addEventListener("click", closeHeaderUserMenu);
-      document.addEventListener("keydown", function (event) {
-        if (event.key === "Escape") closeHeaderUserMenu();
-      });
-
-      updateHeaderUserName();
-    }
-
-
     function safeText(value) { return value === null || value === undefined || value === "" ? "-" : String(value); }
     function escapeHtml(value) {
       return String(value)
@@ -1761,14 +1587,13 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
       await stopLoanMemberQrScanner();
       byId("homeView").classList.add("hidden");
       byId("workspace").classList.add("active");
-      if (byId("backRow")) if (byId("backRow")) byId("backRow").classList.remove("visible");
+      byId("backRow").classList.add("visible");
       ["loanTab", "returnTab", "adminTab", "reportsTab", "skatingSchoolTab"].forEach((id) => {
         const el = byId(id);
         if (el) el.classList.add("hidden");
       });
       const target = byId(sectionId);
       if (target) target.classList.remove("hidden");
-      if (sectionId === "reportsTab") setupReportTabs();
     }
 
     async function goHome() {
@@ -1776,7 +1601,7 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
       await stopReturnQrScanner();
       byId("homeView").classList.remove("hidden");
       byId("workspace").classList.remove("active");
-      if (byId("backRow")) byId("backRow").classList.remove("visible");
+      byId("backRow").classList.remove("visible");
       ["loanTab", "returnTab", "adminTab", "reportsTab", "skatingSchoolTab"].forEach((id) => {
         const el = byId(id);
         if (el) el.classList.add("hidden");
@@ -1796,9 +1621,7 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
         return false;
       }
       supabaseClient = window.supabase.createClient(config.url, config.anonKey);
-      
-      window.supabaseClient = supabaseClient;
-return true;
+      return true;
     }
 
 
@@ -2120,7 +1943,6 @@ return true;
           resetSkateForm();
         }
         await loadAll();
-        if (window.updateHeaderUserName) window.updateHeaderUserName();
       } catch (error) {
         console.error(error);
         alert("Kunne ikke arkivere skøyte.\n\n" + error.message);
@@ -2531,40 +2353,6 @@ function attachSortHandlers() {
       });
 
       showAdminSubtab(getUiPref("adminSubtab", "skates"));
-    }
-
-    function showReportSubtab(targetId) {
-      const reports = byId("reportsTab");
-      if (!reports) return;
-
-      const target = String(targetId || getUiPref("reportSubtab", "reportSkates"));
-      let activeTarget = target;
-      if (!byId(activeTarget)) activeTarget = "reportSkates";
-
-      reports.querySelectorAll(".report-tab").forEach((tab) => {
-        tab.classList.toggle("active", String(tab.dataset.reportTarget || "") === activeTarget);
-      });
-
-      reports.querySelectorAll(".report-anchor").forEach((section) => {
-        section.classList.toggle("report-section-hidden", String(section.id || "") !== activeTarget);
-      });
-
-      setUiPref("reportSubtab", activeTarget);
-    }
-
-    function setupReportTabs() {
-      const reports = byId("reportsTab");
-      if (!reports) return;
-
-      reports.querySelectorAll(".report-tab").forEach((btn) => {
-        if (btn.dataset.bound === "1") return;
-        btn.dataset.bound = "1";
-        btn.addEventListener("click", function () {
-          showReportSubtab(this.dataset.reportTarget || "reportSkates");
-        });
-      });
-
-      showReportSubtab(getUiPref("reportSubtab", "reportSkates"));
     }
 
 
@@ -4142,7 +3930,6 @@ function renderSchoolSignups() {
 }
 
 function renderAll() {
-      if (window.updateHeaderUserName) window.updateHeaderUserName();
       updateMemberDepartmentOptions();
       updateMemberGroupListByDepartment(byId("memberDepartment") ? byId("memberDepartment").value : "", byId("memberGroupsText") ? byId("memberGroupsText").value : "");
 
@@ -6217,7 +6004,7 @@ async function loadAll() {
       renderMembers();
     });
 
-    if (byId("backBtn")) byId("backBtn").addEventListener("click", goHome);
+    byId("backBtn").addEventListener("click", goHome);
 
     if (byId("schoolBatchForm")) byId("schoolBatchForm").addEventListener("submit", async function (e) {
       e.preventDefault();
@@ -6425,7 +6212,6 @@ attachSortHandlers();
     }
   
     setupAdminTabs();
-    setupReportTabs();
 </script>
 
 <div class="school-mobile-modal hidden" id="schoolMobileModal">
@@ -6446,194 +6232,186 @@ attachSortHandlers();
 
 <script>
 (function () {
-  function byHeaderId(id) {
-    return document.getElementById(id);
+  function el(id) { return document.getElementById(id); }
+
+  function stopEvent(event) {
+    if (!event) return;
+    event.preventDefault();
+    event.stopPropagation();
   }
 
-  function cleanName(value) {
-    return String(value || "").trim();
+  function openSection(sectionId) {
+    if (!sectionId) return;
+    if (typeof window.showSection === "function") {
+      window.showSection(sectionId);
+    } else if (typeof showSection === "function") {
+      showSection(sectionId);
+    }
+  }
+
+  function bindMainMenu() {
+    document.querySelectorAll(".landing-card, .app-menu-card").forEach(function (card) {
+      if (card.dataset.mainMenuFixedBound === "1") return;
+      card.dataset.mainMenuFixedBound = "1";
+      card.addEventListener("click", function (event) {
+        stopEvent(event);
+        openSection(card.dataset.target || "");
+      });
+    });
   }
 
   function nameFromEmail(email) {
-    const raw = String(email || "").trim();
-    if (!raw || !raw.includes("@")) return "";
-    const local = raw.split("@")[0].replace(/[._-]+/g, " ").trim();
-    return local ? local.replace(/\b\w/g, function (c) { return c.toUpperCase(); }) : "";
+    const prefix = String(email || "").split("@")[0] || "";
+    return prefix
+      .replace(/[._-]+/g, " ")
+      .trim()
+      .replace(/\b\w/g, function (char) { return char.toUpperCase(); });
   }
 
-  function getNameFromUser(user) {
-    if (!user) return "";
-    const meta = user.user_metadata || user.raw_user_meta_data || {};
-
-    const fullCandidates = [
-      meta.name,
+  function getMetadataName(user) {
+    const meta = (user && (user.user_metadata || user.raw_user_meta_data || user.app_metadata)) || {};
+    const candidates = [
       meta.full_name,
+      meta.name,
       meta.display_name,
-      meta.fornavn,
-      meta.first_name,
-      meta.given_name,
-      meta.username
+      meta.first_name && meta.last_name ? meta.first_name + " " + meta.last_name : "",
+      meta.firstName && meta.lastName ? meta.firstName + " " + meta.lastName : ""
     ];
-
-    for (const item of fullCandidates) {
-      const name = cleanName(item);
-      if (name) return name;
+    for (const value of candidates) {
+      const text = String(value || "").trim();
+      if (text) return text;
     }
-
-    const first = cleanName(meta.first_name || meta.given_name || meta.fornavn);
-    const last = cleanName(meta.last_name || meta.family_name || meta.etternavn);
-    if (first || last) return cleanName(first + " " + last);
-
-    return nameFromEmail(user.email);
+    return "";
   }
 
-  async function resolveLoggedInName() {
+  function findNameInLocalStorage() {
+    const keys = [
+      "skoyteutleie_current_user",
+      "skoyteutleie_user",
+      "currentUser",
+      "user"
+    ];
+    for (const key of keys) {
+      try {
+        const raw = localStorage.getItem(key);
+        if (!raw) continue;
+        const data = JSON.parse(raw);
+        const name = String(data.name || data.full_name || data.display_name || "").trim();
+        if (name) return name;
+        const email = String(data.email || "").trim();
+        if (email) return nameFromEmail(email);
+      } catch (e) {}
+    }
+    return "";
+  }
+
+  async function resolveUserName() {
     let user = null;
 
     try {
-      if (window.supabaseClient && window.supabaseClient.auth) {
-        const result = await window.supabaseClient.auth.getUser();
-        user = result && result.data ? result.data.user : null;
+      if (typeof supabaseClient !== "undefined" && supabaseClient && supabaseClient.auth) {
+        const res = await supabaseClient.auth.getUser();
+        user = res && res.data ? res.data.user : null;
       }
     } catch (e) {}
 
     try {
-      if (!user && typeof supabaseClient !== "undefined" && supabaseClient && supabaseClient.auth) {
-        const result = await supabaseClient.auth.getUser();
-        user = result && result.data ? result.data.user : null;
-      }
+      if (!user && typeof currentUser !== "undefined" && currentUser) user = currentUser;
     } catch (e) {}
 
-    try {
-      if (!user && typeof currentUser !== "undefined" && currentUser) {
-        user = currentUser;
-      }
-    } catch (e) {}
+    const metaName = getMetadataName(user);
+    if (metaName) return metaName;
 
-    // 1. Bruk navn fra Supabase Auth metadata hvis det finnes.
-    const metadataName = getNameFromUser(user);
     const email = String((user && user.email) || "").trim().toLowerCase();
-
-    if (metadataName && metadataName !== nameFromEmail(email)) {
-      return metadataName;
+    if (email) {
+      try {
+        if (typeof state !== "undefined" && state && Array.isArray(state.members)) {
+          const member = state.members.find(function (m) {
+            return String((m && m.email) || "").trim().toLowerCase() === email;
+          });
+          if (member && String(member.name || "").trim()) return String(member.name).trim();
+        }
+      } catch (e) {}
+      return nameFromEmail(email);
     }
 
-    // 2. Hvis Auth bare har e-post, slå opp samme e-post i appens medlemsliste.
-    try {
-      if (email && typeof state !== "undefined" && state && Array.isArray(state.members)) {
-        const member = state.members.find(function (m) {
-          return String((m && m.email) || "").trim().toLowerCase() === email;
-        });
-
-        if (member && String(member.name || "").trim()) {
-          return String(member.name).trim();
-        }
-      }
-    } catch (e) {}
-
-    // 3. Hvis app_user_roles senere har navn/display_name, støtt det også.
-    try {
-      if (email && typeof state !== "undefined" && state && Array.isArray(state.accessRoles)) {
-        const access = state.accessRoles.find(function (row) {
-          return String((row && row.email) || "").trim().toLowerCase() === email;
-        });
-
-        const accessName = String((access && (access.name || access.display_name || access.full_name)) || "").trim();
-        if (accessName) return accessName;
-      }
-    } catch (e) {}
-
-    // 4. Siste fallback: pent formatert e-post-prefix, ikke ordet "Konto".
-    if (email) return nameFromEmail(email);
-
-    return "Konto";
+    return findNameInLocalStorage() || "Konto";
   }
 
-  async function updateHeaderUserName() {
-    const btn = byHeaderId("appUserButton");
+  async function updateHeaderUserNameFixed() {
+    const btn = el("appUserButton");
     if (!btn) return;
-    const name = await resolveLoggedInName();
+    const name = await resolveUserName();
     btn.textContent = name || "Konto";
   }
 
-  function closeHeaderUserMenu() {
-    const dropdown = byHeaderId("appUserDropdown");
-    const btn = byHeaderId("appUserButton");
+  function closeUserMenu() {
+    const dropdown = el("appUserDropdown");
+    const btn = el("appUserButton");
     if (dropdown) dropdown.classList.add("hidden");
     if (btn) btn.setAttribute("aria-expanded", "false");
   }
 
-  function openOrCloseHeaderUserMenu(event) {
-    const dropdown = byHeaderId("appUserDropdown");
-    const btn = byHeaderId("appUserButton");
-    if (!dropdown || !btn) return;
-    event.stopPropagation();
-    const shouldOpen = dropdown.classList.contains("hidden");
-    dropdown.classList.toggle("hidden", !shouldOpen);
-    btn.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
-    updateHeaderUserName();
-  }
-
-  function setupHeaderUserMenu() {
-    const btn = byHeaderId("appUserButton");
-    const dropdown = byHeaderId("appUserDropdown");
-    const changePassword = byHeaderId("appUserChangePassword");
-    const logout = byHeaderId("appUserLogout");
-
+  function bindUserMenu() {
+    const btn = el("appUserButton");
+    const dropdown = el("appUserDropdown");
+    const changePassword = el("appUserChangePassword");
+    const logout = el("appUserLogout");
     if (!btn || !dropdown) return;
-    if (btn.dataset.headerMenuBound === "1") {
-      updateHeaderUserName();
-      return;
+
+    if (btn.dataset.userMenuFixedBound !== "1") {
+      btn.dataset.userMenuFixedBound = "1";
+      btn.addEventListener("click", function (event) {
+        stopEvent(event);
+        const shouldOpen = dropdown.classList.contains("hidden");
+        dropdown.classList.toggle("hidden", !shouldOpen);
+        btn.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
+        updateHeaderUserNameFixed();
+      });
     }
 
-    btn.dataset.headerMenuBound = "1";
-    btn.addEventListener("click", openOrCloseHeaderUserMenu);
-
-    if (changePassword) {
+    if (changePassword && changePassword.dataset.userMenuFixedBound !== "1") {
+      changePassword.dataset.userMenuFixedBound = "1";
       changePassword.addEventListener("click", function (event) {
-        event.stopPropagation();
-        closeHeaderUserMenu();
-        const oldBtn = byHeaderId("btnChangePassword");
-        if (oldBtn) {
-          oldBtn.click();
-          return;
-        }
-        if (typeof showPasswordModal === "function") {
-          showPasswordModal("Endre passord", "Velg et nytt passord på minst 8 tegn.");
-        }
+        stopEvent(event);
+        closeUserMenu();
+        const oldBtn = el("btnChangePassword");
+        if (oldBtn) oldBtn.click();
+        else alert("Endre passord er ikke koblet til i denne versjonen ennå.");
       });
     }
 
-    if (logout) {
+    if (logout && logout.dataset.userMenuFixedBound !== "1") {
+      logout.dataset.userMenuFixedBound = "1";
       logout.addEventListener("click", function (event) {
-        event.stopPropagation();
-        closeHeaderUserMenu();
-        const oldBtn = byHeaderId("btnLogout");
-        if (oldBtn) {
-          oldBtn.click();
-          return;
-        }
-        if (typeof handleLogout === "function") {
-          handleLogout();
+        stopEvent(event);
+        closeUserMenu();
+        const oldBtn = el("btnLogout");
+        if (oldBtn) oldBtn.click();
+        else if (typeof handleLogout === "function") handleLogout();
+        else if (typeof supabaseClient !== "undefined" && supabaseClient && supabaseClient.auth) {
+          supabaseClient.auth.signOut().then(function () { window.location.reload(); });
         }
       });
     }
-
-    document.addEventListener("click", closeHeaderUserMenu);
-    document.addEventListener("keydown", function (event) {
-      if (event.key === "Escape") closeHeaderUserMenu();
-    });
-
-    updateHeaderUserName();
-
-    // Oppdater litt forsinket også, siden Supabase-sessionen ofte settes etter DOMContentLoaded.
-    setTimeout(updateHeaderUserName, 300);
-    setTimeout(updateHeaderUserName, 1200);
   }
 
-  document.addEventListener("DOMContentLoaded", setupHeaderUserMenu);
-  window.setupHeaderUserMenu = setupHeaderUserMenu;
-  window.updateHeaderUserName = updateHeaderUserName;
+  function initFixedHeaderAndMenu() {
+    bindMainMenu();
+    bindUserMenu();
+    updateHeaderUserNameFixed();
+    setTimeout(updateHeaderUserNameFixed, 400);
+    setTimeout(updateHeaderUserNameFixed, 1500);
+  }
+
+  document.addEventListener("DOMContentLoaded", initFixedHeaderAndMenu);
+  window.addEventListener("load", initFixedHeaderAndMenu);
+  document.addEventListener("click", closeUserMenu);
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") closeUserMenu();
+  });
+
+  window.updateHeaderUserName = updateHeaderUserNameFixed;
 })();
 </script>
 
