@@ -6442,20 +6442,70 @@ attachSortHandlers();
       if (logout && logout.dataset.bound !== "1") {
         logout.dataset.bound = "1";
         logout.addEventListener("click", async function (event) {
+          event.preventDefault();
           event.stopPropagation();
           closeHeaderUserMenu();
+
           try {
-            const client = supabaseClient || window.supabaseClient;
+            // Bruk eksisterende logout-flyt hvis den finnes i appen.
+            const oldLogoutButton = byId("btnLogout");
+            if (oldLogoutButton && oldLogoutButton !== logout) {
+              oldLogoutButton.click();
+              return;
+            }
+            if (typeof handleLogout === "function") {
+              await handleLogout();
+              return;
+            }
+
+            // Logg ut av Supabase Auth.
+            let client = supabaseClient || window.supabaseClient || null;
+
+            if (!client && window.supabase && window.supabase.createClient) {
+              const config = loadConfig ? loadConfig() : {};
+              if (config && config.url && config.anonKey) {
+                client = window.supabase.createClient(config.url, config.anonKey);
+              }
+            }
+
             if (client && client.auth && client.auth.signOut) {
-              const res = await client.auth.signOut();
+              const res = await client.auth.signOut({ scope: "local" });
               if (res && res.error) throw res.error;
             }
+
+            // Rydd lokale Supabase-sessioner og app-cache i tilfelle klienten ikke var klar.
+            try {
+              Object.keys(localStorage).forEach(function (key) {
+                if (
+                  key.startsWith("sb-") ||
+                  key.toLowerCase().includes("supabase") ||
+                  key.toLowerCase().includes("auth") ||
+                  key.toLowerCase().includes("session") ||
+                  key === "skoyteutleie_current_user"
+                ) {
+                  localStorage.removeItem(key);
+                }
+              });
+            } catch (e) {}
+
+            try {
+              Object.keys(sessionStorage).forEach(function (key) {
+                if (
+                  key.startsWith("sb-") ||
+                  key.toLowerCase().includes("supabase") ||
+                  key.toLowerCase().includes("auth") ||
+                  key.toLowerCase().includes("session")
+                ) {
+                  sessionStorage.removeItem(key);
+                }
+              });
+            } catch (e) {}
+
+            window.location.replace(window.location.pathname + "?logged_out=1");
           } catch (error) {
             console.error(error);
             alert("Kunne ikke logge ut.\n\n" + (error.message || error));
-            return;
           }
-          window.location.href = window.location.pathname;
         });
       }
 
