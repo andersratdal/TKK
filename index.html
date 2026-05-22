@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>TKK Skøyteutleie</title>
+<title>SkateFlow</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode"></script>
@@ -884,19 +884,110 @@
   }
 }
 
+
+
+/* Felles header: logo til venstre, bruker til høyre */
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 0 18px;
+  padding: 4px 0;
+}
+
+.app-logo-link {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+}
+
+.app-logo-link:hover { opacity: 0.88; }
+
+.app-logo {
+  height: 42px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
+.app-user-menu {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.app-user-button {
+  background: transparent;
+  color: var(--text);
+  border: 0;
+  border-radius: 0;
+  padding: 6px 0;
+  font-size: 14px;
+  font-weight: 600;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-user-button:hover { color: var(--accent); }
+
+.app-user-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 170px;
+  background: #ffffff;
+  border: 1px solid rgba(16,35,63,0.10);
+  border-radius: 14px;
+  box-shadow: 0 14px 34px rgba(16,35,63,0.18);
+  padding: 8px;
+  z-index: 1400;
+}
+
+.app-user-dropdown button {
+  width: 100%;
+  display: block;
+  text-align: left;
+  background: transparent;
+  color: var(--text);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.app-user-dropdown button:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+#backRow { display: none !important; }
+
+@media (max-width: 600px) {
+  .app-header { margin-bottom: 12px; }
+  .app-logo { height: 34px; }
+  .app-user-button { max-width: 145px; }
+}
+
 </style>
 </head>
 <body>
 <div class="container">
+<header class="app-header">
+  <a class="app-logo-link" href="#" onclick="goHome(); return false;" aria-label="Gå til forsiden">
+    <img class="app-logo" alt="Trondheim Kortbaneklubb" src="logo.png"/>
+  </a>
+  <div class="app-user-menu">
+    <button class="app-user-button" id="appUserButton" type="button" aria-haspopup="true" aria-expanded="false">Konto</button>
+    <div class="app-user-dropdown hidden" id="appUserDropdown">
+      <button type="button" id="appUserChangePassword">Endre passord</button>
+      <button type="button" id="appUserLogout">Log ut</button>
+    </div>
+  </div>
+</header>
 <div id="homeView">
-<div class="brand">
-<img alt="Trondheim Kortbaneklubb" src="logo.png"/>
-<div class="brand-text">
-<div class="eyebrow">Trondheim Kortbaneklubb</div>
-<h1 class="brand-title">Skøyteutleie</h1>
-<div class="brand-subtitle">Velg arbeidsflate for å gå videre i appen.</div>
-</div>
-</div>
 <div class="landing-grid app-menu">
   <button class="app-menu-card" data-target="loanTab" type="button">
     <span class="app-menu-icon"><img src="utlan-skoyte-ikon.png" alt="" class="app-menu-image-icon"></span>
@@ -931,7 +1022,7 @@
 </div>
 <div class="workspace" id="workspace">
 <div class="back-row" id="backRow">
-<button class="btn-secondary" id="backBtn" type="button">← Til forsiden</button>
+<button class="btn-secondary hidden" id="backBtn" type="button" aria-label="Til forsiden"></button>
 </div>
 <div class="section-card hidden" id="loanTab">
 <h2>Registrer utlån</h2>
@@ -1621,6 +1712,8 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
         return false;
       }
       supabaseClient = window.supabase.createClient(config.url, config.anonKey);
+      window.supabaseClient = supabaseClient;
+      if (typeof updateHeaderUserName === "function") setTimeout(updateHeaderUserName, 0);
       return true;
     }
 
@@ -3930,6 +4023,7 @@ function renderSchoolSignups() {
 }
 
 function renderAll() {
+      if (typeof updateHeaderUserName === "function") updateHeaderUserName();
       updateMemberDepartmentOptions();
       updateMemberGroupListByDepartment(byId("memberDepartment") ? byId("memberDepartment").value : "", byId("memberGroupsText") ? byId("memberGroupsText").value : "");
 
@@ -6211,6 +6305,168 @@ attachSortHandlers();
       startAutoRefresh();
     }
   
+
+    async function getSupabaseAuthUser() {
+      try {
+        if (supabaseClient && supabaseClient.auth && supabaseClient.auth.getUser) {
+          const res = await supabaseClient.auth.getUser();
+          if (res && res.data && res.data.user) return res.data.user;
+        }
+      } catch (e) {
+        console.warn("Kunne ikke hente Supabase-bruker", e);
+      }
+      return null;
+    }
+
+    function nameFromEmail(email) {
+      const prefix = String(email || "").split("@")[0] || "";
+      if (!prefix) return "Konto";
+      return prefix
+        .replace(/[._-]+/g, " ")
+        .split(" ")
+        .filter(Boolean)
+        .map(function (part) { return part.charAt(0).toUpperCase() + part.slice(1); })
+        .join(" ") || "Konto";
+    }
+
+    function nameFromUserMetadata(user) {
+      const meta = (user && (user.user_metadata || user.raw_user_meta_data || user.app_metadata)) || {};
+      const candidates = [meta.full_name, meta.name, meta.display_name, meta.displayName, meta.first_name && meta.last_name ? meta.first_name + " " + meta.last_name : ""];
+      for (const value of candidates) {
+        const text = String(value || "").trim();
+        if (text) return text;
+      }
+      return "";
+    }
+
+    async function lookupNameInSupabase(user) {
+      if (!supabaseClient || !user) return "";
+      const email = String(user.email || "").trim().toLowerCase();
+      const userId = String(user.id || "").trim();
+
+      try {
+        if (email && state && Array.isArray(state.members)) {
+          const member = state.members.find(function (m) {
+            return String((m && m.email) || "").trim().toLowerCase() === email;
+          });
+          if (member && String(member.name || "").trim()) return String(member.name).trim();
+        }
+      } catch (e) {}
+
+      const lookups = [];
+      if (email) lookups.push({ table: "members", column: "email", value: email, fields: "name,email" });
+      if (email) lookups.push({ table: "app_user_roles", column: "email", value: email, fields: "name,display_name,full_name,email" });
+      if (userId) lookups.push({ table: "app_user_roles", column: "user_id", value: userId, fields: "name,display_name,full_name,email,user_id" });
+      if (userId) lookups.push({ table: "profiles", column: "id", value: userId, fields: "name,display_name,full_name,id" });
+
+      for (const lookup of lookups) {
+        try {
+          const res = await supabaseClient
+            .from(lookup.table)
+            .select(lookup.fields)
+            .eq(lookup.column, lookup.value)
+            .limit(1)
+            .maybeSingle();
+          if (!res || res.error || !res.data) continue;
+          const name = String(res.data.name || res.data.display_name || res.data.full_name || "").trim();
+          if (name) return name;
+        } catch (e) {}
+      }
+
+      return "";
+    }
+
+    async function updateHeaderUserName() {
+      const btn = byId("appUserButton");
+      if (!btn) return;
+      const user = await getSupabaseAuthUser();
+      let name = nameFromUserMetadata(user);
+      if (!name) name = await lookupNameInSupabase(user);
+      if (!name && user && user.email) name = nameFromEmail(user.email);
+      btn.textContent = name || "Konto";
+    }
+
+    function closeHeaderUserMenu() {
+      const dropdown = byId("appUserDropdown");
+      const btn = byId("appUserButton");
+      if (dropdown) dropdown.classList.add("hidden");
+      if (btn) btn.setAttribute("aria-expanded", "false");
+    }
+
+    function setupHeaderUserMenu() {
+      const btn = byId("appUserButton");
+      const dropdown = byId("appUserDropdown");
+      const changePassword = byId("appUserChangePassword");
+      const logout = byId("appUserLogout");
+      if (!btn || !dropdown) return;
+
+      if (btn.dataset.bound !== "1") {
+        btn.dataset.bound = "1";
+        btn.addEventListener("click", function (event) {
+          event.stopPropagation();
+          const open = dropdown.classList.contains("hidden");
+          dropdown.classList.toggle("hidden", !open);
+          btn.setAttribute("aria-expanded", open ? "true" : "false");
+          updateHeaderUserName();
+        });
+        document.addEventListener("click", closeHeaderUserMenu);
+        document.addEventListener("keydown", function (event) {
+          if (event.key === "Escape") closeHeaderUserMenu();
+        });
+      }
+
+      if (changePassword && changePassword.dataset.bound !== "1") {
+        changePassword.dataset.bound = "1";
+        changePassword.addEventListener("click", async function (event) {
+          event.stopPropagation();
+          closeHeaderUserMenu();
+          const existing = byId("btnChangePassword");
+          if (existing) { existing.click(); return; }
+
+          const password = prompt("Skriv nytt passord (minst 8 tegn):");
+          if (!password) return;
+          if (password.length < 8) { alert("Passordet må være minst 8 tegn."); return; }
+          try {
+            const client = supabaseClient || window.supabaseClient;
+            if (!client || !client.auth || !client.auth.updateUser) throw new Error("Supabase Auth er ikke klar.");
+            const res = await client.auth.updateUser({ password: password });
+            if (res.error) throw res.error;
+            alert("Passordet er endret.");
+          } catch (error) {
+            console.error(error);
+            alert("Kunne ikke endre passord.\n\n" + (error.message || error));
+          }
+        });
+      }
+
+      if (logout && logout.dataset.bound !== "1") {
+        logout.dataset.bound = "1";
+        logout.addEventListener("click", async function (event) {
+          event.stopPropagation();
+          closeHeaderUserMenu();
+          try {
+            const client = supabaseClient || window.supabaseClient;
+            if (client && client.auth && client.auth.signOut) {
+              const res = await client.auth.signOut();
+              if (res && res.error) throw res.error;
+            }
+          } catch (error) {
+            console.error(error);
+            alert("Kunne ikke logge ut.\n\n" + (error.message || error));
+            return;
+          }
+          window.location.href = window.location.pathname;
+        });
+      }
+
+      updateHeaderUserName();
+      setTimeout(updateHeaderUserName, 300);
+      setTimeout(updateHeaderUserName, 1200);
+    }
+
+    setupHeaderUserMenu();
+    window.updateHeaderUserName = updateHeaderUserName;
+
     setupAdminTabs();
 </script>
 
@@ -6227,193 +6483,6 @@ attachSortHandlers();
     </div>
   </div>
 </div>
-
-
-
-<script>
-(function () {
-  function el(id) { return document.getElementById(id); }
-
-  function stopEvent(event) {
-    if (!event) return;
-    event.preventDefault();
-    event.stopPropagation();
-  }
-
-  function openSection(sectionId) {
-    if (!sectionId) return;
-    if (typeof window.showSection === "function") {
-      window.showSection(sectionId);
-    } else if (typeof showSection === "function") {
-      showSection(sectionId);
-    }
-  }
-
-  function bindMainMenu() {
-    document.querySelectorAll(".landing-card, .app-menu-card").forEach(function (card) {
-      if (card.dataset.mainMenuFixedBound === "1") return;
-      card.dataset.mainMenuFixedBound = "1";
-      card.addEventListener("click", function (event) {
-        stopEvent(event);
-        openSection(card.dataset.target || "");
-      });
-    });
-  }
-
-  function nameFromEmail(email) {
-    const prefix = String(email || "").split("@")[0] || "";
-    return prefix
-      .replace(/[._-]+/g, " ")
-      .trim()
-      .replace(/\b\w/g, function (char) { return char.toUpperCase(); });
-  }
-
-  function getMetadataName(user) {
-    const meta = (user && (user.user_metadata || user.raw_user_meta_data || user.app_metadata)) || {};
-    const candidates = [
-      meta.full_name,
-      meta.name,
-      meta.display_name,
-      meta.first_name && meta.last_name ? meta.first_name + " " + meta.last_name : "",
-      meta.firstName && meta.lastName ? meta.firstName + " " + meta.lastName : ""
-    ];
-    for (const value of candidates) {
-      const text = String(value || "").trim();
-      if (text) return text;
-    }
-    return "";
-  }
-
-  function findNameInLocalStorage() {
-    const keys = [
-      "skoyteutleie_current_user",
-      "skoyteutleie_user",
-      "currentUser",
-      "user"
-    ];
-    for (const key of keys) {
-      try {
-        const raw = localStorage.getItem(key);
-        if (!raw) continue;
-        const data = JSON.parse(raw);
-        const name = String(data.name || data.full_name || data.display_name || "").trim();
-        if (name) return name;
-        const email = String(data.email || "").trim();
-        if (email) return nameFromEmail(email);
-      } catch (e) {}
-    }
-    return "";
-  }
-
-  async function resolveUserName() {
-    let user = null;
-
-    try {
-      if (typeof supabaseClient !== "undefined" && supabaseClient && supabaseClient.auth) {
-        const res = await supabaseClient.auth.getUser();
-        user = res && res.data ? res.data.user : null;
-      }
-    } catch (e) {}
-
-    try {
-      if (!user && typeof currentUser !== "undefined" && currentUser) user = currentUser;
-    } catch (e) {}
-
-    const metaName = getMetadataName(user);
-    if (metaName) return metaName;
-
-    const email = String((user && user.email) || "").trim().toLowerCase();
-    if (email) {
-      try {
-        if (typeof state !== "undefined" && state && Array.isArray(state.members)) {
-          const member = state.members.find(function (m) {
-            return String((m && m.email) || "").trim().toLowerCase() === email;
-          });
-          if (member && String(member.name || "").trim()) return String(member.name).trim();
-        }
-      } catch (e) {}
-      return nameFromEmail(email);
-    }
-
-    return findNameInLocalStorage() || "Konto";
-  }
-
-  async function updateHeaderUserNameFixed() {
-    const btn = el("appUserButton");
-    if (!btn) return;
-    const name = await resolveUserName();
-    btn.textContent = name || "Konto";
-  }
-
-  function closeUserMenu() {
-    const dropdown = el("appUserDropdown");
-    const btn = el("appUserButton");
-    if (dropdown) dropdown.classList.add("hidden");
-    if (btn) btn.setAttribute("aria-expanded", "false");
-  }
-
-  function bindUserMenu() {
-    const btn = el("appUserButton");
-    const dropdown = el("appUserDropdown");
-    const changePassword = el("appUserChangePassword");
-    const logout = el("appUserLogout");
-    if (!btn || !dropdown) return;
-
-    if (btn.dataset.userMenuFixedBound !== "1") {
-      btn.dataset.userMenuFixedBound = "1";
-      btn.addEventListener("click", function (event) {
-        stopEvent(event);
-        const shouldOpen = dropdown.classList.contains("hidden");
-        dropdown.classList.toggle("hidden", !shouldOpen);
-        btn.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
-        updateHeaderUserNameFixed();
-      });
-    }
-
-    if (changePassword && changePassword.dataset.userMenuFixedBound !== "1") {
-      changePassword.dataset.userMenuFixedBound = "1";
-      changePassword.addEventListener("click", function (event) {
-        stopEvent(event);
-        closeUserMenu();
-        const oldBtn = el("btnChangePassword");
-        if (oldBtn) oldBtn.click();
-        else alert("Endre passord er ikke koblet til i denne versjonen ennå.");
-      });
-    }
-
-    if (logout && logout.dataset.userMenuFixedBound !== "1") {
-      logout.dataset.userMenuFixedBound = "1";
-      logout.addEventListener("click", function (event) {
-        stopEvent(event);
-        closeUserMenu();
-        const oldBtn = el("btnLogout");
-        if (oldBtn) oldBtn.click();
-        else if (typeof handleLogout === "function") handleLogout();
-        else if (typeof supabaseClient !== "undefined" && supabaseClient && supabaseClient.auth) {
-          supabaseClient.auth.signOut().then(function () { window.location.reload(); });
-        }
-      });
-    }
-  }
-
-  function initFixedHeaderAndMenu() {
-    bindMainMenu();
-    bindUserMenu();
-    updateHeaderUserNameFixed();
-    setTimeout(updateHeaderUserNameFixed, 400);
-    setTimeout(updateHeaderUserNameFixed, 1500);
-  }
-
-  document.addEventListener("DOMContentLoaded", initFixedHeaderAndMenu);
-  window.addEventListener("load", initFixedHeaderAndMenu);
-  document.addEventListener("click", closeUserMenu);
-  document.addEventListener("keydown", function (event) {
-    if (event.key === "Escape") closeUserMenu();
-  });
-
-  window.updateHeaderUserName = updateHeaderUserNameFixed;
-})();
-</script>
 
 </body>
 </html>
