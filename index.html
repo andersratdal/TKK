@@ -6447,17 +6447,6 @@ attachSortHandlers();
           closeHeaderUserMenu();
 
           try {
-            // Bruk eksisterende logout-flyt hvis den finnes i appen.
-            const oldLogoutButton = byId("btnLogout");
-            if (oldLogoutButton && oldLogoutButton !== logout) {
-              oldLogoutButton.click();
-              return;
-            }
-            if (typeof handleLogout === "function") {
-              await handleLogout();
-              return;
-            }
-
             // Logg ut av Supabase Auth.
             let client = supabaseClient || window.supabaseClient || null;
 
@@ -6501,7 +6490,7 @@ attachSortHandlers();
               });
             } catch (e) {}
 
-            window.location.replace(window.location.pathname + "?logged_out=1");
+            window.location.replace(window.location.origin + window.location.pathname + "?logged_out=1");
           } catch (error) {
             console.error(error);
             alert("Kunne ikke logge ut.\n\n" + (error.message || error));
@@ -6533,6 +6522,205 @@ attachSortHandlers();
     </div>
   </div>
 </div>
+
+
+<script>
+(function () {
+  const CONFIG_KEY_AUTH_GUARD = "skoyteutleie_supabase_config_v7";
+
+  function readStoredSupabaseConfig() {
+    try {
+      const raw = localStorage.getItem(CONFIG_KEY_AUTH_GUARD);
+      return raw ? JSON.parse(raw) : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function getAuthClient() {
+    try {
+      if (window.supabaseClient && window.supabaseClient.auth) return window.supabaseClient;
+    } catch (e) {}
+    try {
+      if (typeof supabaseClient !== "undefined" && supabaseClient && supabaseClient.auth) return supabaseClient;
+    } catch (e) {}
+    try {
+      const cfg = readStoredSupabaseConfig();
+      if (window.supabase && window.supabase.createClient && cfg.url && cfg.anonKey) {
+        const client = window.supabase.createClient(cfg.url, cfg.anonKey);
+        window.supabaseClient = client;
+        return client;
+      }
+    } catch (e) {}
+    return null;
+  }
+
+  function clearAuthStorage() {
+    try {
+      Object.keys(localStorage).forEach(function (key) {
+        const lower = key.toLowerCase();
+        if (
+          key.startsWith("sb-") ||
+          lower.includes("supabase.auth") ||
+          lower.includes("auth-token") ||
+          lower.includes("auth.session") ||
+          lower.includes("session") ||
+          key === "skoyteutleie_current_user"
+        ) {
+          localStorage.removeItem(key);
+        }
+      });
+    } catch (e) {}
+
+    try {
+      Object.keys(sessionStorage).forEach(function (key) {
+        const lower = key.toLowerCase();
+        if (
+          key.startsWith("sb-") ||
+          lower.includes("supabase.auth") ||
+          lower.includes("auth-token") ||
+          lower.includes("auth.session") ||
+          lower.includes("session")
+        ) {
+          sessionStorage.removeItem(key);
+        }
+      });
+    } catch (e) {}
+  }
+
+  function setAppVisible(visible) {
+    const app = document.querySelector("body > .container");
+    if (app) app.style.display = visible ? "" : "none";
+  }
+
+  function removeLoginView() {
+    const existing = document.getElementById("authLoginView");
+    if (existing) existing.remove();
+  }
+
+  function ensureLoginView(message) {
+    removeLoginView();
+    setAppVisible(false);
+
+    const view = document.createElement("div");
+    view.id = "authLoginView";
+    view.innerHTML = `
+      <div class="auth-login-card">
+        <div class="auth-login-brand">
+          <img src="logo.png" alt="Trondheim Kortbaneklubb" />
+          <strong>SkateFlow</strong>
+        </div>
+        <h1>Logg inn</h1>
+        <p class="auth-login-help">Logg inn med e-post og passord for å bruke appen.</p>
+        <form id="authLoginForm">
+          <label for="authLoginEmail">E-post</label>
+          <input id="authLoginEmail" type="email" autocomplete="email" required />
+          <label for="authLoginPassword">Passord</label>
+          <input id="authLoginPassword" type="password" autocomplete="current-password" required />
+          <div class="auth-login-actions">
+            <button type="submit">Logg inn</button>
+          </div>
+          <div id="authLoginMessage" class="auth-login-message">${message || ""}</div>
+        </form>
+      </div>
+    `;
+
+    const style = document.createElement("style");
+    style.textContent = `
+      #authLoginView {
+        min-height: 100vh;
+        display: grid;
+        place-items: start center;
+        padding: 38px 18px;
+        background:
+          radial-gradient(circle at top left, rgba(31,79,255,0.10), transparent 32%),
+          linear-gradient(180deg, #f7faff 0%, #edf3fb 100%);
+        color: #132238;
+        font-family: Arial, Helvetica, sans-serif;
+      }
+      .auth-login-card {
+        width: min(100%, 520px);
+        background: #ffffff;
+        border: 1px solid rgba(16,35,63,0.08);
+        border-radius: 22px;
+        box-shadow: 0 18px 40px rgba(16,35,63,0.12);
+        padding: 26px;
+      }
+      .auth-login-brand { display:flex; align-items:center; gap:10px; margin-bottom:18px; }
+      .auth-login-brand img { width:42px; height:auto; display:block; }
+      .auth-login-card h1 { margin:0; font-size:32px; }
+      .auth-login-help { color:#64748b; margin:8px 0 22px; line-height:1.45; }
+      .auth-login-card label { display:block; margin:14px 0 6px; font-weight:700; }
+      .auth-login-card input { width:100%; padding:12px 14px; border:1px solid #cbd5e1; border-radius:12px; font:inherit; }
+      .auth-login-actions { margin-top:20px; display:flex; gap:10px; align-items:center; }
+      .auth-login-actions button { background:#003a8f; color:#fff; border:0; border-radius:12px; padding:11px 16px; font:inherit; font-weight:700; cursor:pointer; }
+      .auth-login-message { margin-top:14px; color:#991b1b; white-space:pre-wrap; }
+    `;
+    document.head.appendChild(style);
+    document.body.appendChild(view);
+
+    const form = document.getElementById("authLoginForm");
+    const msg = document.getElementById("authLoginMessage");
+    form.addEventListener("submit", async function (event) {
+      event.preventDefault();
+      const client = getAuthClient();
+      if (!client || !client.auth || !client.auth.signInWithPassword) {
+        msg.textContent = "Supabase Auth er ikke klar. Sjekk at Supabase URL og anon key er lagret.";
+        return;
+      }
+      const email = document.getElementById("authLoginEmail").value.trim();
+      const password = document.getElementById("authLoginPassword").value;
+      msg.textContent = "Logger inn ...";
+      try {
+        const res = await client.auth.signInWithPassword({ email, password });
+        if (res.error) throw res.error;
+        removeLoginView();
+        setAppVisible(true);
+        if (window.history && window.history.replaceState) {
+          window.history.replaceState({}, document.title, window.location.origin + window.location.pathname);
+        }
+        if (typeof loadAll === "function") await loadAll();
+        if (typeof startAutoRefresh === "function") startAutoRefresh();
+        if (typeof window.updateHeaderUserName === "function") window.updateHeaderUserName();
+      } catch (error) {
+        msg.textContent = "Kunne ikke logge inn.\n\n" + (error.message || error);
+      }
+    });
+  }
+
+  async function handleLoggedOutOrMissingSession() {
+    const params = new URLSearchParams(window.location.search);
+    const hasLoggedOutFlag = params.get("logged_out") === "1";
+    const client = getAuthClient();
+
+    if (hasLoggedOutFlag) {
+      try {
+        if (client && client.auth && client.auth.signOut) {
+          await client.auth.signOut({ scope: "local" });
+        }
+      } catch (e) {}
+      clearAuthStorage();
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState({}, document.title, window.location.origin + window.location.pathname);
+      }
+      ensureLoginView("Du er logget ut.");
+      return;
+    }
+
+    try {
+      if (client && client.auth && client.auth.getSession) {
+        const res = await client.auth.getSession();
+        const session = res && res.data ? res.data.session : null;
+        if (!session) ensureLoginView("");
+      }
+    } catch (e) {}
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    setTimeout(handleLoggedOutOrMissingSession, 0);
+  });
+})();
+</script>
 
 </body>
 </html>
