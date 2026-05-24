@@ -6640,8 +6640,19 @@ attachSortHandlers();
           <input id="authLoginPassword" type="password" autocomplete="current-password" required />
           <div class="auth-login-actions">
             <button type="submit">Logg inn</button>
+            <button type="button" class="auth-login-secondary" id="authForgotPasswordBtn">Glemt passord</button>
           </div>
           <div id="authLoginMessage" class="auth-login-message">${message || ""}</div>
+        </form>
+        <form id="authForgotPasswordForm" class="auth-forgot-form hidden">
+          <p class="auth-login-help auth-forgot-help">Skriv inn e-postadressen din, så sender vi en lenke for å lage nytt passord.</p>
+          <label for="authForgotEmail">E-post</label>
+          <input id="authForgotEmail" type="email" autocomplete="email" required />
+          <div class="auth-login-actions">
+            <button type="submit">Send passordlenke</button>
+            <button type="button" class="auth-login-secondary" id="authForgotBackBtn">Tilbake</button>
+          </div>
+          <div id="authForgotMessage" class="auth-login-message"></div>
         </form>
       </div>
     `;
@@ -6673,15 +6684,80 @@ attachSortHandlers();
       .auth-login-help { color:#64748b; margin:8px 0 22px; line-height:1.45; }
       .auth-login-card label { display:block; margin:14px 0 6px; font-weight:700; }
       .auth-login-card input { width:100%; padding:12px 14px; border:1px solid #cbd5e1; border-radius:12px; font:inherit; }
-      .auth-login-actions { margin-top:20px; display:flex; gap:10px; align-items:center; }
+      .auth-login-actions { margin-top:20px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
       .auth-login-actions button { background:#003a8f; color:#fff; border:0; border-radius:12px; padding:11px 16px; font:inherit; font-weight:700; cursor:pointer; }
+      .auth-login-actions .auth-login-secondary { background:transparent; color:#003a8f; padding:11px 0; }
+      .auth-login-actions .auth-login-secondary:hover { color:#002b68; }
       .auth-login-message { margin-top:14px; color:#991b1b; white-space:pre-wrap; }
+      .auth-login-message.ok { color:#166534; }
+      .auth-forgot-form { margin-top:18px; }
+      .auth-forgot-form.hidden { display:none !important; }
+      .auth-forgot-help { margin-top:0; }
     `;
     document.head.appendChild(style);
     document.body.appendChild(view);
 
     const form = document.getElementById("authLoginForm");
     const msg = document.getElementById("authLoginMessage");
+    const forgotForm = document.getElementById("authForgotPasswordForm");
+    const forgotBtn = document.getElementById("authForgotPasswordBtn");
+    const forgotBackBtn = document.getElementById("authForgotBackBtn");
+    const forgotMsg = document.getElementById("authForgotMessage");
+
+    if (forgotBtn && forgotForm) {
+      forgotBtn.addEventListener("click", function () {
+        forgotForm.classList.remove("hidden");
+        if (forgotMsg) {
+          forgotMsg.textContent = "";
+          forgotMsg.classList.remove("ok");
+        }
+        const loginEmail = document.getElementById("authLoginEmail");
+        const forgotEmail = document.getElementById("authForgotEmail");
+        if (loginEmail && forgotEmail && loginEmail.value) forgotEmail.value = loginEmail.value;
+        if (forgotEmail) forgotEmail.focus();
+      });
+    }
+
+    if (forgotBackBtn && forgotForm) {
+      forgotBackBtn.addEventListener("click", function () {
+        forgotForm.classList.add("hidden");
+        if (forgotMsg) {
+          forgotMsg.textContent = "";
+          forgotMsg.classList.remove("ok");
+        }
+      });
+    }
+
+    if (forgotForm) {
+      forgotForm.addEventListener("submit", async function (event) {
+        event.preventDefault();
+        const client = getAuthClient();
+        if (!client || !client.auth || !client.auth.resetPasswordForEmail) {
+          forgotMsg.textContent = "Supabase Auth er ikke klar. Sjekk at Supabase URL og anon key er lagret.";
+          forgotMsg.classList.remove("ok");
+          return;
+        }
+        const email = document.getElementById("authForgotEmail").value.trim();
+        if (!email) {
+          forgotMsg.textContent = "Skriv inn e-postadressen din.";
+          forgotMsg.classList.remove("ok");
+          return;
+        }
+        forgotMsg.textContent = "Sender passordlenke ...";
+        forgotMsg.classList.remove("ok");
+        try {
+          const redirectTo = window.location.origin + window.location.pathname + "?reset=1";
+          const res = await client.auth.resetPasswordForEmail(email, { redirectTo });
+          if (res.error) throw res.error;
+          forgotMsg.textContent = "Hvis e-postadressen finnes som bruker, er passordlenke sendt. Sjekk innboksen din.";
+          forgotMsg.classList.add("ok");
+        } catch (error) {
+          forgotMsg.textContent = "Kunne ikke sende passordlenke.\n\n" + (error.message || error);
+          forgotMsg.classList.remove("ok");
+        }
+      });
+    }
+
     form.addEventListener("submit", async function (event) {
       event.preventDefault();
       const client = getAuthClient();
@@ -6737,8 +6813,55 @@ attachSortHandlers();
     } catch (e) {}
   }
 
+  async function handlePasswordResetCallback() {
+    const params = new URLSearchParams(window.location.search);
+    const isReset = params.get("reset") === "1" || params.get("type") === "recovery";
+    if (!isReset) return false;
+
+    const client = getAuthClient();
+    if (!client || !client.auth || !client.auth.updateUser) {
+      ensureLoginView("Supabase Auth er ikke klar. Prøv lenken på nytt.");
+      return true;
+    }
+
+    try {
+      if (client.auth.getSession) {
+        await client.auth.getSession();
+      }
+    } catch (e) {}
+
+    const password = prompt("Skriv nytt passord (minst 8 tegn):");
+    if (!password) {
+      ensureLoginView("Passordet ble ikke endret.");
+      return true;
+    }
+    if (password.length < 8) {
+      ensureLoginView("Passordet må være minst 8 tegn. Klikk på passordlenken igjen og prøv på nytt.");
+      return true;
+    }
+
+    try {
+      const res = await client.auth.updateUser({ password });
+      if (res.error) throw res.error;
+      try { await client.auth.signOut({ scope: "local" }); } catch (e) {}
+      clearAuthStorage();
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState({}, document.title, window.location.origin + window.location.pathname);
+      }
+      ensureLoginView("Passordet er endret. Logg inn med det nye passordet.");
+      return true;
+    } catch (error) {
+      console.error(error);
+      ensureLoginView("Kunne ikke endre passord.\n\n" + (error.message || error));
+      return true;
+    }
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
-    setTimeout(handleLoggedOutOrMissingSession, 0);
+    setTimeout(async function () {
+      const handledReset = await handlePasswordResetCallback();
+      if (!handledReset) await handleLoggedOutOrMissingSession();
+    }, 0);
   });
 })();
 </script>
