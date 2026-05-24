@@ -813,34 +813,42 @@
 }
 
 
-/* Ryddigere Admin med underfaner */
+/* Minimal tekstmeny for Admin */
 .admin-tabs-card {
-  background: var(--card);
-  border: 1px solid rgba(16,35,63,0.06);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow);
-  padding: 12px;
-  margin-bottom: 14px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0;
+  margin: 4px 0 18px;
 }
 
 .admin-tabs {
   display: flex;
-  gap: 8px;
+  gap: 22px;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .admin-tab {
-  background: #e7edf5;
-  color: var(--text);
-  border-radius: 999px;
-  padding: 9px 13px;
+  background: transparent;
+  color: var(--muted);
+  border: 0;
+  border-radius: 0;
+  padding: 6px 0;
   font-size: 14px;
   font-weight: 500;
+  box-shadow: none;
+}
+
+.admin-tab:hover {
+  color: var(--accent);
 }
 
 .admin-tab.active {
-  background: var(--accent);
-  color: #ffffff;
+  background: transparent;
+  color: var(--accent);
+  font-weight: 700;
 }
 
 .admin-section-hidden {
@@ -849,19 +857,84 @@
 
 @media (max-width: 600px) {
   .admin-tabs-card {
-    padding: 10px;
-    border-radius: 16px;
+    padding: 0;
+    margin: 2px 0 14px;
   }
 
   .admin-tabs {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
   }
 
   .admin-tab {
-    border-radius: 12px;
-    padding: 10px 8px;
+    padding: 5px 0;
+    font-size: 13px;
+  }
+}
+
+
+/* Tekstfaner for Rapporter */
+.report-tabs-card {
+  background: rgba(247, 250, 255, 0.96);
+  border: 0;
+  box-shadow: none;
+  padding: 8px 0 12px;
+  margin: 0 0 14px;
+  position: sticky;
+  top: 72px;
+  z-index: 900;
+  backdrop-filter: blur(10px);
+}
+
+.report-tabs {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.report-tab {
+  background: transparent;
+  color: var(--muted);
+  border-radius: 0;
+  padding: 6px 0;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: none;
+}
+
+.report-tab:hover {
+  color: var(--accent);
+}
+
+.report-tab.active {
+  background: transparent;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.report-section-hidden {
+  display: none !important;
+}
+
+.report-section {
+  scroll-margin-top: 126px;
+}
+
+@media (max-width: 600px) {
+  .report-tabs-card {
+    top: 62px;
+    padding: 6px 0 10px;
+    margin-bottom: 12px;
+  }
+
+  .report-tabs {
+    gap: 14px;
+  }
+
+  .report-tab {
+    padding: 5px 0;
     font-size: 13px;
   }
 }
@@ -893,7 +966,12 @@
   justify-content: space-between;
   gap: 16px;
   margin: 0 0 18px;
-  padding: 4px 0;
+  padding: 8px 0;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: rgba(247, 250, 255, 0.96);
+  backdrop-filter: blur(10px);
 }
 
 .app-logo-link {
@@ -904,6 +982,21 @@
 }
 
 .app-logo-link:hover { opacity: 0.88; }
+
+.app-logo-stack {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.app-page-context {
+  font-size: 12px;
+  line-height: 1.1;
+  color: var(--muted);
+  font-weight: 600;
+  margin-left: 1px;
+}
 
 .app-logo {
   height: 42px;
@@ -976,9 +1069,12 @@
 <body>
 <div class="container">
 <header class="app-header">
-  <a class="app-logo-link" href="#" onclick="goHome(); return false;" aria-label="Gå til forsiden">
-    <img class="app-logo" alt="Trondheim Kortbaneklubb" src="logo.png"/>
-  </a>
+  <div class="app-logo-stack">
+    <a class="app-logo-link" href="#" onclick="goHome(); return false;" aria-label="Gå til forsiden">
+      <img class="app-logo" alt="Trondheim Kortbaneklubb" src="logo.png"/>
+    </a>
+    <div class="app-page-context hidden" id="appPageContext">Rapporter</div>
+  </div>
   <div class="app-user-menu">
     <button class="app-user-button" id="appUserButton" type="button" aria-haspopup="true" aria-expanded="false">Konto</button>
     <div class="app-user-dropdown hidden" id="appUserDropdown">
@@ -1021,9 +1117,6 @@
 </div>
 </div>
 <div class="workspace" id="workspace">
-<div class="back-row" id="backRow">
-<button class="btn-secondary hidden" id="backBtn" type="button" aria-label="Til forsiden"></button>
-</div>
 <div class="section-card hidden" id="loanTab">
 <h2>Registrer utlån</h2>
 <div class="help" style="margin-top:8px;">Velg gruppe, medlem og ledig skøyte.</div>
@@ -1401,11 +1494,19 @@
 
 </div>
 <div class="hidden" id="reportsTab">
-<div class="section-card" id="reportsIntro">
-<h2>Rapporter</h2>
-<div class="help" style="margin-top:8px;">Her finner du oversikter og eksport for skøyter, arkiverte skøyter og medlemmer.</div>
+<div class="report-tabs-card">
+  <div class="report-tabs" role="navigation" aria-label="Rapportmeny">
+    <button type="button" class="report-tab active" data-report-tab="skates">Skøyter</button>
+    <button type="button" class="report-tab" data-report-tab="archived-skates">Arkiverte skøyter</button>
+    <button type="button" class="report-tab" data-report-tab="members">Medlemmer</button>
+    <button type="button" class="report-tab" data-report-tab="system">System</button>
+    <button type="button" class="report-tab" data-report-tab="loans-by-group">Utlån per gruppe</button>
+    <button type="button" class="report-tab" data-report-tab="missing-contact">Mangler kontaktinfo</button>
+    <button type="button" class="report-tab" data-report-tab="history">Historikk</button>
+  </div>
 </div>
-<div class="section-card">
+
+<div class="section-card report-section" data-report-section="skates">
 <div class="section-header">
 <div>
 <h2>Skøyter</h2>
@@ -1429,7 +1530,9 @@
 </div>
 <div id="skatesWrap"></div>
 </div>
-</div><div class="section-card">
+</div>
+
+<div class="section-card report-section report-section-hidden" data-report-section="archived-skates">
 <div class="section-header">
 <div>
 <h2>Arkiverte skøyter</h2>
@@ -1437,7 +1540,9 @@
 </div>
 <div class="toolbar"><button class="btn-secondary btn-small" id="btnExportArchivedSkatesReport" type="button">Eksporter CSV</button></div></div>
 <div id="archivedSkatesWrap"></div>
-</div><div class="section-card">
+</div>
+
+<div class="section-card report-section report-section-hidden" data-report-section="members">
 <div class="section-header">
 <div>
 <h2>Medlemmer</h2>
@@ -1469,7 +1574,8 @@
 <div id="membersWrap"></div>
 </div>
 </div>
-<div class="section-card">
+
+<div class="section-card report-section report-section-hidden" data-report-section="system">
 <h2>System &amp; oversikt</h2>
 <div class="toolbar" style="margin-top: 12px;">
 <button class="btn-secondary btn-small" id="btnTest" type="button">Test tilkobling</button>
@@ -1495,7 +1601,8 @@
 </div>
 <div class="help" style="margin-top: 10px;">Flerbrukerstøtte er aktivert. Appen oppdaterer data automatisk hvert 5. sekund.</div>
 </div>
-<div class="section-card">
+
+<div class="section-card report-section report-section-hidden" data-report-section="loans-by-group">
 <div class="section-header">
 <div>
 <h2>Rapport: Utlån per gruppe</h2>
@@ -1509,17 +1616,19 @@
 </div>
 <div id="reportLoansByGroupWrap"></div>
 </div>
-<div class="section-card">
+
+<div class="section-card report-section report-section-hidden" data-report-section="missing-contact">
 <h2>Rapport: Mangler kontaktinfo</h2>
 <div class="help" style="margin-top:8px;">Viser medlemmer som mangler både telefon og e-post.</div>
 <div id="reportMissingContactWrap"></div>
 </div>
-<div class="section-card">
+
+<div class="section-card report-section report-section-hidden" data-report-section="history">
 <h2>Historikk</h2>
 <div class="help" style="margin-top:8px;">Viser de siste 50 utlånene.</div>
 <div id="historyWrap"></div>
 </div>
-</div>
+</div></div>
 </div>
 </div>
 
@@ -1679,6 +1788,21 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
       el.className = isError ? "help msg-error" : "help msg-ok";
     }
 
+    function updatePageContext(sectionId) {
+      const context = byId("appPageContext");
+      if (!context) return;
+      const labels = {
+        loanTab: "Utlån",
+        returnTab: "Innlevering",
+        skatingSchoolTab: "Skøyteskole",
+        adminTab: "Admin",
+        reportsTab: "Rapporter"
+      };
+      const label = labels[sectionId] || "";
+      context.textContent = label;
+      context.classList.toggle("hidden", !label);
+    }
+
     async function showSection(sectionId) {
       await stopLoanQrScanner();
       await stopReturnQrScanner();
@@ -1686,13 +1810,14 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
       await stopLoanMemberQrScanner();
       byId("homeView").classList.add("hidden");
       byId("workspace").classList.add("active");
-      byId("backRow").classList.add("visible");
       ["loanTab", "returnTab", "adminTab", "reportsTab", "skatingSchoolTab"].forEach((id) => {
         const el = byId(id);
         if (el) el.classList.add("hidden");
       });
       const target = byId(sectionId);
       if (target) target.classList.remove("hidden");
+      updatePageContext(sectionId);
+      if (sectionId === "reportsTab") setupReportTabs();
     }
 
     async function goHome() {
@@ -1700,7 +1825,7 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
       await stopReturnQrScanner();
       byId("homeView").classList.remove("hidden");
       byId("workspace").classList.remove("active");
-      byId("backRow").classList.remove("visible");
+      updatePageContext("");
       ["loanTab", "returnTab", "adminTab", "reportsTab", "skatingSchoolTab"].forEach((id) => {
         const el = byId(id);
         if (el) el.classList.add("hidden");
@@ -2454,6 +2579,43 @@ function attachSortHandlers() {
       });
 
       showAdminSubtab(getUiPref("adminSubtab", "skates"));
+    }
+
+
+    function showReportSubtab(tabName) {
+      const reports = byId("reportsTab");
+      if (!reports) return;
+
+      const target = String(tabName || "skates");
+      const sections = Array.from(reports.querySelectorAll("[data-report-section]"));
+      const exists = sections.some((section) => String(section.dataset.reportSection || "") === target);
+      const active = exists ? target : "skates";
+
+      reports.querySelectorAll(".report-tab").forEach((btn) => {
+        btn.classList.toggle("active", String(btn.dataset.reportTab || "") === active);
+      });
+
+      sections.forEach((section) => {
+        section.classList.toggle("report-section-hidden", String(section.dataset.reportSection || "") !== active);
+      });
+
+      setUiPref("reportSubtab", active);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function setupReportTabs() {
+      const reports = byId("reportsTab");
+      if (!reports) return;
+
+      reports.querySelectorAll(".report-tab").forEach((btn) => {
+        if (btn.dataset.bound === "1") return;
+        btn.dataset.bound = "1";
+        btn.addEventListener("click", function () {
+          showReportSubtab(this.dataset.reportTab || "skates");
+        });
+      });
+
+      showReportSubtab(getUiPref("reportSubtab", "skates"));
     }
 
 
@@ -6106,7 +6268,7 @@ async function loadAll() {
       renderMembers();
     });
 
-    byId("backBtn").addEventListener("click", goHome);
+    if (byId("backBtn")) byId("backBtn").addEventListener("click", goHome);
 
     if (byId("schoolBatchForm")) byId("schoolBatchForm").addEventListener("submit", async function (e) {
       e.preventDefault();
