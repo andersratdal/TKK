@@ -1276,9 +1276,41 @@
     <button type="button" class="admin-tab" data-admin-tab="import">Import</button>
     <button type="button" class="admin-tab" data-admin-tab="labels">QR / NFC</button>
     <button type="button" class="admin-tab" data-admin-tab="settings">Innstillinger</button>
+    <button type="button" class="admin-tab" data-admin-tab="access">Tilgang</button>
   </div>
 </div>
 
+
+<div class="section-card" data-admin-section="access">
+<h2>Tilgang</h2>
+<div class="help" style="margin-top:8px;">Opprett appbrukere med midlertidig passord og rolle. Eksisterende e-post kan brukes for å oppdatere rollen.</div>
+<form class="form-grid" id="appUserForm" style="margin-top: 14px;">
+<div class="col-4">
+<label for="appUserEmail">E-post</label>
+<input id="appUserEmail" type="email" placeholder="bruker@epost.no" required=""/>
+</div>
+<div class="col-3">
+<label for="appUserRole">Rolle</label>
+<select id="appUserRole" required="">
+<option value="admin">Admin</option>
+<option value="utlan">Utlån</option>
+<option value="skoyteskole">Skøyteskole</option>
+</select>
+</div>
+<div class="col-3">
+<label for="appUserPassword">Midlertidig passord</label>
+<input id="appUserPassword" type="text" placeholder="Minst 8 tegn" required=""/>
+</div>
+<div class="col-2">
+<label> </label>
+<button class="btn-primary" id="btnCreateAppUser" type="submit">Lagre bruker</button>
+</div>
+<div class="col-12">
+<div class="help" id="appUserMessage"></div>
+</div>
+</form>
+<div id="appUsersWrap"></div>
+</div>
 
 <div class="section-card">
 <h2>Avdelinger</h2>
@@ -1672,7 +1704,7 @@
     const UI_PREFS_KEY = "skoyteutleie_ui_prefs_v1";
     let supabaseClient = null;
     let sortState = { skates: { key: null, asc: true }, members: { key: null, asc: true } };
-let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], departments: [], schoolBatches: [], schoolGroups: [], schoolEnrollments: [], schoolSignups: [], schoolSignupsLoadError: "", selectedSchoolSignupIds: [] };
+let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], departments: [], schoolBatches: [], schoolGroups: [], schoolEnrollments: [], schoolSignups: [], schoolSignupsLoadError: "", selectedSchoolSignupIds: [], accessRoles: [], accessRolesLoadError: "" };
     let missingContactOnly = false;
     let editingMemberId = null;
     let editingSkateId = null;
@@ -2514,6 +2546,123 @@ function attachSortHandlers() {
     }
 
 
+
+    function setAppUserMessage(message, isError) {
+      const el = byId("appUserMessage");
+      if (!el) return;
+      el.textContent = message || "";
+      el.className = isError ? "help msg-error" : "help msg-ok";
+    }
+
+    function roleLabel(role) {
+      const value = String(role || "").toLowerCase();
+      if (value === "admin") return "Admin";
+      if (value === "utlan") return "Utlån";
+      if (value === "skoyteskole") return "Skøyteskole";
+      return role || "-";
+    }
+
+    function generateTemporaryPassword() {
+      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+      let password = "Tkk" + new Date().getFullYear() + "!";
+      while (password.length < 12) {
+        password += chars[Math.floor(Math.random() * chars.length)];
+      }
+      return password;
+    }
+
+    function renderAppUsers() {
+      const wrap = byId("appUsersWrap");
+      if (!wrap) return;
+
+      if (state.accessRolesLoadError) {
+        wrap.innerHTML = '<div class="empty">Kunne ikke lese brukertilgang: ' + escapeHtml(state.accessRolesLoadError) + '</div>';
+        return;
+      }
+
+      const rows = Array.isArray(state.accessRoles) ? state.accessRoles.slice() : [];
+      if (!rows.length) {
+        wrap.innerHTML = '<div class="empty">Ingen appbrukere registrert ennå.</div>';
+        return;
+      }
+
+      rows.sort((a, b) => String(a.email || "").localeCompare(String(b.email || ""), "no"));
+      const table = document.createElement("table");
+      table.innerHTML = "<thead><tr><th>E-post</th><th>Rolle</th><th>Sist oppdatert</th><th>Handling</th></tr></thead>";
+      const tbody = document.createElement("tbody");
+
+      rows.forEach((row) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = "<td data-label='E-post'></td><td data-label='Rolle'></td><td data-label='Sist oppdatert'></td><td data-label='Handling'></td>";
+        tr.children[0].textContent = safeText(row.email);
+        tr.children[1].textContent = roleLabel(row.role);
+        tr.children[2].textContent = row.updated_at ? formatDate(row.updated_at) : "-";
+
+        const editBtn = document.createElement("button");
+        editBtn.className = "btn-secondary btn-small";
+        editBtn.type = "button";
+        editBtn.textContent = "Rediger";
+        editBtn.addEventListener("click", function () {
+          if (byId("appUserEmail")) byId("appUserEmail").value = row.email || "";
+          if (byId("appUserRole")) byId("appUserRole").value = row.role || "utlan";
+          if (byId("appUserPassword")) byId("appUserPassword").value = generateTemporaryPassword();
+          setAppUserMessage("Fyll inn eller behold midlertidig passord, og trykk Lagre bruker for å oppdatere rollen.", false);
+        });
+        tr.children[3].appendChild(editBtn);
+        tbody.appendChild(tr);
+      });
+
+      table.appendChild(tbody);
+      wrap.innerHTML = "";
+      wrap.appendChild(table);
+    }
+
+    async function createOrUpdateAppUser(event) {
+      event.preventDefault();
+      if (!supabaseClient || !supabaseClient.auth) {
+        setAppUserMessage("Supabase Auth er ikke klar.", true);
+        return;
+      }
+
+      const email = byId("appUserEmail") ? byId("appUserEmail").value.trim().toLowerCase() : "";
+      const role = byId("appUserRole") ? byId("appUserRole").value : "";
+      const password = byId("appUserPassword") ? byId("appUserPassword").value : "";
+
+      if (!email) { setAppUserMessage("Mangler e-post.", true); return; }
+      if (!role) { setAppUserMessage("Velg rolle.", true); return; }
+      if (password.length < 8) { setAppUserMessage("Midlertidig passord må være minst 8 tegn.", true); return; }
+
+      try {
+        setAppUserMessage("Lagrer bruker ...", false);
+        const sessionRes = await supabaseClient.auth.getSession();
+        const token = sessionRes && sessionRes.data && sessionRes.data.session ? sessionRes.data.session.access_token : "";
+        if (!token) {
+          setAppUserMessage("Du må være innlogget som admin.", true);
+          return;
+        }
+
+        const response = await fetch("/.netlify/functions/create-app-user", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+          },
+          body: JSON.stringify({ email, role, password })
+        });
+
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || result.error) {
+          throw new Error(result.error || "Kunne ikke lagre bruker.");
+        }
+
+        setAppUserMessage("Bruker lagret. Send det midlertidige passordet til brukeren på en trygg måte.", false);
+        if (byId("appUserPassword")) byId("appUserPassword").value = generateTemporaryPassword();
+        await loadAll();
+      } catch (error) {
+        console.error(error);
+        setAppUserMessage(error.message || "Kunne ikke lagre bruker.", true);
+      }
+    }
 
     function getAdminSectionKey(card) {
       const heading = card.querySelector("h2");
@@ -4282,6 +4431,7 @@ function renderAll() {
       renderSchoolSignups();
 
       renderDepartments();
+      renderAppUsers();
       updateStats();
       updateLoanSelectors();
       updateMemberFilters();
@@ -5605,6 +5755,20 @@ async function loadAll() {
           schoolSignupsLoadError = signupError && signupError.message ? signupError.message : String(signupError);
         }
 
+        let accessRolesData = [];
+        let accessRolesLoadError = "";
+        try {
+          const accessRolesRes = await supabaseClient
+            .from("app_user_roles")
+            .select("email, role, updated_at")
+            .order("email", { ascending: true });
+          if (accessRolesRes.error) throw accessRolesRes.error;
+          accessRolesData = accessRolesRes.data || [];
+        } catch (accessError) {
+          console.error("Kunne ikke lese app_user_roles", accessError);
+          accessRolesLoadError = accessError && accessError.message ? accessError.message : String(accessError);
+        }
+
         state.members = membersRes.data || [];
         state.skates = skatesRes.data || [];
         state.loans = loansRes.data || [];
@@ -5616,6 +5780,8 @@ async function loadAll() {
         state.schoolEnrollments = schoolEnrollmentsRes.data || [];
         state.schoolSignups = schoolSignupsData;
         state.schoolSignupsLoadError = schoolSignupsLoadError;
+        state.accessRoles = accessRolesData;
+        state.accessRolesLoadError = accessRolesLoadError;
 
         renderAll();
       } catch (error) {
@@ -6466,6 +6632,8 @@ attachSortHandlers();
       updateMemberQrFilters();
     });
     if (byId("memberQrGroupFilter")) byId("memberQrGroupFilter").addEventListener("change", function () {});
+    if (byId("appUserForm")) byId("appUserForm").addEventListener("submit", createOrUpdateAppUser);
+    if (byId("appUserPassword") && !byId("appUserPassword").value) byId("appUserPassword").value = generateTemporaryPassword();
 
     byId("loanDate").value = nowLocalInputValue();
     if (byId("existingLoansDate")) byId("existingLoansDate").value = "2025-01-01";
