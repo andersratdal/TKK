@@ -161,7 +161,13 @@ exports.handler = async (event) => {
 
     const insertResult = await supabase
       .from("loans")
-      .insert([{ department_id, member_id, skate_id, loaned_at }])
+     .insert([{
+  department_id,
+  member_id,
+  skate_id,
+  loaned_at,
+  created_by_user_id: auth.user.id
+}])
       .select("*")
       .single();
 
