@@ -1064,9 +1064,83 @@
   .app-user-button { max-width: 145px; }
 }
 
+
+/* Toast-varsler */
+.toast-container {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  display: grid;
+  gap: 10px;
+  z-index: 3000;
+  pointer-events: none;
+}
+
+.toast {
+  min-width: min(360px, calc(100vw - 32px));
+  max-width: 420px;
+  padding: 13px 15px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid rgba(16,35,63,0.10);
+  box-shadow: 0 14px 34px rgba(16,35,63,0.18);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.35;
+  pointer-events: auto;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  animation: toastSlideIn 0.18s ease-out;
+}
+
+.toast-success { border-left: 5px solid var(--good); }
+.toast-error { border-left: 5px solid var(--danger); }
+.toast-info { border-left: 5px solid var(--accent); }
+
+.toast-icon {
+  flex: 0 0 auto;
+  font-weight: 700;
+}
+
+.toast-message {
+  flex: 1 1 auto;
+}
+
+.toast-close {
+  background: transparent;
+  color: var(--muted);
+  border: 0;
+  padding: 0;
+  border-radius: 0;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+@keyframes toastSlideIn {
+  from { transform: translateY(-6px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@media (max-width: 600px) {
+  .toast-container {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+  }
+
+  .toast {
+    min-width: 0;
+    max-width: none;
+    width: 100%;
+  }
+}
+
 </style>
 </head>
 <body>
+<div class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="true"></div>
 <div class="container">
 <header class="app-header">
   <div class="app-logo-stack">
@@ -1580,7 +1654,8 @@
 <h2>Medlemmer</h2>
 <div class="help" style="margin-top:8px;">Søk og se registrerte medlemmer. Du kan også filtrere på gruppe.</div>
 </div>
-<div class="toolbar"><button class="btn-secondary btn-small" id="btnExportMembersReport" type="button">Eksporter CSV</button>
+<div class="toolbar"><button class="btn-primary btn-small" id="btnAddMemberFromReport" type="button">+ Legg til medlem</button>
+<button class="btn-secondary btn-small" id="btnExportMembersReport" type="button">Eksporter CSV</button>
 <button class="btn-secondary btn-small collapse-toggle" id="btnToggleMembersSection" type="button">Skjul liste</button>
 </div>
 </div>
@@ -1721,6 +1796,45 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
     let loanMemberQrLastText = "";
 
     function byId(id) { return document.getElementById(id); }
+
+    function showToast(message, type = "success", options = {}) {
+      const container = byId("toastContainer");
+      if (!container) return;
+
+      const text = String(message || "").trim();
+      if (!text) return;
+
+      const toast = document.createElement("div");
+      const normalizedType = ["success", "error", "info"].includes(type) ? type : "info";
+      toast.className = "toast toast-" + normalizedType;
+      toast.setAttribute("role", normalizedType === "error" ? "alert" : "status");
+
+      const icon = document.createElement("div");
+      icon.className = "toast-icon";
+      icon.textContent = normalizedType === "success" ? "✓" : normalizedType === "error" ? "!" : "i";
+
+      const messageEl = document.createElement("div");
+      messageEl.className = "toast-message";
+      messageEl.textContent = text;
+
+      const close = document.createElement("button");
+      close.className = "toast-close";
+      close.type = "button";
+      close.setAttribute("aria-label", "Lukk varsel");
+      close.textContent = "×";
+      close.addEventListener("click", function () { toast.remove(); });
+
+      toast.appendChild(icon);
+      toast.appendChild(messageEl);
+      toast.appendChild(close);
+      container.appendChild(toast);
+
+      const timeout = Number(options.timeout || (normalizedType === "error" ? 7000 : 4200));
+      if (timeout > 0) {
+        setTimeout(function () { toast.remove(); }, timeout);
+      }
+    }
+
     function safeText(value) { return value === null || value === undefined || value === "" ? "-" : String(value); }
     function escapeHtml(value) {
       return String(value)
@@ -2109,24 +2223,14 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
           .sort((a, b) => compareBatchNames(a.name, b.name))
           .forEach((member) => {
             const opt = document.createElement("option");
-            let label = String(member.name || "");
-            const details = [];
-            if (member.phone) details.push(member.phone);
-            if (member.email) details.push(member.email);
-            if (details.length) label += " - " + details.join(" - ");
-            opt.value = label;
+            opt.value = String(member.name || "");
             loanMemberListEl.appendChild(opt);
           });
       }
 
       const selectedMember = members.find((m) => String(m.id) === String(currentMemberId));
       if (selectedMember) {
-        let label = String(selectedMember.name || "");
-        const details = [];
-        if (selectedMember.phone) details.push(selectedMember.phone);
-        if (selectedMember.email) details.push(selectedMember.email);
-        if (details.length) label += " - " + details.join(" - ");
-        loanMemberSearchEl.value = label;
+        loanMemberSearchEl.value = String(selectedMember.name || "");
         loanMemberEl.value = selectedMember.id;
       } else {
         if (!currentMemberSearch) loanMemberEl.value = "";
@@ -2220,14 +2324,7 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
       }
 
       const members = state.members.slice().sort((a, b) => compareBatchNames(a.name, b.name));
-      const found = members.find((member) => {
-        let label = String(member.name || "");
-        const details = [];
-        if (member.phone) details.push(member.phone);
-        if (member.email) details.push(member.email);
-        if (details.length) label += " - " + details.join(" - ");
-        return label === value;
-      });
+      const found = members.find((member) => String(member.name || "").trim() === value);
 
       hiddenEl.value = found ? String(found.id) : "";
     }
@@ -2656,6 +2753,7 @@ function attachSortHandlers() {
         }
 
         setAppUserMessage("Bruker lagret. Send det midlertidige passordet til brukeren på en trygg måte.", false);
+        showToast("Bruker lagret.", "success");
         if (byId("appUserPassword")) byId("appUserPassword").value = generateTemporaryPassword();
         await loadAll();
       } catch (error) {
@@ -2927,6 +3025,7 @@ function renderSkates() {
             const result = await supabaseClient.from("skates").update({ is_active: true }).eq("id", skate.id);
             if (result.error) throw result.error;
             await loadAll();
+            showToast("Skøyte gjenopprettet.", "success");
           } catch (error) {
             console.error(error);
             alert("Kunne ikke gjenopprette skøyte.\n\n" + error.message);
@@ -3661,6 +3760,7 @@ function renderSchoolParticipants() {
       const res = await updateSchoolEnrollmentGroup(enrollment.id, newGroupId || null);
       if (res && res.error) throw res.error;
       setSchoolMessage("schoolParticipantMessage", newGroupId ? "Deltaker flyttet." : "Gruppe nullstilt.", false);
+      showToast(newGroupId ? "Deltaker flyttet." : "Gruppe nullstilt.", "success");
       closeMobileSchoolModal();
       await loadAll();
     } catch (error) {
@@ -4510,6 +4610,7 @@ function renderAll() {
           .is("returned_at", null);
         if (result.error) throw result.error;
         await loadAll();
+        showToast("Innlevering registrert.", "success");
       } catch (error) {
         console.error(error);
         alert("Kunne ikke registrere innlevering.\n\n" + error.message);
@@ -5014,6 +5115,7 @@ function parseBirthYearFromSpondValue(rawValue) {
           message += "<br><br>Klikk på et navn for å fylle inn medlemsskjemaet.";
         }
         setImportStatusHtml(message, false);
+        showToast("Spond-import fullført.", "success");
 
         document.querySelectorAll(".missing-contact-name").forEach((el) => {
           el.addEventListener("click", function () { fillMemberFormFromName(this.dataset.name || ""); });
@@ -5081,6 +5183,7 @@ function parseBirthYearFromSpondValue(rawValue) {
           "Import ferdig. Opprettet " + created + " skøyter, oppdatert " + updated + ", hoppet over " + skipped + " rader.",
           false
         );
+        showToast("Skøyteimport fullført.", "success");
       } catch (error) {
         console.error(error);
         setSkateImportStatus("Import av skøyter feilet: " + error.message, true);
@@ -5176,6 +5279,7 @@ function parseBirthYearFromSpondValue(rawValue) {
           message += "\n\nDetaljer:\n- " + skipped.join("\n- ");
         }
         setExistingLoansStatus(message, false);
+        showToast("Import av eksisterende utlån fullført.", "success");
       } catch (error) {
         console.error(error);
         setExistingLoansStatus("Import av eksisterende utlån feilet: " + error.message, true);
@@ -6165,6 +6269,7 @@ async function loadAll() {
         wrap.appendChild(label);
       });
       setQrLabelsStatus("Laget " + rows.length + " QR-etiketter i 2,5 x 2,5 cm.", false);
+      showToast("QR-etiketter laget.", "success");
     }
 
     function printQrLabels() {
@@ -6226,6 +6331,7 @@ async function loadAll() {
       else if (groupName) scopeText = groupName;
 
       setMemberQrLabelsStatus("Laget " + rows.length + " medlems-QR-koder for " + scopeText + ".", false);
+      showToast("Medlems-QR laget.", "success");
     }
 
     function printMemberQrLabels() {
@@ -6253,8 +6359,10 @@ async function loadAll() {
           result = await supabaseClient.from("departments").insert([{ name }]);
         }
         if (result.error) throw result.error;
+        const wasEditingDepartment = !!editingDepartmentId;
         resetDepartmentForm();
         await loadAll();
+        showToast(wasEditingDepartment ? "Avdeling oppdatert." : "Avdeling opprettet.", "success");
       } catch (error) {
         console.error(error);
         alert("Kunne ikke lagre avdeling.\n\n" + error.message);
@@ -6290,6 +6398,7 @@ async function loadAll() {
       }
 
       setConfigMessage("Innstillinger lagret.", false);
+      showToast("Innstillinger lagret.", "success");
       await loadAll();
       startAutoRefresh();
     });
@@ -6315,8 +6424,10 @@ async function loadAll() {
           result = await supabaseClient.from("skates").insert([{ skate_code, model, size, type, is_active: true }]);
         }
         if (result.error) throw result.error;
+        const wasEditingSkate = !!editingSkateId;
         resetSkateForm();
         await loadAll();
+        showToast(wasEditingSkate ? "Skøyte oppdatert." : "Skøyte lagret.", "success");
       } catch (error) {
         console.error(error);
         alert("Kunne ikke lagre skøyte.\n\n" + error.message);
@@ -6358,8 +6469,10 @@ async function loadAll() {
         const groupNames = groupsText ? groupsText.split(",").map((x) => x.trim()).filter(Boolean) : [];
         await setMemberGroups(memberId, groupNames, selectedDepartmentId);
 
+        const wasEditingMember = !!editingMemberId;
         resetMemberForm();
         await loadAll();
+        showToast(wasEditingMember ? "Medlem oppdatert." : "Medlem lagret.", "success");
       } catch (error) {
         console.error(error);
         alert("Kunne ikke lagre medlem.\n\n" + error.message);
@@ -6514,6 +6627,7 @@ async function loadAll() {
           .insert([{ batch_id, member_id, assignment_reason: "Manuelt lagt til" }]);
         if (ins.error) throw ins.error;
         setSchoolMessage("schoolParticipantMessage", "Deltaker lagt til i partiet.", false);
+        showToast("Deltaker lagt til i partiet.", "success");
         await loadAll();
       } catch (error) {
         console.error(error);
@@ -6559,6 +6673,14 @@ attachSortHandlers();
     });
     byId("filterMemberGroup").addEventListener("change", renderMembers);
     if (byId("filterMemberRole")) byId("filterMemberRole").addEventListener("change", renderMembers);
+    if (byId("btnAddMemberFromReport")) byId("btnAddMemberFromReport").addEventListener("click", async function () {
+      await showSection("adminTab");
+      setupAdminTabs();
+      showAdminSubtab("members");
+      resetMemberForm();
+      const memberName = byId("memberName");
+      if (memberName) memberName.focus();
+    });
     byId("btnLoadMemberForEdit").addEventListener("click", function () {
       const member = findMemberForEdit(byId("memberEditSearch").value);
       if (!member) {
