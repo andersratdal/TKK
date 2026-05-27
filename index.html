@@ -6502,26 +6502,39 @@ async function loadAll() {
       }
 
       try {
-        const check = await supabaseClient
-          .from("loans")
-          .select("id")
-          .eq("skate_id", skate_id)
-          .is("returned_at", null)
-          .limit(1);
+        const sessionResult = await supabaseClient.auth.getSession();
+        const token = sessionResult && sessionResult.data && sessionResult.data.session
+          ? sessionResult.data.session.access_token
+          : "";
 
-        if (check.error) throw check.error;
-
-        if ((check.data || []).length > 0) {
-          await loadAll();
-          alert("Denne skøyten ble nettopp utlånt av en annen bruker. Listen er oppdatert.");
-          return;
+        if (!token) {
+          throw new Error("Du må være logget inn for å registrere utlån.");
         }
 
-        const result = await supabaseClient
-          .from("loans")
-          .insert([{ department_id, member_id, skate_id, loaned_at }]);
+        const response = await fetch("/.netlify/functions/create-loan", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token
+          },
+          body: JSON.stringify({
+            department_id,
+            member_id,
+            skate_id,
+            loaned_at
+          })
+        });
 
-        if (result.error) throw result.error;
+        let result = {};
+        try {
+          result = await response.json();
+        } catch (jsonError) {
+          result = {};
+        }
+
+        if (!response.ok) {
+          throw new Error(result.error || "Kunne ikke registrere utlån.");
+        }
 
         await loadAll();
 
