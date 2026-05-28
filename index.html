@@ -4580,9 +4580,9 @@ function renderAll() {
       const names = Array.from(new Set(groupNames.map((x) => String(x || "").trim()).filter(Boolean)));
 
       if (departmentId) {
-        const departmentGroupIds = state.groups.filter((g) => g.department_id === departmentId).map((g) => g.id);
+        const departmentGroupIds = state.groups.filter((g) => sameId(g.department_id, departmentId)).map((g) => g.id);
         if (departmentGroupIds.length) {
-          const existingLinks = state.memberGroups.filter((mg) => mg.member_id === memberId && departmentGroupIds.includes(mg.group_id));
+          const existingLinks = state.memberGroups.filter((mg) => sameId(mg.member_id, memberId) && departmentGroupIds.some((groupId) => sameId(groupId, mg.group_id)));
           for (const link of existingLinks) {
             const delOne = await supabaseClient.from("member_groups").delete().eq("member_id", memberId).eq("group_id", link.group_id);
             if (delOne.error) throw delOne.error;
@@ -5422,20 +5422,10 @@ function updateMemberGroupListByDepartment(selectedDepartmentId, currentGroupsTe
       list.appendChild(opt);
     });
 
-  if (input) {
-    if (!selectedDepartmentId) {
-      if (typeof currentGroupsText === "string") input.value = currentGroupsText;
-      return;
-    }
-
-    const allowedNames = new Set(relevantGroups.map((g) => String(g.name || "").trim().toLowerCase()).filter(Boolean));
-    const filtered = String(currentGroupsText || input.value || "")
-      .split(",")
-      .map((x) => x.trim())
-      .filter(Boolean)
-      .filter((name) => allowedNames.has(String(name).toLowerCase()));
-
-    input.value = filtered.join(", ");
+  // Behold tekst brukeren skriver inn, også nye grupper som ikke finnes ennå.
+  // setMemberGroups() oppretter manglende grupper ved lagring.
+  if (input && typeof currentGroupsText === "string") {
+    input.value = currentGroupsText;
   }
 }
 
