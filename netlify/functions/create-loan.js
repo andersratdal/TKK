@@ -177,8 +177,22 @@ exports.handler = async (event) => {
     }
 
     try {
-      const emailResult = await sendLoanEmail({ member, skate });
-console.log("EMAIL RESULT:", JSON.stringify(emailResult));
+  const emailResult = await sendLoanEmail({ member, skate });
+  console.log("EMAIL RESULT:", JSON.stringify(emailResult, null, 2));
+
+  if (emailResult && emailResult.error) {
+    throw new Error(
+      "Resend returnerte feil: " +
+      (emailResult.error.message || JSON.stringify(emailResult.error))
+    );
+  }
+
+  if (!emailResult || !emailResult.data || !emailResult.data.id) {
+    throw new Error(
+      "Resend returnerte ikke gyldig meldings-ID: " +
+      JSON.stringify(emailResult)
+    );
+  }
     } catch (emailError) {
       console.error(
   "Loan email error:",
