@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>SkateFlow</title>
+<title>TKK Skøyteutleie</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode"></script>
@@ -813,42 +813,34 @@
 }
 
 
-/* Minimal tekstmeny for Admin */
+/* Ryddigere Admin med underfaner */
 .admin-tabs-card {
-  background: transparent;
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
-  padding: 0;
-  margin: 4px 0 18px;
+  background: var(--card);
+  border: 1px solid rgba(16,35,63,0.06);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 12px;
+  margin-bottom: 14px;
 }
 
 .admin-tabs {
   display: flex;
-  gap: 22px;
+  gap: 8px;
   flex-wrap: wrap;
-  align-items: center;
 }
 
 .admin-tab {
-  background: transparent;
-  color: var(--muted);
-  border: 0;
-  border-radius: 0;
-  padding: 6px 0;
+  background: #e7edf5;
+  color: var(--text);
+  border-radius: 999px;
+  padding: 9px 13px;
   font-size: 14px;
   font-weight: 500;
-  box-shadow: none;
-}
-
-.admin-tab:hover {
-  color: var(--accent);
 }
 
 .admin-tab.active {
-  background: transparent;
-  color: var(--accent);
-  font-weight: 700;
+  background: var(--accent);
+  color: #ffffff;
 }
 
 .admin-section-hidden {
@@ -857,84 +849,19 @@
 
 @media (max-width: 600px) {
   .admin-tabs-card {
-    padding: 0;
-    margin: 2px 0 14px;
+    padding: 10px;
+    border-radius: 16px;
   }
 
   .admin-tabs {
-    display: flex;
-    gap: 14px;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
   }
 
   .admin-tab {
-    padding: 5px 0;
-    font-size: 13px;
-  }
-}
-
-
-/* Tekstfaner for Rapporter */
-.report-tabs-card {
-  background: rgba(247, 250, 255, 0.96);
-  border: 0;
-  box-shadow: none;
-  padding: 8px 0 12px;
-  margin: 0 0 14px;
-  position: sticky;
-  top: 72px;
-  z-index: 900;
-  backdrop-filter: blur(10px);
-}
-
-.report-tabs {
-  display: flex;
-  gap: 24px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.report-tab {
-  background: transparent;
-  color: var(--muted);
-  border-radius: 0;
-  padding: 6px 0;
-  font-size: 14px;
-  font-weight: 500;
-  box-shadow: none;
-}
-
-.report-tab:hover {
-  color: var(--accent);
-}
-
-.report-tab.active {
-  background: transparent;
-  color: var(--accent);
-  font-weight: 700;
-}
-
-.report-section-hidden {
-  display: none !important;
-}
-
-.report-section {
-  scroll-margin-top: 126px;
-}
-
-@media (max-width: 600px) {
-  .report-tabs-card {
-    top: 62px;
-    padding: 6px 0 10px;
-    margin-bottom: 12px;
-  }
-
-  .report-tabs {
-    gap: 14px;
-  }
-
-  .report-tab {
-    padding: 5px 0;
+    border-radius: 12px;
+    padding: 10px 8px;
     font-size: 13px;
   }
 }
@@ -957,207 +884,19 @@
   }
 }
 
-
-
-/* Felles header: logo til venstre, bruker til høyre */
-.app-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin: 0 0 18px;
-  padding: 8px 0;
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  background: rgba(247, 250, 255, 0.96);
-  backdrop-filter: blur(10px);
-}
-
-.app-logo-link {
-  display: inline-flex;
-  align-items: center;
-  text-decoration: none;
-  color: inherit;
-}
-
-.app-logo-link:hover { opacity: 0.88; }
-
-.app-logo-stack {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-}
-
-.app-page-context {
-  font-size: 12px;
-  line-height: 1.1;
-  color: var(--muted);
-  font-weight: 600;
-  margin-left: 1px;
-}
-
-.app-logo {
-  height: 42px;
-  width: auto;
-  object-fit: contain;
-  display: block;
-}
-
-.app-user-menu {
-  position: relative;
-  flex: 0 0 auto;
-}
-
-.app-user-button {
-  background: transparent;
-  color: var(--text);
-  border: 0;
-  border-radius: 0;
-  padding: 6px 0;
-  font-size: 14px;
-  font-weight: 600;
-  max-width: 220px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.app-user-button:hover { color: var(--accent); }
-
-.app-user-dropdown {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  min-width: 170px;
-  background: #ffffff;
-  border: 1px solid rgba(16,35,63,0.10);
-  border-radius: 14px;
-  box-shadow: 0 14px 34px rgba(16,35,63,0.18);
-  padding: 8px;
-  z-index: 1400;
-}
-
-.app-user-dropdown button {
-  width: 100%;
-  display: block;
-  text-align: left;
-  background: transparent;
-  color: var(--text);
-  border-radius: 10px;
-  padding: 10px 12px;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.app-user-dropdown button:hover {
-  background: var(--accent-soft);
-  color: var(--accent);
-}
-
-#backRow { display: none !important; }
-
-@media (max-width: 600px) {
-  .app-header { margin-bottom: 12px; }
-  .app-logo { height: 34px; }
-  .app-user-button { max-width: 145px; }
-}
-
-
-/* Toast-varsler */
-.toast-container {
-  position: fixed;
-  top: 16px;
-  right: 16px;
-  display: grid;
-  gap: 10px;
-  z-index: 3000;
-  pointer-events: none;
-}
-
-.toast {
-  min-width: min(360px, calc(100vw - 32px));
-  max-width: 420px;
-  padding: 13px 15px;
-  border-radius: 14px;
-  background: #ffffff;
-  border: 1px solid rgba(16,35,63,0.10);
-  box-shadow: 0 14px 34px rgba(16,35,63,0.18);
-  color: var(--text);
-  font-size: 14px;
-  line-height: 1.35;
-  pointer-events: auto;
-  display: flex;
-  gap: 10px;
-  align-items: flex-start;
-  animation: toastSlideIn 0.18s ease-out;
-}
-
-.toast-success { border-left: 5px solid var(--good); }
-.toast-error { border-left: 5px solid var(--danger); }
-.toast-info { border-left: 5px solid var(--accent); }
-
-.toast-icon {
-  flex: 0 0 auto;
-  font-weight: 700;
-}
-
-.toast-message {
-  flex: 1 1 auto;
-}
-
-.toast-close {
-  background: transparent;
-  color: var(--muted);
-  border: 0;
-  padding: 0;
-  border-radius: 0;
-  font-size: 18px;
-  line-height: 1;
-  cursor: pointer;
-}
-
-@keyframes toastSlideIn {
-  from { transform: translateY(-6px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-@media (max-width: 600px) {
-  .toast-container {
-    top: 10px;
-    right: 10px;
-    left: 10px;
-  }
-
-  .toast {
-    min-width: 0;
-    max-width: none;
-    width: 100%;
-  }
-}
-
 </style>
 </head>
 <body>
-<div class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="true"></div>
 <div class="container">
-<header class="app-header">
-  <div class="app-logo-stack">
-    <a class="app-logo-link" href="#" onclick="goHome(); return false;" aria-label="Gå til forsiden">
-      <img class="app-logo" alt="Trondheim Kortbaneklubb" src="logo.png"/>
-    </a>
-    <div class="app-page-context hidden" id="appPageContext">Rapporter</div>
-  </div>
-  <div class="app-user-menu">
-    <button class="app-user-button" id="appUserButton" type="button" aria-haspopup="true" aria-expanded="false">Konto</button>
-    <div class="app-user-dropdown hidden" id="appUserDropdown">
-      <button type="button" id="appUserChangePassword">Endre passord</button>
-      <button type="button" id="appUserLogout">Log ut</button>
-    </div>
-  </div>
-</header>
 <div id="homeView">
+<div class="brand">
+<img alt="Trondheim Kortbaneklubb" src="logo.png"/>
+<div class="brand-text">
+<div class="eyebrow">Trondheim Kortbaneklubb</div>
+<h1 class="brand-title">Skøyteutleie</h1>
+<div class="brand-subtitle">Velg arbeidsflate for å gå videre i appen.</div>
+</div>
+</div>
 <div class="landing-grid app-menu">
   <button class="app-menu-card" data-target="loanTab" type="button">
     <span class="app-menu-icon"><img src="utlan-skoyte-ikon.png" alt="" class="app-menu-image-icon"></span>
@@ -1191,6 +930,9 @@
 </div>
 </div>
 <div class="workspace" id="workspace">
+<div class="back-row" id="backRow">
+<button class="btn-secondary" id="backBtn" type="button">← Til forsiden</button>
+</div>
 <div class="section-card hidden" id="loanTab">
 <h2>Registrer utlån</h2>
 <div class="help" style="margin-top:8px;">Velg gruppe, medlem og ledig skøyte.</div>
@@ -1350,41 +1092,9 @@
     <button type="button" class="admin-tab" data-admin-tab="import">Import</button>
     <button type="button" class="admin-tab" data-admin-tab="labels">QR / NFC</button>
     <button type="button" class="admin-tab" data-admin-tab="settings">Innstillinger</button>
-    <button type="button" class="admin-tab" data-admin-tab="access">Tilgang</button>
   </div>
 </div>
 
-
-<div class="section-card" data-admin-section="access">
-<h2>Tilgang</h2>
-<div class="help" style="margin-top:8px;">Opprett appbrukere med midlertidig passord og rolle. Eksisterende e-post kan brukes for å oppdatere rollen.</div>
-<form class="form-grid" id="appUserForm" style="margin-top: 14px;">
-<div class="col-4">
-<label for="appUserEmail">E-post</label>
-<input id="appUserEmail" type="email" placeholder="bruker@epost.no" required=""/>
-</div>
-<div class="col-3">
-<label for="appUserRole">Rolle</label>
-<select id="appUserRole" required="">
-<option value="admin">Admin</option>
-<option value="utlan">Utlån</option>
-<option value="skoyteskole">Skøyteskole</option>
-</select>
-</div>
-<div class="col-3">
-<label for="appUserPassword">Midlertidig passord</label>
-<input id="appUserPassword" type="text" placeholder="Minst 8 tegn" required=""/>
-</div>
-<div class="col-2">
-<label> </label>
-<button class="btn-primary" id="btnCreateAppUser" type="submit">Lagre bruker</button>
-</div>
-<div class="col-12">
-<div class="help" id="appUserMessage"></div>
-</div>
-</form>
-<div id="appUsersWrap"></div>
-</div>
 
 <div class="section-card">
 <h2>Avdelinger</h2>
@@ -1600,19 +1310,11 @@
 
 </div>
 <div class="hidden" id="reportsTab">
-<div class="report-tabs-card">
-  <div class="report-tabs" role="navigation" aria-label="Rapportmeny">
-    <button type="button" class="report-tab active" data-report-tab="skates">Skøyter</button>
-    <button type="button" class="report-tab" data-report-tab="archived-skates">Arkiverte skøyter</button>
-    <button type="button" class="report-tab" data-report-tab="members">Medlemmer</button>
-    <button type="button" class="report-tab" data-report-tab="system">System</button>
-    <button type="button" class="report-tab" data-report-tab="loans-by-group">Utlån per gruppe</button>
-    <button type="button" class="report-tab" data-report-tab="missing-contact">Mangler kontaktinfo</button>
-    <button type="button" class="report-tab" data-report-tab="history">Historikk</button>
-  </div>
+<div class="section-card" id="reportsIntro">
+<h2>Rapporter</h2>
+<div class="help" style="margin-top:8px;">Her finner du oversikter og eksport for skøyter, arkiverte skøyter og medlemmer.</div>
 </div>
-
-<div class="section-card report-section" data-report-section="skates">
+<div class="section-card">
 <div class="section-header">
 <div>
 <h2>Skøyter</h2>
@@ -1636,9 +1338,7 @@
 </div>
 <div id="skatesWrap"></div>
 </div>
-</div>
-
-<div class="section-card report-section report-section-hidden" data-report-section="archived-skates">
+</div><div class="section-card">
 <div class="section-header">
 <div>
 <h2>Arkiverte skøyter</h2>
@@ -1646,16 +1346,13 @@
 </div>
 <div class="toolbar"><button class="btn-secondary btn-small" id="btnExportArchivedSkatesReport" type="button">Eksporter CSV</button></div></div>
 <div id="archivedSkatesWrap"></div>
-</div>
-
-<div class="section-card report-section report-section-hidden" data-report-section="members">
+</div><div class="section-card">
 <div class="section-header">
 <div>
 <h2>Medlemmer</h2>
 <div class="help" style="margin-top:8px;">Søk og se registrerte medlemmer. Du kan også filtrere på gruppe.</div>
 </div>
-<div class="toolbar"><button class="btn-primary btn-small" id="btnAddMemberFromReport" type="button">+ Legg til medlem</button>
-<button class="btn-secondary btn-small" id="btnExportMembersReport" type="button">Eksporter CSV</button>
+<div class="toolbar"><button class="btn-secondary btn-small" id="btnExportMembersReport" type="button">Eksporter CSV</button>
 <button class="btn-secondary btn-small collapse-toggle" id="btnToggleMembersSection" type="button">Skjul liste</button>
 </div>
 </div>
@@ -1681,8 +1378,7 @@
 <div id="membersWrap"></div>
 </div>
 </div>
-
-<div class="section-card report-section report-section-hidden" data-report-section="system">
+<div class="section-card">
 <h2>System &amp; oversikt</h2>
 <div class="toolbar" style="margin-top: 12px;">
 <button class="btn-secondary btn-small" id="btnTest" type="button">Test tilkobling</button>
@@ -1708,8 +1404,7 @@
 </div>
 <div class="help" style="margin-top: 10px;">Flerbrukerstøtte er aktivert. Appen oppdaterer data automatisk hvert 5. sekund.</div>
 </div>
-
-<div class="section-card report-section report-section-hidden" data-report-section="loans-by-group">
+<div class="section-card">
 <div class="section-header">
 <div>
 <h2>Rapport: Utlån per gruppe</h2>
@@ -1723,19 +1418,17 @@
 </div>
 <div id="reportLoansByGroupWrap"></div>
 </div>
-
-<div class="section-card report-section report-section-hidden" data-report-section="missing-contact">
+<div class="section-card">
 <h2>Rapport: Mangler kontaktinfo</h2>
 <div class="help" style="margin-top:8px;">Viser medlemmer som mangler både telefon og e-post.</div>
 <div id="reportMissingContactWrap"></div>
 </div>
-
-<div class="section-card report-section report-section-hidden" data-report-section="history">
+<div class="section-card">
 <h2>Historikk</h2>
 <div class="help" style="margin-top:8px;">Viser de siste 50 utlånene.</div>
 <div id="historyWrap"></div>
 </div>
-</div></div>
+</div>
 </div>
 </div>
 
@@ -1779,7 +1472,7 @@
     const UI_PREFS_KEY = "skoyteutleie_ui_prefs_v1";
     let supabaseClient = null;
     let sortState = { skates: { key: null, asc: true }, members: { key: null, asc: true } };
-let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], departments: [], schoolBatches: [], schoolGroups: [], schoolEnrollments: [], schoolSignups: [], schoolSignupsLoadError: "", selectedSchoolSignupIds: [], accessRoles: [], accessRolesLoadError: "" };
+let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], departments: [], schoolBatches: [], schoolGroups: [], schoolEnrollments: [], schoolSignups: [], schoolSignupsLoadError: "", selectedSchoolSignupIds: [] };
     let missingContactOnly = false;
     let editingMemberId = null;
     let editingSkateId = null;
@@ -1796,45 +1489,6 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
     let loanMemberQrLastText = "";
 
     function byId(id) { return document.getElementById(id); }
-
-    function showToast(message, type = "success", options = {}) {
-      const container = byId("toastContainer");
-      if (!container) return;
-
-      const text = String(message || "").trim();
-      if (!text) return;
-
-      const toast = document.createElement("div");
-      const normalizedType = ["success", "error", "info"].includes(type) ? type : "info";
-      toast.className = "toast toast-" + normalizedType;
-      toast.setAttribute("role", normalizedType === "error" ? "alert" : "status");
-
-      const icon = document.createElement("div");
-      icon.className = "toast-icon";
-      icon.textContent = normalizedType === "success" ? "✓" : normalizedType === "error" ? "!" : "i";
-
-      const messageEl = document.createElement("div");
-      messageEl.className = "toast-message";
-      messageEl.textContent = text;
-
-      const close = document.createElement("button");
-      close.className = "toast-close";
-      close.type = "button";
-      close.setAttribute("aria-label", "Lukk varsel");
-      close.textContent = "×";
-      close.addEventListener("click", function () { toast.remove(); });
-
-      toast.appendChild(icon);
-      toast.appendChild(messageEl);
-      toast.appendChild(close);
-      container.appendChild(toast);
-
-      const timeout = Number(options.timeout || (normalizedType === "error" ? 7000 : 4200));
-      if (timeout > 0) {
-        setTimeout(function () { toast.remove(); }, timeout);
-      }
-    }
-
     function safeText(value) { return value === null || value === undefined || value === "" ? "-" : String(value); }
     function escapeHtml(value) {
       return String(value)
@@ -1886,20 +1540,12 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
     }
 
     function loadConfig() {
-      const fallbackConfig = {
-        url: "https://dcfhisxyiuatftzjtuwz.supabase.co",
-        anonKey: "sb_publishable_W_3O4m4r0aZ3ukSOJVTcHw_Gy6W6uj9"
-      };
       try {
         const raw = localStorage.getItem(CONFIG_KEY);
-        const parsed = raw ? JSON.parse(raw) : {};
-        return {
-          url: parsed.url || fallbackConfig.url,
-          anonKey: parsed.anonKey || fallbackConfig.anonKey
-        };
+        return raw ? JSON.parse(raw) : {};
       } catch (e) {
         console.error(e);
-        return fallbackConfig;
+        return {};
       }
     }
     function saveConfig(config) { localStorage.setItem(CONFIG_KEY, JSON.stringify(config)); }
@@ -1934,21 +1580,6 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
       el.className = isError ? "help msg-error" : "help msg-ok";
     }
 
-    function updatePageContext(sectionId) {
-      const context = byId("appPageContext");
-      if (!context) return;
-      const labels = {
-        loanTab: "Utlån",
-        returnTab: "Innlevering",
-        skatingSchoolTab: "Skøyteskole",
-        adminTab: "Admin",
-        reportsTab: "Rapporter"
-      };
-      const label = labels[sectionId] || "";
-      context.textContent = label;
-      context.classList.toggle("hidden", !label);
-    }
-
     async function showSection(sectionId) {
       await stopLoanQrScanner();
       await stopReturnQrScanner();
@@ -1956,14 +1587,13 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
       await stopLoanMemberQrScanner();
       byId("homeView").classList.add("hidden");
       byId("workspace").classList.add("active");
+      byId("backRow").classList.add("visible");
       ["loanTab", "returnTab", "adminTab", "reportsTab", "skatingSchoolTab"].forEach((id) => {
         const el = byId(id);
         if (el) el.classList.add("hidden");
       });
       const target = byId(sectionId);
       if (target) target.classList.remove("hidden");
-      updatePageContext(sectionId);
-      if (sectionId === "reportsTab") setupReportTabs();
     }
 
     async function goHome() {
@@ -1971,7 +1601,7 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
       await stopReturnQrScanner();
       byId("homeView").classList.remove("hidden");
       byId("workspace").classList.remove("active");
-      updatePageContext("");
+      byId("backRow").classList.remove("visible");
       ["loanTab", "returnTab", "adminTab", "reportsTab", "skatingSchoolTab"].forEach((id) => {
         const el = byId(id);
         if (el) el.classList.add("hidden");
@@ -1991,8 +1621,6 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
         return false;
       }
       supabaseClient = window.supabase.createClient(config.url, config.anonKey);
-      window.supabaseClient = supabaseClient;
-      if (typeof updateHeaderUserName === "function") setTimeout(updateHeaderUserName, 0);
       return true;
     }
 
@@ -2223,14 +1851,24 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
           .sort((a, b) => compareBatchNames(a.name, b.name))
           .forEach((member) => {
             const opt = document.createElement("option");
-            opt.value = String(member.name || "");
+            let label = String(member.name || "");
+            const details = [];
+            if (member.phone) details.push(member.phone);
+            if (member.email) details.push(member.email);
+            if (details.length) label += " - " + details.join(" - ");
+            opt.value = label;
             loanMemberListEl.appendChild(opt);
           });
       }
 
       const selectedMember = members.find((m) => String(m.id) === String(currentMemberId));
       if (selectedMember) {
-        loanMemberSearchEl.value = String(selectedMember.name || "");
+        let label = String(selectedMember.name || "");
+        const details = [];
+        if (selectedMember.phone) details.push(selectedMember.phone);
+        if (selectedMember.email) details.push(selectedMember.email);
+        if (details.length) label += " - " + details.join(" - ");
+        loanMemberSearchEl.value = label;
         loanMemberEl.value = selectedMember.id;
       } else {
         if (!currentMemberSearch) loanMemberEl.value = "";
@@ -2324,7 +1962,14 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
       }
 
       const members = state.members.slice().sort((a, b) => compareBatchNames(a.name, b.name));
-      const found = members.find((member) => String(member.name || "").trim() === value);
+      const found = members.find((member) => {
+        let label = String(member.name || "");
+        const details = [];
+        if (member.phone) details.push(member.phone);
+        if (member.email) details.push(member.email);
+        if (details.length) label += " - " + details.join(" - ");
+        return label === value;
+      });
 
       hiddenEl.value = found ? String(found.id) : "";
     }
@@ -2644,124 +2289,6 @@ function attachSortHandlers() {
 
 
 
-    function setAppUserMessage(message, isError) {
-      const el = byId("appUserMessage");
-      if (!el) return;
-      el.textContent = message || "";
-      el.className = isError ? "help msg-error" : "help msg-ok";
-    }
-
-    function roleLabel(role) {
-      const value = String(role || "").toLowerCase();
-      if (value === "admin") return "Admin";
-      if (value === "utlan") return "Utlån";
-      if (value === "skoyteskole") return "Skøyteskole";
-      return role || "-";
-    }
-
-    function generateTemporaryPassword() {
-      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
-      let password = "Tkk" + new Date().getFullYear() + "!";
-      while (password.length < 12) {
-        password += chars[Math.floor(Math.random() * chars.length)];
-      }
-      return password;
-    }
-
-    function renderAppUsers() {
-      const wrap = byId("appUsersWrap");
-      if (!wrap) return;
-
-      if (state.accessRolesLoadError) {
-        wrap.innerHTML = '<div class="empty">Kunne ikke lese brukertilgang: ' + escapeHtml(state.accessRolesLoadError) + '</div>';
-        return;
-      }
-
-      const rows = Array.isArray(state.accessRoles) ? state.accessRoles.slice() : [];
-      if (!rows.length) {
-        wrap.innerHTML = '<div class="empty">Ingen appbrukere registrert ennå.</div>';
-        return;
-      }
-
-      rows.sort((a, b) => String(a.email || "").localeCompare(String(b.email || ""), "no"));
-      const table = document.createElement("table");
-      table.innerHTML = "<thead><tr><th>E-post</th><th>Rolle</th><th>Sist oppdatert</th><th>Handling</th></tr></thead>";
-      const tbody = document.createElement("tbody");
-
-      rows.forEach((row) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = "<td data-label='E-post'></td><td data-label='Rolle'></td><td data-label='Sist oppdatert'></td><td data-label='Handling'></td>";
-        tr.children[0].textContent = safeText(row.email);
-        tr.children[1].textContent = roleLabel(row.role);
-        tr.children[2].textContent = row.updated_at ? formatDate(row.updated_at) : "-";
-
-        const editBtn = document.createElement("button");
-        editBtn.className = "btn-secondary btn-small";
-        editBtn.type = "button";
-        editBtn.textContent = "Rediger";
-        editBtn.addEventListener("click", function () {
-          if (byId("appUserEmail")) byId("appUserEmail").value = row.email || "";
-          if (byId("appUserRole")) byId("appUserRole").value = row.role || "utlan";
-          if (byId("appUserPassword")) byId("appUserPassword").value = generateTemporaryPassword();
-          setAppUserMessage("Fyll inn eller behold midlertidig passord, og trykk Lagre bruker for å oppdatere rollen.", false);
-        });
-        tr.children[3].appendChild(editBtn);
-        tbody.appendChild(tr);
-      });
-
-      table.appendChild(tbody);
-      wrap.innerHTML = "";
-      wrap.appendChild(table);
-    }
-
-    async function createOrUpdateAppUser(event) {
-      event.preventDefault();
-      if (!supabaseClient || !supabaseClient.auth) {
-        setAppUserMessage("Supabase Auth er ikke klar.", true);
-        return;
-      }
-
-      const email = byId("appUserEmail") ? byId("appUserEmail").value.trim().toLowerCase() : "";
-      const role = byId("appUserRole") ? byId("appUserRole").value : "";
-      const password = byId("appUserPassword") ? byId("appUserPassword").value : "";
-
-      if (!email) { setAppUserMessage("Mangler e-post.", true); return; }
-      if (!role) { setAppUserMessage("Velg rolle.", true); return; }
-      if (password.length < 8) { setAppUserMessage("Midlertidig passord må være minst 8 tegn.", true); return; }
-
-      try {
-        setAppUserMessage("Lagrer bruker ...", false);
-        const sessionRes = await supabaseClient.auth.getSession();
-        const token = sessionRes && sessionRes.data && sessionRes.data.session ? sessionRes.data.session.access_token : "";
-        if (!token) {
-          setAppUserMessage("Du må være innlogget som admin.", true);
-          return;
-        }
-
-        const response = await fetch("/.netlify/functions/create-app-user", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer " + token
-          },
-          body: JSON.stringify({ email, role, password })
-        });
-
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok || result.error) {
-          throw new Error(result.error || "Kunne ikke lagre bruker.");
-        }
-
-        setAppUserMessage("Bruker lagret. Send det midlertidige passordet til brukeren på en trygg måte.", false);
-        showToast("Bruker lagret.", "success");
-        if (byId("appUserPassword")) byId("appUserPassword").value = generateTemporaryPassword();
-        await loadAll();
-      } catch (error) {
-        console.error(error);
-        setAppUserMessage(error.message || "Kunne ikke lagre bruker.", true);
-      }
-    }
-
     function getAdminSectionKey(card) {
       const heading = card.querySelector("h2");
       const title = String((heading && heading.textContent) || "").trim().toLowerCase();
@@ -2826,43 +2353,6 @@ function attachSortHandlers() {
       });
 
       showAdminSubtab(getUiPref("adminSubtab", "skates"));
-    }
-
-
-    function showReportSubtab(tabName) {
-      const reports = byId("reportsTab");
-      if (!reports) return;
-
-      const target = String(tabName || "skates");
-      const sections = Array.from(reports.querySelectorAll("[data-report-section]"));
-      const exists = sections.some((section) => String(section.dataset.reportSection || "") === target);
-      const active = exists ? target : "skates";
-
-      reports.querySelectorAll(".report-tab").forEach((btn) => {
-        btn.classList.toggle("active", String(btn.dataset.reportTab || "") === active);
-      });
-
-      sections.forEach((section) => {
-        section.classList.toggle("report-section-hidden", String(section.dataset.reportSection || "") !== active);
-      });
-
-      setUiPref("reportSubtab", active);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-
-    function setupReportTabs() {
-      const reports = byId("reportsTab");
-      if (!reports) return;
-
-      reports.querySelectorAll(".report-tab").forEach((btn) => {
-        if (btn.dataset.bound === "1") return;
-        btn.dataset.bound = "1";
-        btn.addEventListener("click", function () {
-          showReportSubtab(this.dataset.reportTab || "skates");
-        });
-      });
-
-      showReportSubtab(getUiPref("reportSubtab", "skates"));
     }
 
 
@@ -3025,7 +2515,6 @@ function renderSkates() {
             const result = await supabaseClient.from("skates").update({ is_active: true }).eq("id", skate.id);
             if (result.error) throw result.error;
             await loadAll();
-            showToast("Skøyte gjenopprettet.", "success");
           } catch (error) {
             console.error(error);
             alert("Kunne ikke gjenopprette skøyte.\n\n" + error.message);
@@ -3760,7 +3249,6 @@ function renderSchoolParticipants() {
       const res = await updateSchoolEnrollmentGroup(enrollment.id, newGroupId || null);
       if (res && res.error) throw res.error;
       setSchoolMessage("schoolParticipantMessage", newGroupId ? "Deltaker flyttet." : "Gruppe nullstilt.", false);
-      showToast(newGroupId ? "Deltaker flyttet." : "Gruppe nullstilt.", "success");
       closeMobileSchoolModal();
       await loadAll();
     } catch (error) {
@@ -4442,7 +3930,6 @@ function renderSchoolSignups() {
 }
 
 function renderAll() {
-      if (typeof updateHeaderUserName === "function") updateHeaderUserName();
       updateMemberDepartmentOptions();
       updateMemberGroupListByDepartment(byId("memberDepartment") ? byId("memberDepartment").value : "", byId("memberGroupsText") ? byId("memberGroupsText").value : "");
 
@@ -4531,7 +4018,6 @@ function renderAll() {
       renderSchoolSignups();
 
       renderDepartments();
-      renderAppUsers();
       updateStats();
       updateLoanSelectors();
       updateMemberFilters();
@@ -4580,9 +4066,9 @@ function renderAll() {
       const names = Array.from(new Set(groupNames.map((x) => String(x || "").trim()).filter(Boolean)));
 
       if (departmentId) {
-        const departmentGroupIds = state.groups.filter((g) => sameId(g.department_id, departmentId)).map((g) => g.id);
+        const departmentGroupIds = state.groups.filter((g) => g.department_id === departmentId).map((g) => g.id);
         if (departmentGroupIds.length) {
-          const existingLinks = state.memberGroups.filter((mg) => sameId(mg.member_id, memberId) && departmentGroupIds.some((groupId) => sameId(groupId, mg.group_id)));
+          const existingLinks = state.memberGroups.filter((mg) => mg.member_id === memberId && departmentGroupIds.includes(mg.group_id));
           for (const link of existingLinks) {
             const delOne = await supabaseClient.from("member_groups").delete().eq("member_id", memberId).eq("group_id", link.group_id);
             if (delOne.error) throw delOne.error;
@@ -4603,14 +4089,37 @@ function renderAll() {
     async function returnLoan(loanId) {
       if (!supabaseClient) return;
       try {
-        const result = await supabaseClient
-          .from("loans")
-          .update({ returned_at: new Date().toISOString() })
-          .eq("id", loanId)
-          .is("returned_at", null);
-        if (result.error) throw result.error;
+        const sessionResult = await supabaseClient.auth.getSession();
+        const token = sessionResult && sessionResult.data && sessionResult.data.session
+          ? sessionResult.data.session.access_token
+          : null;
+
+        if (!token) {
+          throw new Error("Du må være logget inn for å registrere innlevering.");
+        }
+
+        const response = await fetch("/.netlify/functions/return-loan", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + token,
+          },
+          body: JSON.stringify({
+            loan_id: loanId,
+            returned_at: new Date().toISOString(),
+          }),
+        });
+
+        const payload = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(payload.error || "Kunne ikke registrere innlevering.");
+        }
+
         await loadAll();
-        showToast("Innlevering registrert.", "success");
+        if (typeof showToast === "function") {
+          showToast("Innlevering registrert.", "success");
+        }
       } catch (error) {
         console.error(error);
         alert("Kunne ikke registrere innlevering.\n\n" + error.message);
@@ -5115,7 +4624,6 @@ function parseBirthYearFromSpondValue(rawValue) {
           message += "<br><br>Klikk på et navn for å fylle inn medlemsskjemaet.";
         }
         setImportStatusHtml(message, false);
-        showToast("Spond-import fullført.", "success");
 
         document.querySelectorAll(".missing-contact-name").forEach((el) => {
           el.addEventListener("click", function () { fillMemberFormFromName(this.dataset.name || ""); });
@@ -5183,7 +4691,6 @@ function parseBirthYearFromSpondValue(rawValue) {
           "Import ferdig. Opprettet " + created + " skøyter, oppdatert " + updated + ", hoppet over " + skipped + " rader.",
           false
         );
-        showToast("Skøyteimport fullført.", "success");
       } catch (error) {
         console.error(error);
         setSkateImportStatus("Import av skøyter feilet: " + error.message, true);
@@ -5279,7 +4786,6 @@ function parseBirthYearFromSpondValue(rawValue) {
           message += "\n\nDetaljer:\n- " + skipped.join("\n- ");
         }
         setExistingLoansStatus(message, false);
-        showToast("Import av eksisterende utlån fullført.", "success");
       } catch (error) {
         console.error(error);
         setExistingLoansStatus("Import av eksisterende utlån feilet: " + error.message, true);
@@ -5422,10 +4928,20 @@ function updateMemberGroupListByDepartment(selectedDepartmentId, currentGroupsTe
       list.appendChild(opt);
     });
 
-  // Behold tekst brukeren skriver inn, også nye grupper som ikke finnes ennå.
-  // setMemberGroups() oppretter manglende grupper ved lagring.
-  if (input && typeof currentGroupsText === "string") {
-    input.value = currentGroupsText;
+  if (input) {
+    if (!selectedDepartmentId) {
+      if (typeof currentGroupsText === "string") input.value = currentGroupsText;
+      return;
+    }
+
+    const allowedNames = new Set(relevantGroups.map((g) => String(g.name || "").trim().toLowerCase()).filter(Boolean));
+    const filtered = String(currentGroupsText || input.value || "")
+      .split(",")
+      .map((x) => x.trim())
+      .filter(Boolean)
+      .filter((name) => allowedNames.has(String(name).toLowerCase()));
+
+    input.value = filtered.join(", ");
   }
 }
 
@@ -5849,20 +5365,6 @@ async function loadAll() {
           schoolSignupsLoadError = signupError && signupError.message ? signupError.message : String(signupError);
         }
 
-        let accessRolesData = [];
-        let accessRolesLoadError = "";
-        try {
-          const accessRolesRes = await supabaseClient
-            .from("app_user_roles")
-            .select("email, role, updated_at")
-            .order("email", { ascending: true });
-          if (accessRolesRes.error) throw accessRolesRes.error;
-          accessRolesData = accessRolesRes.data || [];
-        } catch (accessError) {
-          console.error("Kunne ikke lese app_user_roles", accessError);
-          accessRolesLoadError = accessError && accessError.message ? accessError.message : String(accessError);
-        }
-
         state.members = membersRes.data || [];
         state.skates = skatesRes.data || [];
         state.loans = loansRes.data || [];
@@ -5874,8 +5376,6 @@ async function loadAll() {
         state.schoolEnrollments = schoolEnrollmentsRes.data || [];
         state.schoolSignups = schoolSignupsData;
         state.schoolSignupsLoadError = schoolSignupsLoadError;
-        state.accessRoles = accessRolesData;
-        state.accessRolesLoadError = accessRolesLoadError;
 
         renderAll();
       } catch (error) {
@@ -6259,7 +5759,6 @@ async function loadAll() {
         wrap.appendChild(label);
       });
       setQrLabelsStatus("Laget " + rows.length + " QR-etiketter i 2,5 x 2,5 cm.", false);
-      showToast("QR-etiketter laget.", "success");
     }
 
     function printQrLabels() {
@@ -6321,7 +5820,6 @@ async function loadAll() {
       else if (groupName) scopeText = groupName;
 
       setMemberQrLabelsStatus("Laget " + rows.length + " medlems-QR-koder for " + scopeText + ".", false);
-      showToast("Medlems-QR laget.", "success");
     }
 
     function printMemberQrLabels() {
@@ -6349,10 +5847,8 @@ async function loadAll() {
           result = await supabaseClient.from("departments").insert([{ name }]);
         }
         if (result.error) throw result.error;
-        const wasEditingDepartment = !!editingDepartmentId;
         resetDepartmentForm();
         await loadAll();
-        showToast(wasEditingDepartment ? "Avdeling oppdatert." : "Avdeling opprettet.", "success");
       } catch (error) {
         console.error(error);
         alert("Kunne ikke lagre avdeling.\n\n" + error.message);
@@ -6388,7 +5884,6 @@ async function loadAll() {
       }
 
       setConfigMessage("Innstillinger lagret.", false);
-      showToast("Innstillinger lagret.", "success");
       await loadAll();
       startAutoRefresh();
     });
@@ -6414,10 +5909,8 @@ async function loadAll() {
           result = await supabaseClient.from("skates").insert([{ skate_code, model, size, type, is_active: true }]);
         }
         if (result.error) throw result.error;
-        const wasEditingSkate = !!editingSkateId;
         resetSkateForm();
         await loadAll();
-        showToast(wasEditingSkate ? "Skøyte oppdatert." : "Skøyte lagret.", "success");
       } catch (error) {
         console.error(error);
         alert("Kunne ikke lagre skøyte.\n\n" + error.message);
@@ -6457,21 +5950,10 @@ async function loadAll() {
         }
 
         const groupNames = groupsText ? groupsText.split(",").map((x) => x.trim()).filter(Boolean) : [];
-
-        // Et medlem kan ikke knyttes direkte til en avdeling i dagens datamodell.
-        // Avdeling lagres via member_groups -> groups -> department_id.
-        // Hvis admin velger avdeling uten å velge/skrive gruppe, legger vi medlemmet i en
-        // standardgruppe for avdelingen slik at avdelingstilknytningen faktisk blir lagret.
-        if (selectedDepartmentId && groupNames.length === 0) {
-          groupNames.push("Uten gruppe");
-        }
-
         await setMemberGroups(memberId, groupNames, selectedDepartmentId);
 
-        const wasEditingMember = !!editingMemberId;
         resetMemberForm();
         await loadAll();
-        showToast(wasEditingMember ? "Medlem oppdatert." : "Medlem lagret.", "success");
       } catch (error) {
         console.error(error);
         alert("Kunne ikke lagre medlem.\n\n" + error.message);
@@ -6501,39 +5983,26 @@ async function loadAll() {
       }
 
       try {
-        const sessionResult = await supabaseClient.auth.getSession();
-        const token = sessionResult && sessionResult.data && sessionResult.data.session
-          ? sessionResult.data.session.access_token
-          : "";
+        const check = await supabaseClient
+          .from("loans")
+          .select("id")
+          .eq("skate_id", skate_id)
+          .is("returned_at", null)
+          .limit(1);
 
-        if (!token) {
-          throw new Error("Du må være logget inn for å registrere utlån.");
+        if (check.error) throw check.error;
+
+        if ((check.data || []).length > 0) {
+          await loadAll();
+          alert("Denne skøyten ble nettopp utlånt av en annen bruker. Listen er oppdatert.");
+          return;
         }
 
-        const response = await fetch("/.netlify/functions/create-loan", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer " + token
-          },
-          body: JSON.stringify({
-            department_id,
-            member_id,
-            skate_id,
-            loaned_at
-          })
-        });
+        const result = await supabaseClient
+          .from("loans")
+          .insert([{ department_id, member_id, skate_id, loaned_at }]);
 
-        let result = {};
-        try {
-          result = await response.json();
-        } catch (jsonError) {
-          result = {};
-        }
-
-        if (!response.ok) {
-          throw new Error(result.error || "Kunne ikke registrere utlån.");
-        }
+        if (result.error) throw result.error;
 
         await loadAll();
 
@@ -6559,7 +6028,7 @@ async function loadAll() {
       renderMembers();
     });
 
-    if (byId("backBtn")) byId("backBtn").addEventListener("click", goHome);
+    byId("backBtn").addEventListener("click", goHome);
 
     if (byId("schoolBatchForm")) byId("schoolBatchForm").addEventListener("submit", async function (e) {
       e.preventDefault();
@@ -6639,7 +6108,6 @@ async function loadAll() {
           .insert([{ batch_id, member_id, assignment_reason: "Manuelt lagt til" }]);
         if (ins.error) throw ins.error;
         setSchoolMessage("schoolParticipantMessage", "Deltaker lagt til i partiet.", false);
-        showToast("Deltaker lagt til i partiet.", "success");
         await loadAll();
       } catch (error) {
         console.error(error);
@@ -6685,14 +6153,6 @@ attachSortHandlers();
     });
     byId("filterMemberGroup").addEventListener("change", renderMembers);
     if (byId("filterMemberRole")) byId("filterMemberRole").addEventListener("change", renderMembers);
-    if (byId("btnAddMemberFromReport")) byId("btnAddMemberFromReport").addEventListener("click", async function () {
-      await showSection("adminTab");
-      setupAdminTabs();
-      showAdminSubtab("members");
-      resetMemberForm();
-      const memberName = byId("memberName");
-      if (memberName) memberName.focus();
-    });
     byId("btnLoadMemberForEdit").addEventListener("click", function () {
       const member = findMemberForEdit(byId("memberEditSearch").value);
       if (!member) {
@@ -6766,8 +6226,6 @@ attachSortHandlers();
       updateMemberQrFilters();
     });
     if (byId("memberQrGroupFilter")) byId("memberQrGroupFilter").addEventListener("change", function () {});
-    if (byId("appUserForm")) byId("appUserForm").addEventListener("submit", createOrUpdateAppUser);
-    if (byId("appUserPassword") && !byId("appUserPassword").value) byId("appUserPassword").value = generateTemporaryPassword();
 
     byId("loanDate").value = nowLocalInputValue();
     if (byId("existingLoansDate")) byId("existingLoansDate").value = "2025-01-01";
@@ -6777,210 +6235,6 @@ attachSortHandlers();
       startAutoRefresh();
     }
   
-
-    async function getSupabaseAuthUser() {
-      try {
-        if (supabaseClient && supabaseClient.auth && supabaseClient.auth.getUser) {
-          const res = await supabaseClient.auth.getUser();
-          if (res && res.data && res.data.user) return res.data.user;
-        }
-      } catch (e) {
-        console.warn("Kunne ikke hente Supabase-bruker", e);
-      }
-      return null;
-    }
-
-    function nameFromEmail(email) {
-      const prefix = String(email || "").split("@")[0] || "";
-      if (!prefix) return "Konto";
-      return prefix
-        .replace(/[._-]+/g, " ")
-        .split(" ")
-        .filter(Boolean)
-        .map(function (part) { return part.charAt(0).toUpperCase() + part.slice(1); })
-        .join(" ") || "Konto";
-    }
-
-    function nameFromUserMetadata(user) {
-      const meta = (user && (user.user_metadata || user.raw_user_meta_data || user.app_metadata)) || {};
-      const candidates = [meta.full_name, meta.name, meta.display_name, meta.displayName, meta.first_name && meta.last_name ? meta.first_name + " " + meta.last_name : ""];
-      for (const value of candidates) {
-        const text = String(value || "").trim();
-        if (text) return text;
-      }
-      return "";
-    }
-
-    async function lookupNameInSupabase(user) {
-      if (!supabaseClient || !user) return "";
-      const email = String(user.email || "").trim().toLowerCase();
-      const userId = String(user.id || "").trim();
-
-      try {
-        if (email && state && Array.isArray(state.members)) {
-          const member = state.members.find(function (m) {
-            return String((m && m.email) || "").trim().toLowerCase() === email;
-          });
-          if (member && String(member.name || "").trim()) return String(member.name).trim();
-        }
-      } catch (e) {}
-
-      const lookups = [];
-      if (email) lookups.push({ table: "members", column: "email", value: email, fields: "name,email" });
-      if (email) lookups.push({ table: "app_user_roles", column: "email", value: email, fields: "name,display_name,full_name,email" });
-      if (userId) lookups.push({ table: "app_user_roles", column: "user_id", value: userId, fields: "name,display_name,full_name,email,user_id" });
-      if (userId) lookups.push({ table: "profiles", column: "id", value: userId, fields: "name,display_name,full_name,id" });
-
-      for (const lookup of lookups) {
-        try {
-          const res = await supabaseClient
-            .from(lookup.table)
-            .select(lookup.fields)
-            .eq(lookup.column, lookup.value)
-            .limit(1)
-            .maybeSingle();
-          if (!res || res.error || !res.data) continue;
-          const name = String(res.data.name || res.data.display_name || res.data.full_name || "").trim();
-          if (name) return name;
-        } catch (e) {}
-      }
-
-      return "";
-    }
-
-    async function updateHeaderUserName() {
-      const btn = byId("appUserButton");
-      if (!btn) return;
-      const user = await getSupabaseAuthUser();
-      let name = nameFromUserMetadata(user);
-      if (!name) name = await lookupNameInSupabase(user);
-      if (!name && user && user.email) name = nameFromEmail(user.email);
-      btn.textContent = name || "Konto";
-    }
-
-    function closeHeaderUserMenu() {
-      const dropdown = byId("appUserDropdown");
-      const btn = byId("appUserButton");
-      if (dropdown) dropdown.classList.add("hidden");
-      if (btn) btn.setAttribute("aria-expanded", "false");
-    }
-
-    function setupHeaderUserMenu() {
-      const btn = byId("appUserButton");
-      const dropdown = byId("appUserDropdown");
-      const changePassword = byId("appUserChangePassword");
-      const logout = byId("appUserLogout");
-      if (!btn || !dropdown) return;
-
-      if (btn.dataset.bound !== "1") {
-        btn.dataset.bound = "1";
-        btn.addEventListener("click", function (event) {
-          event.stopPropagation();
-          const open = dropdown.classList.contains("hidden");
-          dropdown.classList.toggle("hidden", !open);
-          btn.setAttribute("aria-expanded", open ? "true" : "false");
-          updateHeaderUserName();
-        });
-        document.addEventListener("click", closeHeaderUserMenu);
-        document.addEventListener("keydown", function (event) {
-          if (event.key === "Escape") closeHeaderUserMenu();
-        });
-      }
-
-      if (changePassword && changePassword.dataset.bound !== "1") {
-        changePassword.dataset.bound = "1";
-        changePassword.addEventListener("click", async function (event) {
-          event.stopPropagation();
-          closeHeaderUserMenu();
-          const existing = byId("btnChangePassword");
-          if (existing) { existing.click(); return; }
-
-          const password = prompt("Skriv nytt passord (minst 8 tegn):");
-          if (!password) return;
-          if (password.length < 8) { alert("Passordet må være minst 8 tegn."); return; }
-          try {
-            const client = supabaseClient || window.supabaseClient;
-            if (!client || !client.auth || !client.auth.updateUser) throw new Error("Supabase Auth er ikke klar.");
-            const res = await client.auth.updateUser({ password: password });
-            if (res.error) throw res.error;
-            alert("Passordet er endret.");
-          } catch (error) {
-            console.error(error);
-            alert("Kunne ikke endre passord.\n\n" + (error.message || error));
-          }
-        });
-      }
-
-      if (logout && logout.dataset.bound !== "1") {
-        logout.dataset.bound = "1";
-        logout.addEventListener("click", async function (event) {
-          event.preventDefault();
-          event.stopPropagation();
-          closeHeaderUserMenu();
-
-          try {
-            // Logg ut av Supabase Auth.
-            let client = supabaseClient || window.supabaseClient || null;
-
-            if (!client && window.supabase && window.supabase.createClient) {
-              const config = loadConfig ? loadConfig() : {};
-              if (config && config.url && config.anonKey) {
-                client = window.supabase.createClient(config.url, config.anonKey);
-              }
-            }
-
-            if (client && client.auth && client.auth.signOut) {
-              const res = await client.auth.signOut({ scope: "local" });
-              if (res && res.error) throw res.error;
-            }
-
-            // Rydd lokale Supabase-sessioner og app-cache i tilfelle klienten ikke var klar.
-            try {
-              Object.keys(localStorage).forEach(function (key) {
-                if (
-                  key !== CONFIG_KEY && (
-                    key.startsWith("sb-") ||
-                    key.toLowerCase().includes("supabase.auth") ||
-                    key.toLowerCase().includes("auth-token") ||
-                    key.toLowerCase().includes("auth.session") ||
-                    key.toLowerCase().includes("session") ||
-                    key === "skoyteutleie_current_user"
-                  )
-                ) {
-                  localStorage.removeItem(key);
-                }
-              });
-            } catch (e) {}
-
-            try {
-              Object.keys(sessionStorage).forEach(function (key) {
-                if (
-                  key.startsWith("sb-") ||
-                  key.toLowerCase().includes("supabase") ||
-                  key.toLowerCase().includes("auth") ||
-                  key.toLowerCase().includes("session")
-                ) {
-                  sessionStorage.removeItem(key);
-                }
-              });
-            } catch (e) {}
-
-            window.location.replace(window.location.origin + window.location.pathname + "?logged_out=1");
-          } catch (error) {
-            console.error(error);
-            alert("Kunne ikke logge ut.\n\n" + (error.message || error));
-          }
-        });
-      }
-
-      updateHeaderUserName();
-      setTimeout(updateHeaderUserName, 300);
-      setTimeout(updateHeaderUserName, 1200);
-    }
-
-    setupHeaderUserMenu();
-    window.updateHeaderUserName = updateHeaderUserName;
-
     setupAdminTabs();
 </script>
 
@@ -6997,338 +6251,6 @@ attachSortHandlers();
     </div>
   </div>
 </div>
-
-
-<script>
-(function () {
-  const CONFIG_KEY_AUTH_GUARD = "skoyteutleie_supabase_config_v7";
-
-  function readStoredSupabaseConfig() {
-    const fallbackConfig = {
-      url: "https://dcfhisxyiuatftzjtuwz.supabase.co",
-      anonKey: "sb_publishable_W_3O4m4r0aZ3ukSOJVTcHw_Gy6W6uj9"
-    };
-    try {
-      const raw = localStorage.getItem(CONFIG_KEY_AUTH_GUARD);
-      const parsed = raw ? JSON.parse(raw) : {};
-      return {
-        url: parsed.url || fallbackConfig.url,
-        anonKey: parsed.anonKey || fallbackConfig.anonKey
-      };
-    } catch (e) {
-      return fallbackConfig;
-    }
-  }
-
-  function getAuthClient() {
-    try {
-      if (window.supabaseClient && window.supabaseClient.auth) return window.supabaseClient;
-    } catch (e) {}
-    try {
-      if (typeof supabaseClient !== "undefined" && supabaseClient && supabaseClient.auth) return supabaseClient;
-    } catch (e) {}
-    try {
-      const cfg = readStoredSupabaseConfig();
-      if (window.supabase && window.supabase.createClient && cfg.url && cfg.anonKey) {
-        const client = window.supabase.createClient(cfg.url, cfg.anonKey);
-        window.supabaseClient = client;
-        return client;
-      }
-    } catch (e) {}
-    return null;
-  }
-
-  function clearAuthStorage() {
-    try {
-      Object.keys(localStorage).forEach(function (key) {
-        const lower = key.toLowerCase();
-        if (
-          key !== CONFIG_KEY_AUTH_GUARD && (
-            key.startsWith("sb-") ||
-            lower.includes("supabase.auth") ||
-            lower.includes("auth-token") ||
-            lower.includes("auth.session") ||
-            lower.includes("session") ||
-            key === "skoyteutleie_current_user"
-          )
-        ) {
-          localStorage.removeItem(key);
-        }
-      });
-    } catch (e) {}
-
-    try {
-      Object.keys(sessionStorage).forEach(function (key) {
-        const lower = key.toLowerCase();
-        if (
-          key.startsWith("sb-") ||
-          lower.includes("supabase.auth") ||
-          lower.includes("auth-token") ||
-          lower.includes("auth.session") ||
-          lower.includes("session")
-        ) {
-          sessionStorage.removeItem(key);
-        }
-      });
-    } catch (e) {}
-  }
-
-  function setAppVisible(visible) {
-    const app = document.querySelector("body > .container");
-    if (app) app.style.display = visible ? "" : "none";
-  }
-
-  function removeLoginView() {
-    const existing = document.getElementById("authLoginView");
-    if (existing) existing.remove();
-  }
-
-  function ensureLoginView(message) {
-    removeLoginView();
-    setAppVisible(false);
-
-    const view = document.createElement("div");
-    view.id = "authLoginView";
-    view.innerHTML = `
-      <div class="auth-login-card">
-        <div class="auth-login-brand">
-          <img src="logo.png" alt="Trondheim Kortbaneklubb" />
-          <strong>SkateFlow</strong>
-        </div>
-        <h1>Logg inn</h1>
-        <p class="auth-login-help">Logg inn med e-post og passord for å bruke appen.</p>
-        <form id="authLoginForm">
-          <label for="authLoginEmail">E-post</label>
-          <input id="authLoginEmail" type="email" autocomplete="email" required />
-          <label for="authLoginPassword">Passord</label>
-          <input id="authLoginPassword" type="password" autocomplete="current-password" required />
-          <div class="auth-login-actions">
-            <button type="submit">Logg inn</button>
-            <button type="button" class="auth-login-secondary" id="authForgotPasswordBtn">Glemt passord</button>
-          </div>
-          <div id="authLoginMessage" class="auth-login-message">${message || ""}</div>
-        </form>
-        <form id="authForgotPasswordForm" class="auth-forgot-form hidden">
-          <p class="auth-login-help auth-forgot-help">Skriv inn e-postadressen din, så sender vi en lenke for å lage nytt passord.</p>
-          <label for="authForgotEmail">E-post</label>
-          <input id="authForgotEmail" type="email" autocomplete="email" required />
-          <div class="auth-login-actions">
-            <button type="submit">Send passordlenke</button>
-            <button type="button" class="auth-login-secondary" id="authForgotBackBtn">Tilbake</button>
-          </div>
-          <div id="authForgotMessage" class="auth-login-message"></div>
-        </form>
-      </div>
-    `;
-
-    const style = document.createElement("style");
-    style.textContent = `
-      #authLoginView {
-        min-height: 100vh;
-        display: grid;
-        place-items: start center;
-        padding: 38px 18px;
-        background:
-          radial-gradient(circle at top left, rgba(31,79,255,0.10), transparent 32%),
-          linear-gradient(180deg, #f7faff 0%, #edf3fb 100%);
-        color: #132238;
-        font-family: Arial, Helvetica, sans-serif;
-      }
-      .auth-login-card {
-        width: min(100%, 520px);
-        background: #ffffff;
-        border: 1px solid rgba(16,35,63,0.08);
-        border-radius: 22px;
-        box-shadow: 0 18px 40px rgba(16,35,63,0.12);
-        padding: 26px;
-      }
-      .auth-login-brand { display:flex; align-items:center; gap:10px; margin-bottom:18px; }
-      .auth-login-brand img { width:42px; height:auto; display:block; }
-      .auth-login-card h1 { margin:0; font-size:32px; }
-      .auth-login-help { color:#64748b; margin:8px 0 22px; line-height:1.45; }
-      .auth-login-card label { display:block; margin:14px 0 6px; font-weight:700; }
-      .auth-login-card input { width:100%; padding:12px 14px; border:1px solid #cbd5e1; border-radius:12px; font:inherit; }
-      .auth-login-actions { margin-top:20px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-      .auth-login-actions button { background:#003a8f; color:#fff; border:0; border-radius:12px; padding:11px 16px; font:inherit; font-weight:700; cursor:pointer; }
-      .auth-login-actions .auth-login-secondary { background:transparent; color:#003a8f; padding:11px 0; }
-      .auth-login-actions .auth-login-secondary:hover { color:#002b68; }
-      .auth-login-message { margin-top:14px; color:#991b1b; white-space:pre-wrap; }
-      .auth-login-message.ok { color:#166534; }
-      .auth-forgot-form { margin-top:18px; }
-      .auth-forgot-form.hidden { display:none !important; }
-      .auth-forgot-help { margin-top:0; }
-    `;
-    document.head.appendChild(style);
-    document.body.appendChild(view);
-
-    const form = document.getElementById("authLoginForm");
-    const msg = document.getElementById("authLoginMessage");
-    const forgotForm = document.getElementById("authForgotPasswordForm");
-    const forgotBtn = document.getElementById("authForgotPasswordBtn");
-    const forgotBackBtn = document.getElementById("authForgotBackBtn");
-    const forgotMsg = document.getElementById("authForgotMessage");
-
-    if (forgotBtn && forgotForm) {
-      forgotBtn.addEventListener("click", function () {
-        forgotForm.classList.remove("hidden");
-        if (forgotMsg) {
-          forgotMsg.textContent = "";
-          forgotMsg.classList.remove("ok");
-        }
-        const loginEmail = document.getElementById("authLoginEmail");
-        const forgotEmail = document.getElementById("authForgotEmail");
-        if (loginEmail && forgotEmail && loginEmail.value) forgotEmail.value = loginEmail.value;
-        if (forgotEmail) forgotEmail.focus();
-      });
-    }
-
-    if (forgotBackBtn && forgotForm) {
-      forgotBackBtn.addEventListener("click", function () {
-        forgotForm.classList.add("hidden");
-        if (forgotMsg) {
-          forgotMsg.textContent = "";
-          forgotMsg.classList.remove("ok");
-        }
-      });
-    }
-
-    if (forgotForm) {
-      forgotForm.addEventListener("submit", async function (event) {
-        event.preventDefault();
-        const client = getAuthClient();
-        if (!client || !client.auth || !client.auth.resetPasswordForEmail) {
-          forgotMsg.textContent = "Supabase Auth er ikke klar. Sjekk at Supabase URL og anon key er lagret.";
-          forgotMsg.classList.remove("ok");
-          return;
-        }
-        const email = document.getElementById("authForgotEmail").value.trim();
-        if (!email) {
-          forgotMsg.textContent = "Skriv inn e-postadressen din.";
-          forgotMsg.classList.remove("ok");
-          return;
-        }
-        forgotMsg.textContent = "Sender passordlenke ...";
-        forgotMsg.classList.remove("ok");
-        try {
-          const redirectTo = window.location.origin + window.location.pathname + "?reset=1";
-          const res = await client.auth.resetPasswordForEmail(email, { redirectTo });
-          if (res.error) throw res.error;
-          forgotMsg.textContent = "Hvis e-postadressen finnes som bruker, er passordlenke sendt. Sjekk innboksen din.";
-          forgotMsg.classList.add("ok");
-        } catch (error) {
-          forgotMsg.textContent = "Kunne ikke sende passordlenke.\n\n" + (error.message || error);
-          forgotMsg.classList.remove("ok");
-        }
-      });
-    }
-
-    form.addEventListener("submit", async function (event) {
-      event.preventDefault();
-      const client = getAuthClient();
-      if (!client || !client.auth || !client.auth.signInWithPassword) {
-        msg.textContent = "Supabase Auth er ikke klar. Sjekk at Supabase URL og anon key er lagret.";
-        return;
-      }
-      const email = document.getElementById("authLoginEmail").value.trim();
-      const password = document.getElementById("authLoginPassword").value;
-      msg.textContent = "Logger inn ...";
-      try {
-        const res = await client.auth.signInWithPassword({ email, password });
-        if (res.error) throw res.error;
-        removeLoginView();
-        setAppVisible(true);
-        if (window.history && window.history.replaceState) {
-          window.history.replaceState({}, document.title, window.location.origin + window.location.pathname);
-        }
-        if (typeof loadAll === "function") await loadAll();
-        if (typeof startAutoRefresh === "function") startAutoRefresh();
-        if (typeof window.updateHeaderUserName === "function") window.updateHeaderUserName();
-      } catch (error) {
-        msg.textContent = "Kunne ikke logge inn.\n\n" + (error.message || error);
-      }
-    });
-  }
-
-  async function handleLoggedOutOrMissingSession() {
-    const params = new URLSearchParams(window.location.search);
-    const hasLoggedOutFlag = params.get("logged_out") === "1";
-    const client = getAuthClient();
-
-    if (hasLoggedOutFlag) {
-      try {
-        if (client && client.auth && client.auth.signOut) {
-          await client.auth.signOut({ scope: "local" });
-        }
-      } catch (e) {}
-      clearAuthStorage();
-      if (window.history && window.history.replaceState) {
-        window.history.replaceState({}, document.title, window.location.origin + window.location.pathname);
-      }
-      ensureLoginView("Du er logget ut.");
-      return;
-    }
-
-    try {
-      if (client && client.auth && client.auth.getSession) {
-        const res = await client.auth.getSession();
-        const session = res && res.data ? res.data.session : null;
-        if (!session) ensureLoginView("");
-      }
-    } catch (e) {}
-  }
-
-  async function handlePasswordResetCallback() {
-    const params = new URLSearchParams(window.location.search);
-    const isReset = params.get("reset") === "1" || params.get("type") === "recovery";
-    if (!isReset) return false;
-
-    const client = getAuthClient();
-    if (!client || !client.auth || !client.auth.updateUser) {
-      ensureLoginView("Supabase Auth er ikke klar. Prøv lenken på nytt.");
-      return true;
-    }
-
-    try {
-      if (client.auth.getSession) {
-        await client.auth.getSession();
-      }
-    } catch (e) {}
-
-    const password = prompt("Skriv nytt passord (minst 8 tegn):");
-    if (!password) {
-      ensureLoginView("Passordet ble ikke endret.");
-      return true;
-    }
-    if (password.length < 8) {
-      ensureLoginView("Passordet må være minst 8 tegn. Klikk på passordlenken igjen og prøv på nytt.");
-      return true;
-    }
-
-    try {
-      const res = await client.auth.updateUser({ password });
-      if (res.error) throw res.error;
-      try { await client.auth.signOut({ scope: "local" }); } catch (e) {}
-      clearAuthStorage();
-      if (window.history && window.history.replaceState) {
-        window.history.replaceState({}, document.title, window.location.origin + window.location.pathname);
-      }
-      ensureLoginView("Passordet er endret. Logg inn med det nye passordet.");
-      return true;
-    } catch (error) {
-      console.error(error);
-      ensureLoginView("Kunne ikke endre passord.\n\n" + (error.message || error));
-      return true;
-    }
-  }
-
-  document.addEventListener("DOMContentLoaded", function () {
-    setTimeout(async function () {
-      const handledReset = await handlePasswordResetCallback();
-      if (!handledReset) await handleLoggedOutOrMissingSession();
-    }, 0);
-  });
-})();
-</script>
 
 </body>
 </html>
