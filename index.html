@@ -6457,6 +6457,15 @@ async function loadAll() {
         }
 
         const groupNames = groupsText ? groupsText.split(",").map((x) => x.trim()).filter(Boolean) : [];
+
+        // Et medlem kan ikke knyttes direkte til en avdeling i dagens datamodell.
+        // Avdeling lagres via member_groups -> groups -> department_id.
+        // Hvis admin velger avdeling uten å velge/skrive gruppe, legger vi medlemmet i en
+        // standardgruppe for avdelingen slik at avdelingstilknytningen faktisk blir lagret.
+        if (selectedDepartmentId && groupNames.length === 0) {
+          groupNames.push("Uten gruppe");
+        }
+
         await setMemberGroups(memberId, groupNames, selectedDepartmentId);
 
         const wasEditingMember = !!editingMemberId;
