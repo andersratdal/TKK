@@ -177,7 +177,8 @@ exports.handler = async (event) => {
     }
 
     try {
-      await sendLoanEmail({ member, skate });
+      const emailResult = await sendLoanEmail({ member, skate });
+console.log("EMAIL RESULT:", JSON.stringify(emailResult));
     } catch (emailError) {
       console.error("Loan email error:", emailError);
       return json(500, {
