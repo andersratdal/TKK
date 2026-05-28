@@ -180,7 +180,11 @@ exports.handler = async (event) => {
       const emailResult = await sendLoanEmail({ member, skate });
 console.log("EMAIL RESULT:", JSON.stringify(emailResult));
     } catch (emailError) {
-      console.error("Loan email error:", emailError);
+      console.error(
+  "Loan email error:",
+  emailError,
+  JSON.stringify(emailError, null, 2)
+);
       return json(500, {
         error: "Utlånet ble registrert, men e-posten kunne ikke sendes. Sjekk Resend/EMAIL_FROM i Netlify.",
         loan: insertResult.data,
