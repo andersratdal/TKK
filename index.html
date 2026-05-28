@@ -4601,21 +4601,41 @@ function renderAll() {
     }
 
     async function returnLoan(loanId) {
-      if (!supabaseClient) return;
-      try {
-        const result = await supabaseClient
-          .from("loans")
-          .update({ returned_at: new Date().toISOString() })
-          .eq("id", loanId)
-          .is("returned_at", null);
-        if (result.error) throw result.error;
-        await loadAll();
-        showToast("Innlevering registrert.", "success");
-      } catch (error) {
-        console.error(error);
-        alert("Kunne ikke registrere innlevering.\n\n" + error.message);
-      }
+  if (!supabaseClient) return;
+
+  try {
+    const sessionResult = await supabaseClient.auth.getSession();
+    const token = sessionResult?.data?.session?.access_token;
+
+    if (!token) {
+      throw new Error("Du må være logget inn for å registrere innlevering.");
     }
+
+    const response = await fetch("/.netlify/functions/return-loan", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token,
+      },
+      body: JSON.stringify({
+        loan_id: loanId,
+        returned_at: new Date().toISOString(),
+      }),
+    });
+
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(payload.error || "Kunne ikke registrere innlevering.");
+    }
+
+    await loadAll();
+    showToast("Innlevering registrert.", "success");
+  } catch (error) {
+    console.error(error);
+    alert("Kunne ikke registrere innlevering.\n\n" + error.message);
+  }
+}
 
     function getCellValue(row, header) {
       return row[header] === undefined || row[header] === null ? "" : String(row[header]).trim();
