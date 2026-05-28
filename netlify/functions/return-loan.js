@@ -164,7 +164,26 @@ exports.handler = async (event) => {
     }
 
     try {
-      await sendReturnEmail({ member, skate });
+  const emailResult = await sendReturnEmail({ member, skate });
+
+  console.log(
+    "RETURN EMAIL RESULT:",
+    JSON.stringify(emailResult, null, 2)
+  );
+
+  if (emailResult && emailResult.error) {
+    throw new Error(
+      "Resend returnerte feil: " +
+      (emailResult.error.message || JSON.stringify(emailResult.error))
+    );
+  }
+
+  if (!emailResult || !emailResult.data || !emailResult.data.id) {
+    throw new Error(
+      "Resend returnerte ikke gyldig meldings-ID: " +
+      JSON.stringify(emailResult)
+    );
+  }
     } catch (emailError) {
       console.error("Return email error:", emailError);
       return json(500, {
