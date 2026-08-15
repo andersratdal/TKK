@@ -4089,27 +4089,30 @@ function clearSchoolSignupSelection() {
 
 function findExistingMemberFromSignup(signup) {
   if (!signup) return null;
+
+  // Hvis påmeldingen allerede er eksplisitt koblet til et medlem,
+  // bruker vi denne koblingen.
   if (signup.existing_member_id) {
-    const linked = state.members.find((member) => String(member.id) === String(signup.existing_member_id));
+    const linked = state.members.find(
+      (member) => String(member.id) === String(signup.existing_member_id)
+    );
     if (linked) return linked;
   }
 
-  const email = String(signup.email || "").trim().toLowerCase();
-  const phone = String(signup.phone || "").trim();
+  // Kontaktinfo i påmeldingen tilhører foresatt og kan være lik for
+  // flere søsken. Derfor må e-post/telefon IKKE brukes til å avgjøre
+  // hvilket barn som er medlem.
   const name = String(signup.child_name || "").trim().toLowerCase();
 
-  if (email) {
-    const byEmail = state.members.find((member) => String(member.email || "").trim().toLowerCase() === email);
-    if (byEmail) return byEmail;
-  }
-  if (phone) {
-    const byPhone = state.members.find((member) => String(member.phone || "").trim() === phone);
-    if (byPhone) return byPhone;
-  }
   if (name) {
-    const byName = state.members.find((member) => String(member.name || "").trim().toLowerCase() === name);
-    if (byName) return byName;
+    const exactMatches = state.members.filter(
+      (member) => String(member.name || "").trim().toLowerCase() === name
+    );
+
+    // Bruk kun automatisk navnematch når den er entydig.
+    if (exactMatches.length === 1) return exactMatches[0];
   }
+
   return null;
 }
 
@@ -4315,6 +4318,18 @@ async function moveSelectedSchoolSignupsToParticipants() {
     }
 
     await loadAll();
+
+    // Behold semesteret som var valgt da flyttingen startet,
+    // slik at de nye deltakerne vises umiddelbart i deltakerlisten.
+    const pickerAfterReload = byId("schoolBatchPicker");
+    if (pickerAfterReload && currentBatchId) {
+      pickerAfterReload.value = String(currentBatchId);
+      setUiPref("schoolBatchPicker", String(currentBatchId));
+      renderSchoolBatchOverview();
+      updateSchoolParticipantMemberPicker();
+      renderSchoolParticipants();
+    }
+
     clearSchoolSignupSelection();
 
     if (failed.length) {
