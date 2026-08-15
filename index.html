@@ -3141,9 +3141,24 @@ function renderSkates() {
       if (departmentFilter) {
         rows = rows.filter((member) => {
           const memberGroupIds = getGroupIdsForMember(member.id);
-          return state.groups.some((group) =>
-            String(group.department_id) === String(departmentFilter) && memberGroupIds.includes(group.id)
+
+          const belongsViaRegularGroup = state.groups.some((group) =>
+            sameId(group.department_id, departmentFilter) &&
+            memberGroupIds.some((groupId) => sameId(groupId, group.id))
           );
+
+          if (belongsViaRegularGroup) return true;
+
+          // Skøyteskoledeltakere ligger i skating_school_enrollments,
+          // ikke nødvendigvis i member_groups.
+          if (isSchoolDepartment(departmentFilter)) {
+            return memberBelongsToSchoolDepartment(
+              member.id,
+              departmentFilter
+            );
+          }
+
+          return false;
         });
       }
 
@@ -3268,11 +3283,43 @@ function renderMembers() {
         tr.children[1].textContent = safeText(member.role || "Aktiv");
 
         const memberGroupIds = getGroupIdsForMember(member.id);
-        const groups = state.groups
-          .filter((group) => memberGroupIds.includes(group.id))
-          .filter((group) => !departmentFilter || String(group.department_id) === String(departmentFilter))
+        let groups = state.groups
+          .filter((group) =>
+            memberGroupIds.some((groupId) => sameId(groupId, group.id))
+          )
+          .filter((group) =>
+            !departmentFilter ||
+            sameId(group.department_id, departmentFilter)
+          )
           .map((group) => group.name);
-        tr.children[2].textContent = groups.length ? groups.join(", ") : "-";
+
+        if (
+          !groups.length &&
+          departmentFilter &&
+          isSchoolDepartment(departmentFilter)
+        ) {
+          const batchIds = getSchoolEnrollmentBatchIdsForDepartment(
+            departmentFilter
+          );
+
+          groups = (state.schoolEnrollments || [])
+            .filter((enrollment) =>
+              sameId(enrollment.member_id, member.id) &&
+              batchIds.has(String(enrollment.batch_id))
+            )
+            .map((enrollment) => {
+              const batch = (state.schoolBatches || []).find((item) =>
+                sameId(item.id, enrollment.batch_id)
+              );
+              return batch ? String(batch.name || "Skøyteskole") : "Skøyteskole";
+            });
+
+          groups = Array.from(new Set(groups));
+        }
+
+        tr.children[2].textContent = groups.length
+          ? groups.join(", ")
+          : "-";
 
         const activeLoan = getActiveLoanForMember(member.id);
         tr.children[3].textContent = activeLoan && activeLoan.skates ? safeText(activeLoan.skates.skate_code) : "-";
@@ -3440,16 +3487,53 @@ function renderMembers() {
       wrap.appendChild(table);
     }
 
-    function isSkatingSchoolDepartment(departmentId) {
+    function getSchoolBatchesForDepartment(departmentId) {
+      if (!departmentId) return [];
+      return (state.schoolBatches || []).filter((batch) =>
+        sameId(batch.department_id, departmentId)
+      );
+    }
+
+    function isSchoolDepartment(departmentId) {
       if (!departmentId) return false;
-      const department = state.departments.find((item) => sameId(item.id, departmentId));
+
+      // Primær regel: avdelingen har minst ett skøyteskolesemester.
+      if (getSchoolBatchesForDepartment(departmentId).length > 0) {
+        return true;
+      }
+
+      // Fallback for eldre data.
+      const department = (state.departments || []).find((item) =>
+        sameId(item.id, departmentId)
+      );
+
       const name = String((department && department.name) || "")
         .trim()
         .toLowerCase()
         .replace(/ø/g, "o")
         .replace(/å/g, "a")
         .replace(/æ/g, "ae");
+
       return name.includes("skoyteskole");
+    }
+
+    function getSchoolEnrollmentBatchIdsForDepartment(departmentId) {
+      return new Set(
+        getSchoolBatchesForDepartment(departmentId)
+          .map((batch) => String(batch.id))
+      );
+    }
+
+    function memberBelongsToSchoolDepartment(memberId, departmentId) {
+      if (!memberId || !departmentId) return false;
+
+      const batchIds = getSchoolEnrollmentBatchIdsForDepartment(departmentId);
+      if (!batchIds.size) return false;
+
+      return (state.schoolEnrollments || []).some((enrollment) =>
+        sameId(enrollment.member_id, memberId) &&
+        batchIds.has(String(enrollment.batch_id))
+      );
     }
 
     function updateReportSemesterFilter() {
@@ -3458,26 +3542,24 @@ function renderMembers() {
       if (!departmentFilter || !semesterFilter) return;
 
       const departmentId = departmentFilter.value || "";
-      const showSemester = isSkatingSchoolDepartment(departmentId);
+      const batches = getSchoolBatchesForDepartment(departmentId)
+        .slice()
+        .sort((a, b) => {
+          const aTime = new Date(a.start_date || a.created_at || 0).getTime();
+          const bTime = new Date(b.start_date || b.created_at || 0).getTime();
+          return bTime - aTime;
+        });
 
-      semesterFilter.classList.toggle("hidden", !showSemester);
+      const shouldShow = !!departmentId && batches.length > 0;
+      semesterFilter.classList.toggle("hidden", !shouldShow);
 
-      if (!showSemester) {
-        semesterFilter.value = "";
+      if (!shouldShow) {
         semesterFilter.innerHTML = '<option value="">Alle semester</option>';
+        semesterFilter.value = "";
         return;
       }
 
       const previousValue = semesterFilter.value || "";
-      const batches = (state.schoolBatches || [])
-        .filter((batch) => !batch.department_id || sameId(batch.department_id, departmentId))
-        .slice()
-        .sort((a, b) => {
-          const aDate = new Date(a.start_date || a.created_at || 0).getTime();
-          const bDate = new Date(b.start_date || b.created_at || 0).getTime();
-          return bDate - aDate;
-        });
-
       semesterFilter.innerHTML = '<option value="">Alle semester</option>';
 
       batches.forEach((batch) => {
@@ -3489,30 +3571,36 @@ function renderMembers() {
         semesterFilter.appendChild(option);
       });
 
-      const stillExists = batches.some((batch) => sameId(batch.id, previousValue));
+      const stillExists = batches.some((batch) =>
+        sameId(batch.id, previousValue)
+      );
+
       semesterFilter.value = stillExists ? previousValue : "";
     }
 
     function renderReportLoansByGroup() {
       const wrap = byId("reportLoansByGroupWrap");
       const counts = {};
-      const departmentFilter = byId("reportDepartmentFilter") ? byId("reportDepartmentFilter").value : "";
-      const semesterFilter = byId("reportSemesterFilter") ? byId("reportSemesterFilter").value : "";
+      const departmentFilter = byId("reportDepartmentFilter")
+        ? byId("reportDepartmentFilter").value
+        : "";
+
+      const semesterFilter = byId("reportSemesterFilter")
+        ? byId("reportSemesterFilter").value
+        : "";
 
       let loans = departmentFilter
-        ? state.loans.filter((loan) => sameId(loan.department_id, departmentFilter))
+        ? state.loans.filter((loan) =>
+            sameId(loan.department_id, departmentFilter)
+          )
         : state.loans.slice();
 
-      // Når Skøyteskole er valgt som avdeling og et semester er valgt,
-      // vis bare utlån for medlemmer som er registrert i dette semesteret.
-      if (
-        departmentFilter &&
-        semesterFilter &&
-        isSkatingSchoolDepartment(departmentFilter)
-      ) {
+      if (semesterFilter) {
         const semesterMemberIds = new Set(
           (state.schoolEnrollments || [])
-            .filter((enrollment) => sameId(enrollment.batch_id, semesterFilter))
+            .filter((enrollment) =>
+              sameId(enrollment.batch_id, semesterFilter)
+            )
             .map((enrollment) => String(enrollment.member_id))
         );
 
@@ -4730,7 +4818,9 @@ function renderAll() {
           opt.textContent = d.name;
           reportDepartmentFilter.appendChild(opt);
         });
-        const stillExists = state.departments.some((d) => String(d.id) === String(currentValue || ""));
+        const stillExists = state.departments.some((d) =>
+          String(d.id) === String(currentValue || "")
+        );
         reportDepartmentFilter.value = stillExists ? currentValue : "";
         updateReportSemesterFilter();
       }
@@ -6928,8 +7018,12 @@ attachSortHandlers();
       updateReportSemesterFilter();
       renderReportLoansByGroup();
     });
+
     if (byId("reportSemesterFilter")) {
-      byId("reportSemesterFilter").addEventListener("change", renderReportLoansByGroup);
+      byId("reportSemesterFilter").addEventListener(
+        "change",
+        renderReportLoansByGroup
+      );
     }
     if (byId("btnExportSkatesReport")) byId("btnExportSkatesReport").addEventListener("click", exportSkatesReportCsv);
     if (byId("btnExportArchivedSkatesReport")) byId("btnExportArchivedSkatesReport").addEventListener("click", exportArchivedSkatesReportCsv);
