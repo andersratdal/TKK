@@ -995,6 +995,184 @@
   </div>
 </header>
 
+<script>
+(function () {
+  const CONFIG_KEY = "skoyteutleie_supabase_config_v7";
+
+  function getStoredConfig() {
+    try {
+      const raw = localStorage.getItem(CONFIG_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (error) {
+      console.warn("Kunne ikke lese Supabase-oppsett:", error);
+      return {};
+    }
+  }
+
+  function makeUserAuthClient() {
+    const cfg = getStoredConfig();
+
+    if (
+      !window.supabase ||
+      !window.supabase.createClient ||
+      !cfg.url ||
+      !cfg.anonKey
+    ) {
+      return null;
+    }
+
+    try {
+      return window.supabase.createClient(cfg.url, cfg.anonKey);
+    } catch (error) {
+      console.warn("Kunne ikke opprette auth-klient:", error);
+      return null;
+    }
+  }
+
+  async function initStandaloneUserMenu() {
+    const button = document.getElementById("appUserButton");
+    const label = document.getElementById("appUserLabel");
+    const dropdown = document.getElementById("appUserDropdown");
+    const logoutButton = document.getElementById("appUserLogout");
+    const passwordButton = document.getElementById("appUserChangePassword");
+
+    if (!button || !dropdown || !logoutButton) return;
+
+    const authClient = makeUserAuthClient();
+
+    // Vis aktiv bruker når vi kan hente sesjonen.
+    if (authClient && label) {
+      try {
+        const sessionResult = await authClient.auth.getSession();
+        const session = sessionResult?.data?.session || null;
+        label.textContent = session?.user?.email || "Konto";
+      } catch (error) {
+        console.warn("Kunne ikke hente bruker:", error);
+        label.textContent = "Konto";
+      }
+    }
+
+    button.onclick = function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const opening = dropdown.classList.contains("hidden");
+      dropdown.classList.toggle("hidden");
+      button.setAttribute("aria-expanded", opening ? "true" : "false");
+    };
+
+    document.addEventListener("click", function (event) {
+      if (!event.target.closest(".app-user-menu")) {
+        dropdown.classList.add("hidden");
+        button.setAttribute("aria-expanded", "false");
+      }
+    });
+
+    logoutButton.onclick = async function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      dropdown.classList.add("hidden");
+      logoutButton.disabled = true;
+      logoutButton.textContent = "Logger ut...";
+
+      try {
+        // Supabase-utlogging hvis klienten kan opprettes.
+        if (authClient && authClient.auth) {
+          try {
+            const signOutResult = await authClient.auth.signOut({ scope: "local" });
+            if (signOutResult?.error) {
+              console.warn("Supabase signOut:", signOutResult.error);
+            }
+          } catch (signOutError) {
+            // Fortsett med lokal opprydding selv om Supabase-kallet feiler.
+            console.warn("Supabase signOut feilet:", signOutError);
+          }
+        }
+
+        // Rydd alle kjente Supabase auth-nøkler lokalt.
+        const clearAuthStorage = function (storage) {
+          if (!storage) return;
+          const remove = [];
+
+          for (let i = 0; i < storage.length; i += 1) {
+            const key = storage.key(i);
+            if (!key) continue;
+
+            const lower = key.toLowerCase();
+            if (
+              lower.includes("auth-token") ||
+              lower.includes("supabase.auth.token") ||
+              (lower.startsWith("sb-") && lower.includes("auth"))
+            ) {
+              remove.push(key);
+            }
+          }
+
+          remove.forEach(function (key) {
+            storage.removeItem(key);
+          });
+        };
+
+        try { clearAuthStorage(window.localStorage); } catch (_) {}
+        try { clearAuthStorage(window.sessionStorage); } catch (_) {}
+
+        // Vis tydelig at knappen faktisk ble kjørt før navigering.
+        logoutButton.textContent = "Logget ut";
+
+        // Hard navigering til ren URL.
+        window.location.href =
+          window.location.origin +
+          window.location.pathname +
+          "?logged_out=" +
+          Date.now();
+      } catch (error) {
+        console.error("Utlogging feilet:", error);
+        logoutButton.disabled = false;
+        logoutButton.textContent = "Logg ut";
+        window.alert("Kunne ikke logge ut: " + (error?.message || error));
+      }
+    };
+
+    if (passwordButton) {
+      passwordButton.onclick = async function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        dropdown.classList.add("hidden");
+
+        if (!authClient || !authClient.auth) {
+          window.alert("Supabase-oppsett mangler.");
+          return;
+        }
+
+        const password = window.prompt("Skriv inn nytt passord (minst 6 tegn):");
+        if (password === null) return;
+
+        if (password.length < 6) {
+          window.alert("Passordet må ha minst 6 tegn.");
+          return;
+        }
+
+        try {
+          const result = await authClient.auth.updateUser({ password });
+          if (result?.error) throw result.error;
+          window.alert("Passordet er oppdatert.");
+        } catch (error) {
+          console.error(error);
+          window.alert("Kunne ikke endre passord: " + (error?.message || error));
+        }
+      };
+    }
+  }
+
+  // Scriptet ligger rett etter headeren, så elementene finnes allerede.
+  initStandaloneUserMenu().catch(function (error) {
+    console.error("Brukermeny kunne ikke startes:", error);
+  });
+})();
+</script>
+
+
 <div id="homeView">
 <div class="brand">
 <img alt="Trondheim Kortbaneklubb" src="logo.png"/>
@@ -6320,154 +6498,7 @@ attachSortHandlers();
     }
   
 
-    async function refreshActiveUserMenu() {
-      const label = byId("appUserLabel");
-      if (!label) return;
-
-      if (!supabaseClient || !supabaseClient.auth) {
-        label.textContent = "Konto";
-        return;
-      }
-
-      try {
-        const result = await supabaseClient.auth.getSession();
-        const user = result && result.data && result.data.session
-          ? result.data.session.user
-          : null;
-
-        label.textContent = user
-          ? (user.email || "Innlogget bruker")
-          : "Konto";
-      } catch (error) {
-        console.error("Kunne ikke hente aktiv bruker", error);
-        label.textContent = "Konto";
-      }
-    }
-
-    function setupHeaderUserMenu() {
-      const btn = byId("appUserButton");
-      const dropdown = byId("appUserDropdown");
-      const changePassword = byId("appUserChangePassword");
-      const logout = byId("appUserLogout");
-
-      if (!btn || !dropdown) return;
-
-      btn.addEventListener("click", function (event) {
-        event.stopPropagation();
-        const willOpen = dropdown.classList.contains("hidden");
-        dropdown.classList.toggle("hidden");
-        btn.setAttribute("aria-expanded", willOpen ? "true" : "false");
-      });
-
-      document.addEventListener("click", function (event) {
-        if (!event.target.closest(".app-user-menu")) {
-          dropdown.classList.add("hidden");
-          btn.setAttribute("aria-expanded", "false");
-        }
-      });
-
-      if (changePassword) {
-        changePassword.addEventListener("click", async function () {
-          dropdown.classList.add("hidden");
-
-          if (!supabaseClient || !supabaseClient.auth) {
-            alert("Supabase-oppsett mangler. Gå til Admin → Innstillinger.");
-            return;
-          }
-
-          const password = window.prompt("Skriv inn nytt passord (minst 6 tegn):");
-          if (password === null) return;
-          if (password.length < 6) {
-            alert("Passordet må ha minst 6 tegn.");
-            return;
-          }
-
-          try {
-            const result = await supabaseClient.auth.updateUser({ password });
-            if (result.error) throw result.error;
-            alert("Passordet er oppdatert.");
-          } catch (error) {
-            console.error(error);
-            alert("Kunne ikke endre passord.\n\n" + (error.message || error));
-          }
-        });
-      }
-
-      if (logout) {
-        logout.addEventListener("click", async function () {
-          dropdown.classList.add("hidden");
-          logout.disabled = true;
-          logout.textContent = "Logger ut...";
-
-          try {
-            // Bruk den aktive klienten hvis den finnes.
-            // scope:"local" sørger for at nettleserens lokale sesjon fjernes
-            // selv om server-side/global signout skulle feile.
-            if (supabaseClient && supabaseClient.auth) {
-              const result = await supabaseClient.auth.signOut({ scope: "local" });
-              if (result && result.error) {
-                console.warn("Supabase signOut returnerte feil:", result.error);
-              }
-            }
-
-            // Ekstra sikkerhet: fjern bare Supabase auth-lagring.
-            // Beholder TKK-appens egne innstillinger (CONFIG_KEY / UI_PREFS_KEY).
-            try {
-              const keysToRemove = [];
-              for (let i = 0; i < localStorage.length; i += 1) {
-                const key = localStorage.key(i);
-                if (!key) continue;
-
-                const lower = key.toLowerCase();
-                if (
-                  (lower.startsWith("sb-") && lower.includes("auth-token")) ||
-                  lower.includes("supabase.auth.token")
-                ) {
-                  keysToRemove.push(key);
-                }
-              }
-              keysToRemove.forEach((key) => localStorage.removeItem(key));
-            } catch (storageError) {
-              console.warn("Kunne ikke rydde Supabase auth-token:", storageError);
-            }
-
-            // Fjern også eventuelle sessionStorage-baserte auth-token.
-            try {
-              const sessionKeysToRemove = [];
-              for (let i = 0; i < sessionStorage.length; i += 1) {
-                const key = sessionStorage.key(i);
-                if (!key) continue;
-
-                const lower = key.toLowerCase();
-                if (
-                  (lower.startsWith("sb-") && lower.includes("auth-token")) ||
-                  lower.includes("supabase.auth.token")
-                ) {
-                  sessionKeysToRemove.push(key);
-                }
-              }
-              sessionKeysToRemove.forEach((key) => sessionStorage.removeItem(key));
-            } catch (storageError) {
-              console.warn("Kunne ikke rydde session auth-token:", storageError);
-            }
-
-            // Replace hindrer at tilbake-knappen åpner den gamle innloggede siden.
-            const cleanUrl = window.location.pathname + "?logged_out=1";
-            window.location.replace(cleanUrl);
-          } catch (error) {
-            console.error(error);
-            logout.disabled = false;
-            logout.textContent = "Logg ut";
-            alert("Kunne ikke logge ut.\n\n" + (error.message || error));
-          }
-        });
-      }
-    }
-
-
-    setupHeaderUserMenu();
-    refreshActiveUserMenu();
-    setupAdminTabs();
+        setupAdminTabs();
 </script>
 
 <div class="school-mobile-modal hidden" id="schoolMobileModal">
