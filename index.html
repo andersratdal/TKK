@@ -1963,6 +1963,9 @@
 <select id="reportDepartmentFilter">
 <option value="">Alle avdelinger</option>
 </select>
+<select id="reportSemesterFilter" class="hidden">
+<option value="">Alle semester</option>
+</select>
 </div>
 </div>
 <div id="reportLoansByGroupWrap"></div>
@@ -3437,11 +3440,86 @@ function renderMembers() {
       wrap.appendChild(table);
     }
 
+    function isSkatingSchoolDepartment(departmentId) {
+      if (!departmentId) return false;
+      const department = state.departments.find((item) => sameId(item.id, departmentId));
+      const name = String((department && department.name) || "")
+        .trim()
+        .toLowerCase()
+        .replace(/ø/g, "o")
+        .replace(/å/g, "a")
+        .replace(/æ/g, "ae");
+      return name.includes("skoyteskole");
+    }
+
+    function updateReportSemesterFilter() {
+      const departmentFilter = byId("reportDepartmentFilter");
+      const semesterFilter = byId("reportSemesterFilter");
+      if (!departmentFilter || !semesterFilter) return;
+
+      const departmentId = departmentFilter.value || "";
+      const showSemester = isSkatingSchoolDepartment(departmentId);
+
+      semesterFilter.classList.toggle("hidden", !showSemester);
+
+      if (!showSemester) {
+        semesterFilter.value = "";
+        semesterFilter.innerHTML = '<option value="">Alle semester</option>';
+        return;
+      }
+
+      const previousValue = semesterFilter.value || "";
+      const batches = (state.schoolBatches || [])
+        .filter((batch) => !batch.department_id || sameId(batch.department_id, departmentId))
+        .slice()
+        .sort((a, b) => {
+          const aDate = new Date(a.start_date || a.created_at || 0).getTime();
+          const bDate = new Date(b.start_date || b.created_at || 0).getTime();
+          return bDate - aDate;
+        });
+
+      semesterFilter.innerHTML = '<option value="">Alle semester</option>';
+
+      batches.forEach((batch) => {
+        const option = document.createElement("option");
+        option.value = String(batch.id);
+        option.textContent =
+          String(batch.name || "Uten navn") +
+          (batch.status ? " (" + batch.status + ")" : "");
+        semesterFilter.appendChild(option);
+      });
+
+      const stillExists = batches.some((batch) => sameId(batch.id, previousValue));
+      semesterFilter.value = stillExists ? previousValue : "";
+    }
+
     function renderReportLoansByGroup() {
       const wrap = byId("reportLoansByGroupWrap");
       const counts = {};
       const departmentFilter = byId("reportDepartmentFilter") ? byId("reportDepartmentFilter").value : "";
-      const loans = departmentFilter ? state.loans.filter((loan) => loan.department_id === departmentFilter) : state.loans;
+      const semesterFilter = byId("reportSemesterFilter") ? byId("reportSemesterFilter").value : "";
+
+      let loans = departmentFilter
+        ? state.loans.filter((loan) => sameId(loan.department_id, departmentFilter))
+        : state.loans.slice();
+
+      // Når Skøyteskole er valgt som avdeling og et semester er valgt,
+      // vis bare utlån for medlemmer som er registrert i dette semesteret.
+      if (
+        departmentFilter &&
+        semesterFilter &&
+        isSkatingSchoolDepartment(departmentFilter)
+      ) {
+        const semesterMemberIds = new Set(
+          (state.schoolEnrollments || [])
+            .filter((enrollment) => sameId(enrollment.batch_id, semesterFilter))
+            .map((enrollment) => String(enrollment.member_id))
+        );
+
+        loans = loans.filter((loan) =>
+          semesterMemberIds.has(String(loan.member_id))
+        );
+      }
 
       for (const loan of loans) {
         const groups = getGroupNamesForMember(loan.member_id);
@@ -4654,6 +4732,7 @@ function renderAll() {
         });
         const stillExists = state.departments.some((d) => String(d.id) === String(currentValue || ""));
         reportDepartmentFilter.value = stillExists ? currentValue : "";
+        updateReportSemesterFilter();
       }
 
       const returnDepartmentFilter = byId("returnDepartmentFilter");
@@ -6845,7 +6924,13 @@ attachSortHandlers();
       setUiPref("returnGroupFilter", this.value || "");
       renderActiveLoans();
     });
-    byId("reportDepartmentFilter").addEventListener("change", renderReportLoansByGroup);
+    byId("reportDepartmentFilter").addEventListener("change", function () {
+      updateReportSemesterFilter();
+      renderReportLoansByGroup();
+    });
+    if (byId("reportSemesterFilter")) {
+      byId("reportSemesterFilter").addEventListener("change", renderReportLoansByGroup);
+    }
     if (byId("btnExportSkatesReport")) byId("btnExportSkatesReport").addEventListener("click", exportSkatesReportCsv);
     if (byId("btnExportArchivedSkatesReport")) byId("btnExportArchivedSkatesReport").addEventListener("click", exportArchivedSkatesReportCsv);
     if (byId("btnExportMembersReport")) byId("btnExportMembersReport").addEventListener("click", exportMembersReportCsv);
