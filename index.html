@@ -1911,6 +1911,9 @@
 <select id="filterMemberDepartment">
 <option value="">Alle avdelinger</option>
 </select>
+<select id="filterMemberSemester" class="hidden">
+<option value="">Alle semester</option>
+</select>
 <select id="filterMemberGroup">
 <option value="">Alle grupper</option>
 </select>
@@ -3172,6 +3175,46 @@ function renderSkates() {
       return rows.slice().sort((a, b) => compareBatchNames(a.name, b.name));
     }
 
+    function updateMemberSemesterFilter() {
+      const departmentEl = byId("filterMemberDepartment");
+      const semesterEl = byId("filterMemberSemester");
+      if (!departmentEl || !semesterEl) return;
+
+      const departmentId = departmentEl.value || "";
+      const showSemester = !!departmentId && isSchoolDepartment(departmentId);
+
+      semesterEl.classList.toggle("hidden", !showSemester);
+
+      if (!showSemester) {
+        semesterEl.innerHTML = '<option value="">Alle semester</option>';
+        semesterEl.value = "";
+        return;
+      }
+
+      let batches = getSchoolBatchesForDepartment(departmentId);
+      if (!batches.length) {
+        batches = (state.schoolBatches || []).slice();
+      }
+
+      const current = semesterEl.value || "";
+      semesterEl.innerHTML = '<option value="">Alle semester</option>';
+
+      batches
+        .slice()
+        .sort((a, b) => compareBatchNames(a.name, b.name))
+        .forEach((batch) => {
+          const opt = document.createElement("option");
+          opt.value = String(batch.id);
+          opt.textContent = String(batch.name || "Uten navn") +
+            (batch.status ? " (" + batch.status + ")" : "");
+          semesterEl.appendChild(opt);
+        });
+
+      semesterEl.value = batches.some((batch) => sameId(batch.id, current))
+        ? current
+        : "";
+    }
+
     function updateMemberFilters() {
       const departmentEl = byId("filterMemberDepartment");
       const groupEl = byId("filterMemberGroup");
@@ -3214,6 +3257,8 @@ function renderSkates() {
       const groupStillExists = !currentGroup || relevantGroups.some((g) => String(g.id) === String(currentGroup));
       groupEl.value = groupStillExists ? currentGroup : "";
       groupEl.disabled = false;
+
+      updateMemberSemesterFilter();
     }
 
 
@@ -3222,6 +3267,7 @@ function renderMembers() {
       const wrap = byId("membersWrap");
       const search = byId("searchMembers").value.trim().toLowerCase();
       const departmentFilter = byId("filterMemberDepartment") ? byId("filterMemberDepartment").value : "";
+      const semesterFilter = byId("filterMemberSemester") ? byId("filterMemberSemester").value : "";
       const selectedGroupId = byId("filterMemberGroup") ? String(byId("filterMemberGroup").value || "") : "";
       const roleFilter = byId("filterMemberRole") ? byId("filterMemberRole").value : "";
       let rows = state.members.slice();
@@ -3248,6 +3294,18 @@ function renderMembers() {
 
           return false;
         });
+      }
+
+      if (semesterFilter) {
+        const semesterMemberIds = new Set(
+          (state.schoolEnrollments || [])
+            .filter((enrollment) => sameId(enrollment.batch_id, semesterFilter))
+            .map((enrollment) => String(enrollment.member_id))
+        );
+
+        rows = rows.filter((member) =>
+          semesterMemberIds.has(String(member.id))
+        );
       }
 
       if (selectedGroupId) {
@@ -5850,6 +5908,7 @@ function populateMemberEditList() {
     function getFilteredMembersRows() {
       const search = byId("searchMembers") ? byId("searchMembers").value.trim().toLowerCase() : "";
       const departmentFilter = byId("filterMemberDepartment") ? byId("filterMemberDepartment").value : "";
+      const semesterFilter = byId("filterMemberSemester") ? byId("filterMemberSemester").value : "";
       const selectedGroupId = byId("filterMemberGroup") ? String(byId("filterMemberGroup").value || "") : "";
       const roleFilter = byId("filterMemberRole") ? byId("filterMemberRole").value : "";
       let rows = state.members.slice();
@@ -5861,6 +5920,15 @@ function populateMemberEditList() {
             String(group.department_id) === String(departmentFilter) && memberGroupIds.includes(group.id)
           );
         });
+      }
+
+      if (semesterFilter) {
+        const semesterMemberIds = new Set(
+          (state.schoolEnrollments || [])
+            .filter((enrollment) => sameId(enrollment.batch_id, semesterFilter))
+            .map((enrollment) => String(enrollment.member_id))
+        );
+        rows = rows.filter((member) => semesterMemberIds.has(String(member.id)));
       }
 
       if (selectedGroupId) {
@@ -6997,9 +7065,14 @@ attachSortHandlers();
     byId("filterMemberDepartment").addEventListener("change", function () {
       const groupEl = byId("filterMemberGroup");
       if (groupEl) groupEl.value = "";
+      const semesterEl = byId("filterMemberSemester");
+      if (semesterEl) semesterEl.value = "";
       updateMemberFilters();
       renderMembers();
     });
+    if (byId("filterMemberSemester")) {
+      byId("filterMemberSemester").addEventListener("change", renderMembers);
+    }
     byId("filterMemberGroup").addEventListener("change", renderMembers);
     if (byId("filterMemberRole")) byId("filterMemberRole").addEventListener("change", renderMembers);
     byId("btnLoadMemberForEdit").addEventListener("click", function () {
