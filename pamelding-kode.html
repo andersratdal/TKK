@@ -182,7 +182,7 @@
     <div class="card">
       <h1>Påmelding til skøyteskole med kode</h1>
       <p class="muted">
-        Denne siden er for deltakere som har fått tildelt en kode og derfor ikke skal betale ved påmelding.
+        Denne siden er for deltakere som har fått tildelt en gyldig påmeldingskode.
       </p>
 
       <form id="signupForm">
@@ -275,9 +275,7 @@
   </template>
 
   <script>
-    const ACTIVE_BATCH_NAME = "Høst 2026";
-
-    const form = document.getElementById("signupForm");
+const form = document.getElementById("signupForm");
     const childrenContainer = document.getElementById("childrenContainer");
     const addChildBtn = document.getElementById("addChildBtn");
     const submitBtn = document.getElementById("submitBtn");
@@ -378,13 +376,7 @@
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       clearMessage();
-
-      if (!ACTIVE_BATCH_NAME || ACTIVE_BATCH_NAME === "SETT INN NAVN PÅ AKTIVT SEMESTER HER") {
-        showMessage("Du må sette riktig ACTIVE_BATCH_NAME i HTML-filen før siden kan brukes.");
-        return;
-      }
-
-      const access_code = document.getElementById("access_code").value.trim();
+const access_code = document.getElementById("access_code").value.trim();
       const email = document.getElementById("email").value.trim();
       const phone = document.getElementById("phone").value.trim();
       const children = collectChildren();
@@ -424,8 +416,7 @@
             access_code,
             email,
             phone,
-            batch_name: ACTIVE_BATCH_NAME,
-            children
+children
           })
         });
 
@@ -435,7 +426,7 @@
           throw new Error(data.error || "Kunne ikke sende påmeldingen.");
         }
 
-        showMessage("Påmeldingen ble registrert. Sender videre...", "success");
+        showMessage("Påmeldingen ble registrert.", "success");
 
         window.location.href = data.redirect_url || "/betaling-fullfort-tkk.html";
       } catch (error) {
