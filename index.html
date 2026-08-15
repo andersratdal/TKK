@@ -1613,15 +1613,13 @@
         <input id="schoolSignupSearch" placeholder="Søk på navn, telefon eller e-post..." />
         <select id="schoolSignupStatusFilter">
           <option value="">Alle statuser</option>
-          <option value="Ny">Ny</option>
+          <option value="Ny" selected>Ny</option>
           <option value="Behandles">Behandles</option>
           <option value="Klar for medlem">Klar for medlem</option>
           <option value="Ferdig">Ferdig</option>
           <option value="Avvist">Avvist</option>
         </select>
-        <button class="btn-secondary btn-small" id="btnSelectAllSchoolSignups" type="button">Velg alle viste</button>
-        <button class="btn-secondary btn-small" id="btnClearSchoolSignupsSelection" type="button">Fjern valg</button>
-        <button class="btn-primary btn-small" id="btnMoveSelectedSchoolSignups" type="button">Flytt valgte til deltakere</button>
+                        <button class="btn-primary btn-small" id="btnMoveSelectedSchoolSignups" type="button">Flytt valgte til deltakere</button>
       </div>
     </div>
     <div class="help" id="schoolSignupMessage" style="margin-top:10px;"></div>
@@ -2945,14 +2943,14 @@ function renderSkates() {
       }
 
       const table = document.createElement("table");
-      table.innerHTML = '<thead><tr><th data-sort="skate_code" data-section="skates">Skøyte-ID</th><th data-sort="model" data-section="skates">Modell</th><th data-sort="size" data-section="skates">Størrelse</th><th data-sort="type" data-section="skates">Type</th><th data-sort="status" data-section="skates">Status</th><th data-sort="member_name" data-section="skates">Navn</th><th>NFC</th><th>Handling</th></tr></thead>';
+      table.innerHTML = '<thead><tr><th data-sort="skate_code" data-section="skates">Skøyte-ID</th><th data-sort="model" data-section="skates">Modell</th><th data-sort="size" data-section="skates">Størrelse</th><th data-sort="type" data-section="skates">Type</th><th data-sort="status" data-section="skates">Status</th><th data-sort="member_name" data-section="skates">Navn</th><th>NFC</th></tr></thead>';
       const tbody = document.createElement("tbody");
       if (sortState.skates.key) {
         rows = sortArray(rows, sortState.skates.key, sortState.skates.asc);
       }
       for (const skate of rows) {
         const tr = document.createElement("tr");
-        tr.innerHTML = "<td data-label='Skøyte-ID'></td><td data-label='Modell'></td><td data-label='Størrelse'></td><td data-label='Type'></td><td data-label='Status'></td><td data-label='Navn'></td><td data-label='NFC'></td><td data-label='Handling'></td>";
+        tr.innerHTML = "<td data-label='Skøyte-ID'></td><td data-label='Modell'></td><td data-label='Størrelse'></td><td data-label='Type'></td><td data-label='Status'></td><td data-label='Navn'></td><td data-label='NFC'></td>";
         tr.children[0].textContent = safeText(skate.skate_code);
         tr.children[1].textContent = safeText(skate.model);
         tr.children[2].textContent = safeText(skate.size);
@@ -4025,6 +4023,11 @@ function formatSignupAccessCode(signup) {
   return String(signup.access_code || "Kodepåmelding");
 }
 
+function formatSignupReceivedAt(signup) {
+  if (!signup) return "-";
+  return formatDate(signup.paid_at || signup.created_at);
+}
+
 function formatPaymentStatus(signup) {
   if (isCodeSignup(signup)) {
     return "Ikke betalingskrav";
@@ -4470,35 +4473,24 @@ function renderSchoolSignups() {
   }
 
   const table = document.createElement("table");
-  table.innerHTML = "<thead><tr><th style='width:40px;'><input id='schoolSignupsSelectAllCheckbox' type='checkbox'/></th><th>Barn</th><th>Født</th><th>Kontakt</th><th>Skøyter</th><th>Status</th><th>Påmeldingskode</th><th>Betaling</th><th>Medlem</th><th>Mottatt</th><th>Handling</th></tr></thead>";
+  table.innerHTML = "<thead><tr><th style='width:40px;'><input id='schoolSignupsSelectAllCheckbox' type='checkbox'/></th><th>Barn</th><th>Født</th><th>Skøyter</th><th>Status</th><th>Påmeldingskode</th><th>Mottatt</th></tr></thead>";
   const tbody = document.createElement("tbody");
 
   rows.forEach((row) => {
     const tr = document.createElement("tr");
-    tr.innerHTML = "<td data-label='Velg'></td><td data-label='Barn'></td><td data-label='Født'></td><td data-label='Kontakt'></td><td data-label='Skøyter'></td><td data-label='Status'></td><td data-label='Påmeldingskode'></td><td data-label='Betaling'></td><td data-label='Medlem'></td><td data-label='Mottatt'></td><td data-label='Handling'></td>";
+    tr.innerHTML = "<td data-label='Velg'></td><td data-label='Barn'></td><td data-label='Født'></td><td data-label='Skøyter'></td><td data-label='Status'></td><td data-label='Påmeldingskode'></td><td data-label='Mottatt'></td>";
 
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.checked = selectedIds.has(String(row.id));
     checkbox.addEventListener("change", function () { toggleSchoolSignupSelection(row.id, checkbox.checked); renderSchoolSignups(); });
     tr.children[0].appendChild(checkbox);
-
     tr.children[1].textContent = String(row.child_name || "-");
     tr.children[2].textContent = formatBirthDate(row.birth_date);
     tr.children[3].textContent = formatSkateRequest(row);
     tr.children[4].textContent = String(row.status || "Ny");
     tr.children[5].textContent = formatSignupAccessCode(row);
-    tr.children[6].textContent = formatPaymentStatus(row);
-    tr.children[7].textContent = formatDate(row.created_at);
-
-    const actionMeta = getActionMeta(row);
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = actionMeta.disabled ? "btn-secondary btn-small" : "btn-primary btn-small";
-    btn.textContent = actionMeta.label;
-    btn.disabled = actionMeta.disabled;
-    btn.addEventListener("click", async function () { await moveSignupToParticipant(row.id); });
-    tr.children[8].appendChild(btn);
+    tr.children[6].textContent = formatSignupReceivedAt(row);
 
     tbody.appendChild(tr);
   });
@@ -6655,10 +6647,11 @@ async function loadAll() {
 
     if (byId("schoolParticipantSearch")) byId("schoolParticipantSearch").addEventListener("input", updateSchoolParticipantMemberPicker);
     if (byId("schoolSignupSearch")) byId("schoolSignupSearch").addEventListener("input", renderSchoolSignups);
-    if (byId("schoolSignupStatusFilter")) byId("schoolSignupStatusFilter").addEventListener("change", renderSchoolSignups);
-    if (byId("btnSelectAllSchoolSignups")) byId("btnSelectAllSchoolSignups").addEventListener("click", selectAllVisibleSchoolSignups);
-    if (byId("btnClearSchoolSignupsSelection")) byId("btnClearSchoolSignupsSelection").addEventListener("click", clearSchoolSignupSelection);
-    if (byId("btnMoveSelectedSchoolSignups")) byId("btnMoveSelectedSchoolSignups").addEventListener("click", moveSelectedSchoolSignupsToParticipants);
+    if (byId("schoolSignupStatusFilter")) {
+      byId("schoolSignupStatusFilter").value = "Ny";
+      byId("schoolSignupStatusFilter").addEventListener("change", renderSchoolSignups);
+    }
+if (byId("btnMoveSelectedSchoolSignups")) byId("btnMoveSelectedSchoolSignups").addEventListener("click", moveSelectedSchoolSignupsToParticipants);
 
     if (byId("btnAddSchoolParticipant")) byId("btnAddSchoolParticipant").addEventListener("click", async function () {
       if (!supabaseClient) return;
