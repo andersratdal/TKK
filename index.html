@@ -3965,12 +3965,9 @@ function renderSchoolParticipants() {
 function getSignupTargetBatch(signup) {
   if (!signup) return null;
 
-  const currentBatchId = byId("schoolBatchPicker") ? byId("schoolBatchPicker").value : "";
-  if (currentBatchId) {
-    const selectedBatch = getSchoolBatchById(currentBatchId);
-    if (selectedBatch) return selectedBatch;
-  }
-
+  // Påmeldingen er allerede knyttet til et semester i databasen.
+  // Bruk dette først, slik at den ikke ved et uhell flyttes til et annet
+  // semester bare fordi administrator har et annet semester valgt i UI-et.
   if (signup.batch_id) {
     const found = state.schoolBatches.find((b) => String(b.id) === String(signup.batch_id));
     if (found) return found;
@@ -3983,6 +3980,13 @@ function getSignupTargetBatch(signup) {
         String(signup.batch_name || "").trim().toLowerCase()
     );
     if (found) return found;
+  }
+
+  // Fallback for eldre påmeldinger uten batch_id/batch_name.
+  const currentBatchId = byId("schoolBatchPicker") ? byId("schoolBatchPicker").value : "";
+  if (currentBatchId) {
+    const selectedBatch = getSchoolBatchById(currentBatchId);
+    if (selectedBatch) return selectedBatch;
   }
 
   return null;
@@ -4168,18 +4172,20 @@ function getAutoAssignmentForSignup(signup, batch, member) {
 
 async function moveSingleSignupToParticipant(signup, options = {}) {
   const reloadAfter = options.reloadAfter !== false;
-  const signupId = String(signup && signup.id || "");
+  const signupId = String((signup && signup.id) || "");
   if (!signupId) return { ok: false, message: "Ugyldig påmelding." };
 
   const batch = getSignupTargetBatch(signup);
   if (!batch || !batch.id) {
-    return { ok: false, message: "Fant ikke semester for " + String(signup.child_name || "påmeldingen") + "." };
+    throw new Error("Fant ikke semester for " + String(signup.child_name || "påmeldingen") + ".");
   }
 
+  // 1. Finn eller opprett medlemmet.
   let member = findExistingMemberFromSignup(signup);
+  let createdMember = false;
 
   if (!member) {
-    const createdMember = await supabaseClient
+    const createdMemberRes = await supabaseClient
       .from("members")
       .insert([{
         name: signup.child_name,
@@ -4187,35 +4193,81 @@ async function moveSingleSignupToParticipant(signup, options = {}) {
         email: signup.email || null,
         role: "Skøyteskole"
       }])
-      .select()
+      .select("id, name, phone, email, role")
       .single();
-    if (createdMember.error) throw createdMember.error;
-    member = createdMember.data;
+
+    if (createdMemberRes.error) throw createdMemberRes.error;
+    if (!createdMemberRes.data || !createdMemberRes.data.id) {
+      throw new Error("Medlemmet ble ikke opprettet korrekt.");
+    }
+
+    member = createdMemberRes.data;
+    createdMember = true;
   }
 
+  // 2. Sørg for at semesterets standardgrupper finnes.
   await ensureDefaultSchoolGroups(batch.id);
 
   const assignment = getAutoAssignmentForSignup(signup, batch, member);
-  const existingEnrollment = getExistingEnrollmentForBatchAndMember(batch.id, member.id);
 
-  if (!existingEnrollment) {
-    const enrollmentRes = await upsertSchoolEnrollmentFromImport(
-      batch.id,
-      member.id,
-      assignment.birthYear || null,
-      assignment.autoGroupId || null,
-      assignment.assignmentReason || "Flyttet fra påmelding"
-    );
-    if (enrollmentRes && enrollmentRes.error) throw enrollmentRes.error;
+  // 3. Finn eksisterende deltaker direkte i databasen.
+  const existingEnrollmentRes = await supabaseClient
+    .from("skating_school_enrollments")
+    .select("id, batch_id, member_id, school_group_id, birth_year")
+    .eq("batch_id", batch.id)
+    .eq("member_id", member.id)
+    .maybeSingle();
+
+  if (existingEnrollmentRes.error) throw existingEnrollmentRes.error;
+
+  let enrollment = existingEnrollmentRes.data || null;
+  let createdEnrollment = false;
+
+  if (!enrollment) {
+    const enrollmentInsert = await supabaseClient
+      .from("skating_school_enrollments")
+      .insert([{
+        batch_id: batch.id,
+        member_id: member.id,
+        birth_year: assignment.birthYear || null,
+        school_group_id: assignment.autoGroupId || null,
+        assignment_reason: assignment.assignmentReason || "Flyttet fra påmelding",
+        manual_override: false
+      }])
+      .select("id, batch_id, member_id, school_group_id, birth_year")
+      .single();
+
+    if (enrollmentInsert.error) throw enrollmentInsert.error;
+    if (!enrollmentInsert.data || !enrollmentInsert.data.id) {
+      throw new Error("Deltakerkoblingen ble ikke opprettet korrekt.");
+    }
+
+    enrollment = enrollmentInsert.data;
+    createdEnrollment = true;
   }
 
+  // 4. Verifiser koblingen før påmeldingen merkes som ferdig.
+  const verifyEnrollment = await supabaseClient
+    .from("skating_school_enrollments")
+    .select("id, batch_id, member_id")
+    .eq("id", enrollment.id)
+    .eq("batch_id", batch.id)
+    .eq("member_id", member.id)
+    .maybeSingle();
+
+  if (verifyEnrollment.error) throw verifyEnrollment.error;
+  if (!verifyEnrollment.data) {
+    throw new Error("Kunne ikke bekrefte koblingen mellom medlem og semester.");
+  }
+
+  // 5. Først nå markerer vi påmeldingen som ferdig.
   const notesParts = [];
   const oldNotes = String(signup.notes || "").trim();
   if (oldNotes) notesParts.push(oldNotes);
   if (signup.birth_date) notesParts.push("Fødselsdato: " + String(signup.birth_date));
   if (signup.has_own_skates) notesParts.push("Har egne skøyter");
   else if (signup.requested_skate_size) notesParts.push("Ønsket skøytestørrelse: " + String(signup.requested_skate_size));
-  notesParts.push(existingEnrollment ? "Påmeldingen var allerede registrert som deltaker." : "Flyttet til deltaker " + new Date().toLocaleString("no-NO"));
+  notesParts.push(createdEnrollment ? "Flyttet til deltaker " + new Date().toLocaleString("no-NO") : "Var allerede registrert som deltaker.");
 
   const updateSignup = await supabaseClient
     .from("skating_school_signups")
@@ -4224,20 +4276,36 @@ async function moveSingleSignupToParticipant(signup, options = {}) {
       status: "Ferdig",
       notes: notesParts.join(" | ")
     })
-    .eq("id", signup.id);
+    .eq("id", signup.id)
+    .select("id, existing_member_id, status")
+    .single();
+
   if (updateSignup.error) throw updateSignup.error;
+  if (!updateSignup.data || String(updateSignup.data.existing_member_id) !== String(member.id)) {
+    throw new Error("Påmeldingen ble ikke koblet til medlemmet korrekt.");
+  }
 
   if (reloadAfter) {
-    const picker = byId("schoolBatchPicker");
-    if (picker) picker.value = String(batch.id);
     await loadAll();
+    const picker = byId("schoolBatchPicker");
+    if (picker) {
+      picker.value = String(batch.id);
+      setUiPref("schoolBatchPicker", String(batch.id));
+    }
+    renderSchoolBatchOverview();
+    updateSchoolParticipantMemberPicker();
+    renderSchoolParticipants();
   }
 
   return {
     ok: true,
+    batchId: batch.id,
     batchName: batch.name || "",
-    createdMember: !findExistingMemberFromSignup(signup),
-    existingEnrollment: !!existingEnrollment,
+    memberId: member.id,
+    enrollmentId: enrollment.id,
+    createdMember,
+    createdEnrollment,
+    existingEnrollment: !createdEnrollment,
     groupId: assignment.autoGroupId || null,
     assignmentReason: assignment.assignmentReason || ""
   };
@@ -4300,6 +4368,7 @@ async function moveSelectedSchoolSignupsToParticipants() {
 
   let successCount = 0;
   const failed = [];
+  const movedBatchIds = new Set();
 
   try {
     setSchoolMessage("schoolSignupMessage", "Flytter " + rows.length + " påmelding" + (rows.length === 1 ? "" : "er") + " til deltakere ...", false);
@@ -4315,7 +4384,8 @@ async function moveSelectedSchoolSignupsToParticipants() {
           failed.push(String(signup.child_name || "Uten navn") + ": ikke betalt ennå");
           continue;
         }
-        await moveSingleSignupToParticipant(signup, { reloadAfter: false });
+        const moved = await moveSingleSignupToParticipant(signup, { reloadAfter: false });
+        if (moved && moved.batchId) movedBatchIds.add(String(moved.batchId));
         successCount += 1;
       } catch (error) {
         failed.push(String(signup.child_name || "Uten navn") + ": " + (error && error.message ? error.message : error));
@@ -4324,12 +4394,12 @@ async function moveSelectedSchoolSignupsToParticipants() {
 
     await loadAll();
 
-    // Behold semesteret som var valgt da flyttingen startet,
-    // slik at de nye deltakerne vises umiddelbart i deltakerlisten.
+    // Vis semesteret påmeldingene faktisk ble flyttet til.
     const pickerAfterReload = byId("schoolBatchPicker");
-    if (pickerAfterReload && currentBatchId) {
-      pickerAfterReload.value = String(currentBatchId);
-      setUiPref("schoolBatchPicker", String(currentBatchId));
+    const movedBatchId = movedBatchIds.size === 1 ? Array.from(movedBatchIds)[0] : currentBatchId;
+    if (pickerAfterReload && movedBatchId) {
+      pickerAfterReload.value = String(movedBatchId);
+      setUiPref("schoolBatchPicker", String(movedBatchId));
       renderSchoolBatchOverview();
       updateSchoolParticipantMemberPicker();
       renderSchoolParticipants();
