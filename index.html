@@ -975,6 +975,60 @@
   .app-user-label { max-width: 145px; }
 }
 
+
+/* Underfaner for Skøyteskole */
+.school-tabs-card {
+  background: var(--card);
+  border: 1px solid rgba(16,35,63,0.06);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 12px;
+  margin-bottom: 14px;
+}
+
+.school-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.school-tab {
+  background: #e7edf5;
+  color: var(--text);
+  border-radius: 999px;
+  padding: 9px 13px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.school-tab.active {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.school-section-hidden {
+  display: none !important;
+}
+
+@media (max-width: 600px) {
+  .school-tabs-card {
+    padding: 10px;
+    border-radius: 16px;
+  }
+
+  .school-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .school-tab {
+    border-radius: 12px;
+    padding: 10px 8px;
+    font-size: 13px;
+  }
+}
+
 </style>
 
 <style>
@@ -1391,8 +1445,18 @@
 
 
 
+
 <div class="section-card hidden" id="skatingSchoolTab">
-  <div class="section-card">
+
+  <div class="school-tabs-card">
+    <div class="school-tabs" role="tablist" aria-label="Skøyteskole faner">
+      <button type="button" class="school-tab active" data-school-tab="admin">Admin</button>
+      <button type="button" class="school-tab" data-school-tab="school">Skøyteskole</button>
+    </div>
+  </div>
+
+  <div id="schoolAdminSection">
+<div class="section-card">
     <div class="section-header">
       <div>
         <h2>Opprett semester</h2>
@@ -1444,6 +1508,10 @@
       </div>
     </form>
   </div>
+  </div>
+
+  <div id="schoolMainSection" class="school-section-hidden">
+
 
   <div class="section-card">
     <div class="section-header">
@@ -1502,6 +1570,8 @@
     <div class="help" id="schoolSignupMessage" style="margin-top:10px;"></div>
     <div id="schoolSignupsWrap"></div>
   </div>
+  </div>
+
 </div>
 
 <div class="hidden" id="adminTab">
@@ -6634,7 +6704,34 @@ attachSortHandlers();
     }
   
 
-        setupAdminTabs();
+    
+    function setupSchoolTabs() {
+      const tabs = Array.from(document.querySelectorAll(".school-tab"));
+      const adminSection = byId("schoolAdminSection");
+      const schoolSection = byId("schoolMainSection");
+
+      if (!tabs.length || !adminSection || !schoolSection) return;
+
+      function activateSchoolTab(tabName) {
+        tabs.forEach((tab) => {
+          tab.classList.toggle("active", tab.dataset.schoolTab === tabName);
+        });
+
+        adminSection.classList.toggle("school-section-hidden", tabName !== "admin");
+        schoolSection.classList.toggle("school-section-hidden", tabName !== "school");
+      }
+
+      tabs.forEach((tab) => {
+        tab.addEventListener("click", () => {
+          activateSchoolTab(tab.dataset.schoolTab || "admin");
+        });
+      });
+
+      activateSchoolTab("admin");
+    }
+
+    setupSchoolTabs();
+    setupAdminTabs();
 </script>
 
 <div class="school-mobile-modal hidden" id="schoolMobileModal">
