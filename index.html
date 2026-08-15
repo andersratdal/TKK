@@ -6396,18 +6396,68 @@ attachSortHandlers();
       if (logout) {
         logout.addEventListener("click", async function () {
           dropdown.classList.add("hidden");
-
-          if (!supabaseClient || !supabaseClient.auth) {
-            window.location.reload();
-            return;
-          }
+          logout.disabled = true;
+          logout.textContent = "Logger ut...";
 
           try {
-            const result = await supabaseClient.auth.signOut();
-            if (result.error) throw result.error;
-            window.location.reload();
+            // Bruk den aktive klienten hvis den finnes.
+            // scope:"local" sørger for at nettleserens lokale sesjon fjernes
+            // selv om server-side/global signout skulle feile.
+            if (supabaseClient && supabaseClient.auth) {
+              const result = await supabaseClient.auth.signOut({ scope: "local" });
+              if (result && result.error) {
+                console.warn("Supabase signOut returnerte feil:", result.error);
+              }
+            }
+
+            // Ekstra sikkerhet: fjern bare Supabase auth-lagring.
+            // Beholder TKK-appens egne innstillinger (CONFIG_KEY / UI_PREFS_KEY).
+            try {
+              const keysToRemove = [];
+              for (let i = 0; i < localStorage.length; i += 1) {
+                const key = localStorage.key(i);
+                if (!key) continue;
+
+                const lower = key.toLowerCase();
+                if (
+                  (lower.startsWith("sb-") && lower.includes("auth-token")) ||
+                  lower.includes("supabase.auth.token")
+                ) {
+                  keysToRemove.push(key);
+                }
+              }
+              keysToRemove.forEach((key) => localStorage.removeItem(key));
+            } catch (storageError) {
+              console.warn("Kunne ikke rydde Supabase auth-token:", storageError);
+            }
+
+            // Fjern også eventuelle sessionStorage-baserte auth-token.
+            try {
+              const sessionKeysToRemove = [];
+              for (let i = 0; i < sessionStorage.length; i += 1) {
+                const key = sessionStorage.key(i);
+                if (!key) continue;
+
+                const lower = key.toLowerCase();
+                if (
+                  (lower.startsWith("sb-") && lower.includes("auth-token")) ||
+                  lower.includes("supabase.auth.token")
+                ) {
+                  sessionKeysToRemove.push(key);
+                }
+              }
+              sessionKeysToRemove.forEach((key) => sessionStorage.removeItem(key));
+            } catch (storageError) {
+              console.warn("Kunne ikke rydde session auth-token:", storageError);
+            }
+
+            // Replace hindrer at tilbake-knappen åpner den gamle innloggede siden.
+            const cleanUrl = window.location.pathname + "?logged_out=1";
+            window.location.replace(cleanUrl);
           } catch (error) {
             console.error(error);
+            logout.disabled = false;
+            logout.textContent = "Logg ut";
             alert("Kunne ikke logge ut.\n\n" + (error.message || error));
           }
         });
