@@ -4010,7 +4010,26 @@ function formatSkateRequest(signup) {
   return String(signup.requested_skate_size || "-");
 }
 
+function isCodeSignup(signup) {
+  return !!(
+    signup &&
+    (
+      signup.access_code_id ||
+      String(signup.access_code || "").trim()
+    )
+  );
+}
+
+function formatSignupAccessCode(signup) {
+  if (!isCodeSignup(signup)) return "-";
+  return String(signup.access_code || "Kodepåmelding");
+}
+
 function formatPaymentStatus(signup) {
+  if (isCodeSignup(signup)) {
+    return "Ikke betalingskrav";
+  }
+
   const status = String((signup && signup.payment_status) || "Ubetalt");
   if (status === "Betalt" && signup && signup.paid_at) {
     return "Betalt (" + formatDate(signup.paid_at) + ")";
@@ -4227,6 +4246,7 @@ async function moveSignupToParticipant(signupId) {
 
   try {
     if (
+      !isCodeSignup(signup) &&
       String(signup.payment_status || "Ubetalt") !== "Betalt" &&
       String(signup.payment_status || "Ubetalt") !== "Fritatt" &&
       signup.payment_exempt !== true
@@ -4279,10 +4299,11 @@ async function moveSelectedSchoolSignupsToParticipants() {
     for (const signup of rows) {
       try {
         if (
-        String(signup.payment_status || "Ubetalt") !== "Betalt" &&
-        String(signup.payment_status || "Ubetalt") !== "Fritatt" &&
-        signup.payment_exempt !== true
-      ) {
+          !isCodeSignup(signup) &&
+          String(signup.payment_status || "Ubetalt") !== "Betalt" &&
+          String(signup.payment_status || "Ubetalt") !== "Fritatt" &&
+          signup.payment_exempt !== true
+        ) {
           failed.push(String(signup.child_name || "Uten navn") + ": ikke betalt ennå");
           continue;
         }
@@ -4345,6 +4366,7 @@ function renderSchoolSignups() {
     const existingEnrollment = linkedMember && batch ? getExistingEnrollmentForBatchAndMember(batch.id, linkedMember.id) : null;
     if (existingEnrollment) return { label: "Allerede deltaker", disabled: true };
     if (
+      !isCodeSignup(row) &&
       String((row && row.payment_status) || "Ubetalt") !== "Betalt" &&
       String((row && row.payment_status) || "Ubetalt") !== "Fritatt" &&
       row.payment_exempt !== true
@@ -4402,7 +4424,12 @@ function renderSchoolSignups() {
       const meta3 = document.createElement("div");
       meta3.className = "help";
       meta3.style.marginTop = "4px";
-      meta3.textContent = linked + " | Status: " + String(row.status || "Ny") + " | Betaling: " + formatPaymentStatus(row) + " | Mottatt: " + formatDate(row.created_at);
+      meta3.textContent =
+        linked +
+        " | Status: " + String(row.status || "Ny") +
+        " | Påmeldingskode: " + formatSignupAccessCode(row) +
+        " | Betaling: " + formatPaymentStatus(row) +
+        " | Mottatt: " + formatDate(row.created_at);
 
       card.appendChild(title);
       card.appendChild(meta1);
@@ -4428,12 +4455,12 @@ function renderSchoolSignups() {
   }
 
   const table = document.createElement("table");
-  table.innerHTML = "<thead><tr><th style='width:40px;'><input id='schoolSignupsSelectAllCheckbox' type='checkbox'/></th><th>Barn</th><th>Født</th><th>Kontakt</th><th>Skøyter</th><th>Semester</th><th>Status</th><th>Betaling</th><th>Medlem</th><th>Mottatt</th><th>Handling</th></tr></thead>";
+  table.innerHTML = "<thead><tr><th style='width:40px;'><input id='schoolSignupsSelectAllCheckbox' type='checkbox'/></th><th>Barn</th><th>Født</th><th>Kontakt</th><th>Skøyter</th><th>Semester</th><th>Status</th><th>Påmeldingskode</th><th>Betaling</th><th>Medlem</th><th>Mottatt</th><th>Handling</th></tr></thead>";
   const tbody = document.createElement("tbody");
 
   rows.forEach((row) => {
     const tr = document.createElement("tr");
-    tr.innerHTML = "<td data-label='Velg'></td><td data-label='Barn'></td><td data-label='Født'></td><td data-label='Kontakt'></td><td data-label='Skøyter'></td><td data-label='Semester'></td><td data-label='Status'></td><td data-label='Betaling'></td><td data-label='Medlem'></td><td data-label='Mottatt'></td><td data-label='Handling'></td>";
+    tr.innerHTML = "<td data-label='Velg'></td><td data-label='Barn'></td><td data-label='Født'></td><td data-label='Kontakt'></td><td data-label='Skøyter'></td><td data-label='Semester'></td><td data-label='Status'></td><td data-label='Påmeldingskode'></td><td data-label='Betaling'></td><td data-label='Medlem'></td><td data-label='Mottatt'></td><td data-label='Handling'></td>";
 
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
@@ -4447,9 +4474,10 @@ function renderSchoolSignups() {
     tr.children[4].textContent = formatSkateRequest(row);
     tr.children[5].textContent = String(row.batch_name || "-");
     tr.children[6].textContent = String(row.status || "Ny");
-    tr.children[7].textContent = formatPaymentStatus(row);
-    tr.children[8].textContent = findExistingMemberFromSignup(row) ? "Koblet til medlem" : "Ikke medlem ennå";
-    tr.children[9].textContent = formatDate(row.created_at);
+    tr.children[7].textContent = formatSignupAccessCode(row);
+    tr.children[8].textContent = formatPaymentStatus(row);
+    tr.children[9].textContent = findExistingMemberFromSignup(row) ? "Koblet til medlem" : "Ikke medlem ennå";
+    tr.children[10].textContent = formatDate(row.created_at);
 
     const actionMeta = getActionMeta(row);
     const btn = document.createElement("button");
@@ -4458,7 +4486,7 @@ function renderSchoolSignups() {
     btn.textContent = actionMeta.label;
     btn.disabled = actionMeta.disabled;
     btn.addEventListener("click", async function () { await moveSignupToParticipant(row.id); });
-    tr.children[10].appendChild(btn);
+    tr.children[11].appendChild(btn);
 
     tbody.appendChild(tr);
   });
@@ -5882,7 +5910,7 @@ async function loadAll() {
         try {
           const schoolSignupsRes = await supabaseClient
             .from("skating_school_signups")
-            .select("id, created_at, batch_id, department_id, batch_name, child_name, phone, email, birth_date, requested_skate_size, has_own_skates, existing_member_id, status, payment_status, payment_exempt, amount_nok, stripe_checkout_session_id, stripe_payment_intent_id, paid_at, source, notes")
+            .select("id, created_at, batch_id, department_id, batch_name, child_name, phone, email, birth_date, requested_skate_size, has_own_skates, existing_member_id, status, payment_status, payment_exempt, amount_nok, stripe_checkout_session_id, stripe_payment_intent_id, paid_at, source, notes, access_code_id, access_code")
             .order("created_at", { ascending: false });
           if (schoolSignupsRes.error) throw schoolSignupsRes.error;
           schoolSignupsData = schoolSignupsRes.data || [];
