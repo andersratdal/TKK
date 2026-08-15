@@ -885,52 +885,94 @@
 }
 
 
-
-/* Felles toppfelt med aktiv bruker */
+/* Aktiv bruker / kontomeny - uten ekstra logo */
 .app-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin: 0 0 18px;
-  padding: 8px 0;
+  justify-content: flex-end;
+  min-height: 46px;
+  margin: 0 0 10px;
+  padding: 4px 0;
   position: sticky;
   top: 0;
   z-index: 1000;
   background: rgba(247, 250, 255, 0.96);
   backdrop-filter: blur(10px);
 }
-.app-logo-link { display:inline-flex; align-items:center; text-decoration:none; color:inherit; }
-.app-logo-link:hover { opacity:.88; }
-.app-logo { height:42px; width:auto; object-fit:contain; display:block; }
-.app-user-menu { position:relative; flex:0 0 auto; }
+
+.app-user-menu {
+  position: relative;
+  flex: 0 0 auto;
+}
+
 .app-user-button {
-  background:transparent; color:var(--text); border:0; border-radius:999px;
-  padding:8px 12px; font-size:14px; font-weight:600; max-width:240px;
-  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
-  display:flex; align-items:center; gap:8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  color: var(--text);
+  border: 0;
+  padding: 7px 8px;
+  font-size: 14px;
+  font-weight: 600;
+  max-width: 260px;
 }
-.app-user-button:hover { background:var(--accent-soft); color:var(--accent); }
+
+.app-user-button:hover {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
 .app-user-icon {
-  width:30px; height:30px; border-radius:50%; display:grid; place-items:center;
-  background:var(--accent-soft); color:var(--accent); font-size:16px; flex:0 0 auto;
+  width: 30px;
+  height: 30px;
+  border: 1px solid #bfd2ef;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  font-size: 17px;
+  background: #fff;
 }
+
+.app-user-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .app-user-dropdown {
-  position:absolute; top:calc(100% + 8px); right:0; min-width:190px; background:#fff;
-  border:1px solid rgba(16,35,63,.10); border-radius:14px;
-  box-shadow:0 14px 34px rgba(16,35,63,.18); padding:8px; z-index:1400;
+  position: absolute;
+  top: calc(100% + 7px);
+  right: 0;
+  min-width: 185px;
+  background: #fff;
+  border: 1px solid rgba(16,35,63,0.10);
+  border-radius: 14px;
+  box-shadow: 0 14px 34px rgba(16,35,63,0.18);
+  padding: 8px;
+  z-index: 1400;
 }
+
 .app-user-dropdown button {
-  width:100%; display:block; text-align:left; background:transparent; color:var(--text);
-  border-radius:10px; padding:10px 12px; font-size:14px; font-weight:500;
+  width: 100%;
+  display: block;
+  text-align: left;
+  background: transparent;
+  color: var(--text);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: 500;
 }
-.app-user-dropdown button:hover { background:var(--accent-soft); color:var(--accent); }
-.app-user-email { padding:8px 12px 10px; font-size:12px; color:var(--muted); word-break:break-all; }
-@media (max-width:600px) {
-  .app-header { margin-bottom:12px; }
-  .app-logo { height:34px; }
-  .app-user-label { display:none; }
-  .app-user-button { padding:5px; }
+
+.app-user-dropdown button:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+@media (max-width: 600px) {
+  .app-header { margin-bottom: 6px; }
+  .app-user-label { max-width: 145px; }
 }
 
 </style>
@@ -939,16 +981,14 @@
 <div class="container">
 
 <header class="app-header">
-  <a class="app-logo-link" href="#" id="appHomeLogo" aria-label="Gå til forsiden">
-    <img class="app-logo" alt="Trondheim Kortbaneklubb" src="logo.png" />
-  </a>
   <div class="app-user-menu">
-    <button class="app-user-button" id="appUserButton" type="button" aria-haspopup="true" aria-expanded="false">
+    <button class="app-user-button" id="appUserButton" type="button"
+            aria-haspopup="true" aria-expanded="false" title="Brukermeny">
       <span class="app-user-icon" aria-hidden="true">👤</span>
       <span class="app-user-label" id="appUserLabel">Konto</span>
+      <span aria-hidden="true">⌄</span>
     </button>
     <div class="app-user-dropdown hidden" id="appUserDropdown">
-      <div class="app-user-email" id="appUserEmail"></div>
       <button type="button" id="appUserChangePassword">Endre passord</button>
       <button type="button" id="appUserLogout">Logg ut</button>
     </div>
@@ -6276,8 +6316,107 @@ attachSortHandlers();
     if (started) {
       loadAll();
       startAutoRefresh();
+      refreshActiveUserMenu();
     }
   
+
+    async function refreshActiveUserMenu() {
+      const label = byId("appUserLabel");
+      if (!label) return;
+
+      if (!supabaseClient || !supabaseClient.auth) {
+        label.textContent = "Konto";
+        return;
+      }
+
+      try {
+        const result = await supabaseClient.auth.getSession();
+        const user = result && result.data && result.data.session
+          ? result.data.session.user
+          : null;
+
+        label.textContent = user
+          ? (user.email || "Innlogget bruker")
+          : "Konto";
+      } catch (error) {
+        console.error("Kunne ikke hente aktiv bruker", error);
+        label.textContent = "Konto";
+      }
+    }
+
+    function setupHeaderUserMenu() {
+      const btn = byId("appUserButton");
+      const dropdown = byId("appUserDropdown");
+      const changePassword = byId("appUserChangePassword");
+      const logout = byId("appUserLogout");
+
+      if (!btn || !dropdown) return;
+
+      btn.addEventListener("click", function (event) {
+        event.stopPropagation();
+        const willOpen = dropdown.classList.contains("hidden");
+        dropdown.classList.toggle("hidden");
+        btn.setAttribute("aria-expanded", willOpen ? "true" : "false");
+      });
+
+      document.addEventListener("click", function (event) {
+        if (!event.target.closest(".app-user-menu")) {
+          dropdown.classList.add("hidden");
+          btn.setAttribute("aria-expanded", "false");
+        }
+      });
+
+      if (changePassword) {
+        changePassword.addEventListener("click", async function () {
+          dropdown.classList.add("hidden");
+
+          if (!supabaseClient || !supabaseClient.auth) {
+            alert("Supabase-oppsett mangler. Gå til Admin → Innstillinger.");
+            return;
+          }
+
+          const password = window.prompt("Skriv inn nytt passord (minst 6 tegn):");
+          if (password === null) return;
+          if (password.length < 6) {
+            alert("Passordet må ha minst 6 tegn.");
+            return;
+          }
+
+          try {
+            const result = await supabaseClient.auth.updateUser({ password });
+            if (result.error) throw result.error;
+            alert("Passordet er oppdatert.");
+          } catch (error) {
+            console.error(error);
+            alert("Kunne ikke endre passord.\n\n" + (error.message || error));
+          }
+        });
+      }
+
+      if (logout) {
+        logout.addEventListener("click", async function () {
+          dropdown.classList.add("hidden");
+
+          if (!supabaseClient || !supabaseClient.auth) {
+            window.location.reload();
+            return;
+          }
+
+          try {
+            const result = await supabaseClient.auth.signOut();
+            if (result.error) throw result.error;
+            window.location.reload();
+          } catch (error) {
+            console.error(error);
+            alert("Kunne ikke logge ut.\n\n" + (error.message || error));
+          }
+        });
+      }
+    }
+
+
+    setupHeaderUserMenu();
+    refreshActiveUserMenu();
     setupAdminTabs();
 </script>
 
@@ -6294,108 +6433,6 @@ attachSortHandlers();
     </div>
   </div>
 </div>
-
-
-<script>
-(function setupAccountHeader() {
-  const CONFIG_KEY = "skoyteutleie_supabase_config_v7";
-
-  function getConfig() {
-    try {
-      const raw = localStorage.getItem(CONFIG_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch (_) { return {}; }
-  }
-
-  function makeAuthClient() {
-    const cfg = getConfig();
-    if (!window.supabase || !window.supabase.createClient || !cfg.url || !cfg.anonKey) return null;
-    return window.supabase.createClient(cfg.url, cfg.anonKey);
-  }
-
-  async function initUserMenu() {
-    const button = document.getElementById("appUserButton");
-    const label = document.getElementById("appUserLabel");
-    const emailBox = document.getElementById("appUserEmail");
-    const dropdown = document.getElementById("appUserDropdown");
-    const logoutBtn = document.getElementById("appUserLogout");
-    const passwordBtn = document.getElementById("appUserChangePassword");
-    const homeLogo = document.getElementById("appHomeLogo");
-    if (!button || !dropdown) return;
-
-    const authClient = makeAuthClient();
-    let currentUser = null;
-
-    if (authClient) {
-      try {
-        const result = await authClient.auth.getSession();
-        currentUser = result && result.data && result.data.session ? result.data.session.user : null;
-      } catch (err) {
-        console.warn("Kunne ikke hente aktiv bruker", err);
-      }
-    }
-
-    const email = currentUser && currentUser.email ? currentUser.email : "";
-    if (label) label.textContent = email || "Konto";
-    if (emailBox) {
-      emailBox.textContent = email || "Ingen aktiv bruker funnet";
-      emailBox.style.display = email ? "block" : "none";
-    }
-
-    button.addEventListener("click", function (event) {
-      event.stopPropagation();
-      const isHidden = dropdown.classList.contains("hidden");
-      dropdown.classList.toggle("hidden", !isHidden);
-      button.setAttribute("aria-expanded", isHidden ? "true" : "false");
-    });
-
-    document.addEventListener("click", function (event) {
-      if (!dropdown.contains(event.target) && !button.contains(event.target)) {
-        dropdown.classList.add("hidden");
-        button.setAttribute("aria-expanded", "false");
-      }
-    });
-
-    if (homeLogo) {
-      homeLogo.addEventListener("click", function (event) {
-        event.preventDefault();
-        if (typeof window.goHome === "function") window.goHome();
-        else window.location.href = "index.html";
-      });
-    }
-
-    logoutBtn.addEventListener("click", async function () {
-      if (!authClient) return alert("Supabase-oppsett mangler.");
-      try {
-        await authClient.auth.signOut();
-        window.location.reload();
-      } catch (err) {
-        console.error(err);
-        alert("Kunne ikke logge ut.");
-      }
-    });
-
-    passwordBtn.addEventListener("click", async function () {
-      if (!authClient || !currentUser) return alert("Ingen aktiv bruker funnet.");
-      const password = prompt("Skriv inn nytt passord (minst 6 tegn):");
-      if (password === null) return;
-      if (password.length < 6) return alert("Passordet må ha minst 6 tegn.");
-      try {
-        const result = await authClient.auth.updateUser({ password });
-        if (result.error) throw result.error;
-        dropdown.classList.add("hidden");
-        alert("Passordet er endret.");
-      } catch (err) {
-        console.error(err);
-        alert("Kunne ikke endre passord: " + (err.message || err));
-      }
-    });
-  }
-
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", initUserMenu);
-  else initUserMenu();
-})();
-</script>
 
 </body>
 </html>
