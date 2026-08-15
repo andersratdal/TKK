@@ -3374,11 +3374,11 @@ function renderMembers() {
       }
 
       const table = document.createElement("table");
-      table.innerHTML = "<thead><tr><th>Avdeling</th><th>Skøyte</th><th>Medlem</th><th>Kontakt</th><th>Utlånt</th><th>Handling</th></tr></thead>";
+      table.innerHTML = "<thead><tr><th>Avdeling</th><th>Skøyte</th><th>Utlånt</th><th>Handling</th></tr></thead>";
       const tbody = document.createElement("tbody");
       for (const loan of rows) {
         const tr = document.createElement("tr");
-        tr.innerHTML = "<td data-label='Avdeling'></td><td data-label='Skøyte'></td><td data-label='Medlem'></td><td data-label='Kontakt'></td><td data-label='Utlånt'></td><td data-label='Handling'></td>";
+        tr.innerHTML = "<td data-label='Avdeling'></td><td data-label='Skøyte'></td><td data-label='Utlånt'></td><td data-label='Handling'></td>";
         let skateLabel = safeText(loan.skates && loan.skates.skate_code);
         if (loan.skates && loan.skates.size) skateLabel += " (str " + loan.skates.size + ")";
         tr.children[0].textContent = safeText(loan.departments && loan.departments.name);
@@ -4455,12 +4455,12 @@ function renderSchoolSignups() {
   }
 
   const table = document.createElement("table");
-  table.innerHTML = "<thead><tr><th style='width:40px;'><input id='schoolSignupsSelectAllCheckbox' type='checkbox'/></th><th>Barn</th><th>Født</th><th>Kontakt</th><th>Skøyter</th><th>Semester</th><th>Status</th><th>Påmeldingskode</th><th>Betaling</th><th>Medlem</th><th>Mottatt</th><th>Handling</th></tr></thead>";
+  table.innerHTML = "<thead><tr><th style='width:40px;'><input id='schoolSignupsSelectAllCheckbox' type='checkbox'/></th><th>Barn</th><th>Født</th><th>Kontakt</th><th>Skøyter</th><th>Status</th><th>Påmeldingskode</th><th>Betaling</th><th>Medlem</th><th>Mottatt</th><th>Handling</th></tr></thead>";
   const tbody = document.createElement("tbody");
 
   rows.forEach((row) => {
     const tr = document.createElement("tr");
-    tr.innerHTML = "<td data-label='Velg'></td><td data-label='Barn'></td><td data-label='Født'></td><td data-label='Kontakt'></td><td data-label='Skøyter'></td><td data-label='Semester'></td><td data-label='Status'></td><td data-label='Påmeldingskode'></td><td data-label='Betaling'></td><td data-label='Medlem'></td><td data-label='Mottatt'></td><td data-label='Handling'></td>";
+    tr.innerHTML = "<td data-label='Velg'></td><td data-label='Barn'></td><td data-label='Født'></td><td data-label='Kontakt'></td><td data-label='Skøyter'></td><td data-label='Status'></td><td data-label='Påmeldingskode'></td><td data-label='Betaling'></td><td data-label='Medlem'></td><td data-label='Mottatt'></td><td data-label='Handling'></td>";
 
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
@@ -4470,14 +4470,11 @@ function renderSchoolSignups() {
 
     tr.children[1].textContent = String(row.child_name || "-");
     tr.children[2].textContent = formatBirthDate(row.birth_date);
-    tr.children[3].textContent = [row.phone, row.email].filter(Boolean).join(" / ") || "-";
-    tr.children[4].textContent = formatSkateRequest(row);
-    tr.children[5].textContent = String(row.batch_name || "-");
-    tr.children[6].textContent = String(row.status || "Ny");
-    tr.children[7].textContent = formatSignupAccessCode(row);
-    tr.children[8].textContent = formatPaymentStatus(row);
-    tr.children[9].textContent = findExistingMemberFromSignup(row) ? "Koblet til medlem" : "Ikke medlem ennå";
-    tr.children[10].textContent = formatDate(row.created_at);
+    tr.children[3].textContent = formatSkateRequest(row);
+    tr.children[4].textContent = String(row.status || "Ny");
+    tr.children[5].textContent = formatSignupAccessCode(row);
+    tr.children[6].textContent = formatPaymentStatus(row);
+    tr.children[7].textContent = formatDate(row.created_at);
 
     const actionMeta = getActionMeta(row);
     const btn = document.createElement("button");
@@ -4486,7 +4483,7 @@ function renderSchoolSignups() {
     btn.textContent = actionMeta.label;
     btn.disabled = actionMeta.disabled;
     btn.addEventListener("click", async function () { await moveSignupToParticipant(row.id); });
-    tr.children[11].appendChild(btn);
+    tr.children[8].appendChild(btn);
 
     tbody.appendChild(tr);
   });
