@@ -1619,7 +1619,9 @@
           <option value="Ferdig">Ferdig</option>
           <option value="Avvist">Avvist</option>
         </select>
-                        <button class="btn-primary btn-small" id="btnMoveSelectedSchoolSignups" type="button">Flytt valgte til deltakere</button>
+        
+        
+        <button class="btn-primary btn-small" id="btnMoveSelectedSchoolSignups" type="button">Flytt valgte til deltakere</button>
       </div>
     </div>
     <div class="help" id="schoolSignupMessage" style="margin-top:10px;"></div>
@@ -2943,14 +2945,14 @@ function renderSkates() {
       }
 
       const table = document.createElement("table");
-      table.innerHTML = '<thead><tr><th data-sort="skate_code" data-section="skates">Skøyte-ID</th><th data-sort="model" data-section="skates">Modell</th><th data-sort="size" data-section="skates">Størrelse</th><th data-sort="type" data-section="skates">Type</th><th data-sort="status" data-section="skates">Status</th><th data-sort="member_name" data-section="skates">Navn</th><th>NFC</th></tr></thead>';
+      table.innerHTML = '<thead><tr><th data-sort="skate_code" data-section="skates">Skøyte-ID</th><th data-sort="model" data-section="skates">Modell</th><th data-sort="size" data-section="skates">Størrelse</th><th data-sort="type" data-section="skates">Type</th><th data-sort="status" data-section="skates">Status</th><th data-sort="member_name" data-section="skates">Navn</th><th>NFC</th><th>Handling</th></tr></thead>';
       const tbody = document.createElement("tbody");
       if (sortState.skates.key) {
         rows = sortArray(rows, sortState.skates.key, sortState.skates.asc);
       }
       for (const skate of rows) {
         const tr = document.createElement("tr");
-        tr.innerHTML = "<td data-label='Skøyte-ID'></td><td data-label='Modell'></td><td data-label='Størrelse'></td><td data-label='Type'></td><td data-label='Status'></td><td data-label='Navn'></td><td data-label='NFC'></td>";
+        tr.innerHTML = "<td data-label='Skøyte-ID'></td><td data-label='Modell'></td><td data-label='Størrelse'></td><td data-label='Type'></td><td data-label='Status'></td><td data-label='Navn'></td><td data-label='NFC'></td><td data-label='Handling'></td>";
         tr.children[0].textContent = safeText(skate.skate_code);
         tr.children[1].textContent = safeText(skate.model);
         tr.children[2].textContent = safeText(skate.size);
@@ -4362,128 +4364,129 @@ function renderSchoolSignups() {
       messageEl.className = "help msg-error";
     } else {
       const count = Array.isArray(state.schoolSignups) ? state.schoolSignups.length : 0;
-      messageEl.textContent = count ? ("Fant " + count + " påmelding" + (count === 1 ? "" : "er") + ".") : "Ingen påmeldinger ennå.";
+      messageEl.textContent = count
+        ? ("Fant " + count + " påmelding" + (count === 1 ? "" : "er") + ".")
+        : "Ingen påmeldinger ennå.";
       messageEl.className = "help";
     }
   }
 
-  let rows = getFilteredSchoolSignups();
+  const rows = getFilteredSchoolSignups();
 
   if (!rows.length) {
-    wrap.innerHTML = '<div class="empty">' + (loadError ? 'Ingen påmeldinger kunne vises.' : 'Ingen påmeldinger matcher filteret.') + '</div>';
+    wrap.innerHTML =
+      '<div class="empty">' +
+      (loadError ? "Ingen påmeldinger kunne vises." : "Ingen påmeldinger matcher filteret.") +
+      "</div>";
     return;
   }
 
-  const isMobile = window.innerWidth <= 700;
-  wrap.innerHTML = "";
   const selectedIds = getSelectedSchoolSignupIds();
+  wrap.innerHTML = "";
 
-  function getActionMeta(row) {
-    const linkedMember = findExistingMemberFromSignup(row);
-    const batch = getSignupTargetBatch(row);
-    const existingEnrollment = linkedMember && batch ? getExistingEnrollmentForBatchAndMember(batch.id, linkedMember.id) : null;
-    if (existingEnrollment) return { label: "Allerede deltaker", disabled: true };
-    if (
-      !isCodeSignup(row) &&
-      String((row && row.payment_status) || "Ubetalt") !== "Betalt" &&
-      String((row && row.payment_status) || "Ubetalt") !== "Fritatt" &&
-      row.payment_exempt !== true
-    ) return { label: "Må betales først", disabled: true };
-    return { label: "Flytt til deltaker", disabled: false };
-  }
-
-  if (isMobile) {
-    const topRow = document.createElement("div");
-    topRow.className = "help";
-    topRow.style.marginBottom = "10px";
-    topRow.textContent = "Valgt: " + selectedIds.size + " barn";
-    wrap.appendChild(topRow);
+  // Mobilvisning
+  if (window.innerWidth <= 700) {
+    const selectedInfo = document.createElement("div");
+    selectedInfo.className = "help";
+    selectedInfo.style.marginBottom = "10px";
+    selectedInfo.textContent = "Valgt: " + selectedIds.size + " barn";
+    wrap.appendChild(selectedInfo);
 
     const list = document.createElement("div");
     list.className = "loan-card-list";
+
     rows.forEach((row) => {
       const card = document.createElement("div");
       card.className = "loan-card";
 
-      const selectorRow = document.createElement("div");
-      selectorRow.style.marginBottom = "8px";
       const selector = document.createElement("label");
       selector.style.display = "flex";
       selector.style.alignItems = "center";
       selector.style.gap = "8px";
+      selector.style.marginBottom = "8px";
+
       const checkbox = document.createElement("input");
       checkbox.type = "checkbox";
       checkbox.checked = selectedIds.has(String(row.id));
-      checkbox.addEventListener("change", function () { toggleSchoolSignupSelection(row.id, checkbox.checked); renderSchoolSignups(); });
+      checkbox.addEventListener("change", function () {
+        toggleSchoolSignupSelection(row.id, checkbox.checked);
+        renderSchoolSignups();
+      });
+
       const selectorText = document.createElement("span");
       selectorText.textContent = "Velg";
       selector.appendChild(checkbox);
       selector.appendChild(selectorText);
-      selectorRow.appendChild(selector);
-      card.appendChild(selectorRow);
-
-      const linked = findExistingMemberFromSignup(row) ? "Koblet til medlem" : "Ikke medlem ennå";
-      const contact = [row.phone, row.email].filter(Boolean).join(" / ") || "Ingen kontaktinfo";
+      card.appendChild(selector);
 
       const title = document.createElement("div");
       title.className = "loan-card-title";
       title.textContent = String(row.child_name || "Uten navn");
+      card.appendChild(title);
 
       const meta1 = document.createElement("div");
       meta1.className = "help";
       meta1.style.marginTop = "8px";
-      meta1.textContent = "Født: " + formatBirthDate(row.birth_date) + " | Skøyter: " + formatSkateRequest(row);
+      meta1.textContent =
+        "Født: " + formatBirthDate(row.birth_date) +
+        " | Skøyter: " + formatSkateRequest(row);
+      card.appendChild(meta1);
 
       const meta2 = document.createElement("div");
       meta2.className = "help";
       meta2.style.marginTop = "4px";
-      meta2.textContent = contact;
+      meta2.textContent =
+        "Status: " + String(row.status || "Ny") +
+        " | Påmeldingskode: " + formatSignupAccessCode(row);
+      card.appendChild(meta2);
 
       const meta3 = document.createElement("div");
       meta3.className = "help";
       meta3.style.marginTop = "4px";
-      meta3.textContent =
-        linked +
-        " | Status: " + String(row.status || "Ny") +
-        " | Påmeldingskode: " + formatSignupAccessCode(row) +
-        " | Betaling: " + formatPaymentStatus(row) +
-        " | Mottatt: " + formatDate(row.created_at);
-
-      card.appendChild(title);
-      card.appendChild(meta1);
-      card.appendChild(meta2);
+      meta3.textContent = "Mottatt: " + formatSignupReceivedAt(row);
       card.appendChild(meta3);
-
-      const actionMeta = getActionMeta(row);
-      const actionRow = document.createElement("div");
-      actionRow.style.marginTop = "10px";
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = actionMeta.disabled ? "btn-secondary" : "btn-primary";
-      btn.textContent = actionMeta.label;
-      btn.disabled = actionMeta.disabled;
-      btn.addEventListener("click", async function () { await moveSignupToParticipant(row.id); });
-      actionRow.appendChild(btn);
-      card.appendChild(actionRow);
 
       list.appendChild(card);
     });
+
     wrap.appendChild(list);
     return;
   }
 
+  // Desktopvisning
   const table = document.createElement("table");
-  table.innerHTML = "<thead><tr><th style='width:40px;'><input id='schoolSignupsSelectAllCheckbox' type='checkbox'/></th><th>Barn</th><th>Født</th><th>Skøyter</th><th>Status</th><th>Påmeldingskode</th><th>Mottatt</th></tr></thead>";
+  table.innerHTML =
+    "<thead><tr>" +
+    "<th style='width:40px;'><input id='schoolSignupsSelectAllCheckbox' type='checkbox'/></th>" +
+    "<th>Barn</th>" +
+    "<th>Født</th>" +
+    "<th>Skøyter</th>" +
+    "<th>Status</th>" +
+    "<th>Påmeldingskode</th>" +
+    "<th>Mottatt</th>" +
+    "</tr></thead>";
+
   const tbody = document.createElement("tbody");
 
   rows.forEach((row) => {
     const tr = document.createElement("tr");
-    tr.innerHTML = "<td data-label='Velg'></td><td data-label='Barn'></td><td data-label='Født'></td><td data-label='Skøyter'></td><td data-label='Status'></td><td data-label='Påmeldingskode'></td><td data-label='Mottatt'></td>";
+    tr.innerHTML =
+      "<td data-label='Velg'></td>" +
+      "<td data-label='Barn'></td>" +
+      "<td data-label='Født'></td>" +
+      "<td data-label='Skøyter'></td>" +
+      "<td data-label='Status'></td>" +
+      "<td data-label='Påmeldingskode'></td>" +
+      "<td data-label='Mottatt'></td>";
 
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.checked = selectedIds.has(String(row.id));
-    checkbox.addEventListener("change", function () { toggleSchoolSignupSelection(row.id, checkbox.checked); renderSchoolSignups(); });
+    checkbox.addEventListener("change", function () {
+      toggleSchoolSignupSelection(row.id, checkbox.checked);
+      renderSchoolSignups();
+    });
+
     tr.children[0].appendChild(checkbox);
     tr.children[1].textContent = String(row.child_name || "-");
     tr.children[2].textContent = formatBirthDate(row.birth_date);
@@ -4501,11 +4504,21 @@ function renderSchoolSignups() {
   const selectAllBox = byId("schoolSignupsSelectAllCheckbox");
   if (selectAllBox) {
     const allVisibleIds = rows.map((row) => String(row.id));
-    const allSelected = allVisibleIds.length > 0 && allVisibleIds.every((id) => selectedIds.has(id));
-    selectAllBox.checked = allSelected;
+    selectAllBox.checked =
+      allVisibleIds.length > 0 &&
+      allVisibleIds.every((id) => selectedIds.has(id));
+
     selectAllBox.addEventListener("change", function () {
-      if (selectAllBox.checked) selectAllVisibleSchoolSignups();
-      else clearSchoolSignupSelection();
+      if (selectAllBox.checked) {
+        const ids = getSelectedSchoolSignupIds();
+        rows.forEach((row) => ids.add(String(row.id)));
+        setSelectedSchoolSignupIds(ids);
+      } else {
+        const ids = getSelectedSchoolSignupIds();
+        rows.forEach((row) => ids.delete(String(row.id)));
+        setSelectedSchoolSignupIds(ids);
+      }
+      renderSchoolSignups();
     });
   }
 }
@@ -6651,7 +6664,7 @@ async function loadAll() {
       byId("schoolSignupStatusFilter").value = "Ny";
       byId("schoolSignupStatusFilter").addEventListener("change", renderSchoolSignups);
     }
-if (byId("btnMoveSelectedSchoolSignups")) byId("btnMoveSelectedSchoolSignups").addEventListener("click", moveSelectedSchoolSignupsToParticipants);
+    if (byId("btnMoveSelectedSchoolSignups")) byId("btnMoveSelectedSchoolSignups").addEventListener("click", moveSelectedSchoolSignupsToParticipants);
 
     if (byId("btnAddSchoolParticipant")) byId("btnAddSchoolParticipant").addEventListener("click", async function () {
       if (!supabaseClient) return;
