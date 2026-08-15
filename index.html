@@ -165,7 +165,7 @@
 
     .landing-grid {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 18px;
     }
     .landing-card {
@@ -1490,6 +1490,7 @@
     <div class="school-tabs" role="tablist" aria-label="Skøyteskole faner">
       <button type="button" class="school-tab active" data-school-tab="admin">Admin</button>
       <button type="button" class="school-tab" data-school-tab="school">Skøyteskole</button>
+      <button type="button" class="school-tab" id="schoolSignupCodesLink">Påmeldingskoder</button>
     </div>
   </div>
 
@@ -6954,10 +6955,18 @@ attachSortHandlers();
       }
 
       tabs.forEach((tab) => {
+        if (!tab.dataset.schoolTab) return;
         tab.addEventListener("click", () => {
           activateSchoolTab(tab.dataset.schoolTab || "admin");
         });
       });
+
+      const signupCodesLink = byId("schoolSignupCodesLink");
+      if (signupCodesLink) {
+        signupCodesLink.addEventListener("click", () => {
+          window.location.href = "admin-koder-bulk.html";
+        });
+      }
 
       activateSchoolTab("admin");
     }
