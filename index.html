@@ -1390,7 +1390,61 @@
 </div>
 
 
+
 <div class="section-card hidden" id="skatingSchoolTab">
+  <div class="section-card">
+    <div class="section-header">
+      <div>
+        <h2>Opprett semester</h2>
+        <div class="help" style="margin-top:8px;">
+          Opprett et nytt semester for skøyteskolen. Standardgruppene Blå, Gul og Rød opprettes sammen med semesteret.
+        </div>
+      </div>
+    </div>
+
+    <form class="form-grid" id="schoolBatchForm" style="margin-top:14px;">
+      <div class="col-3">
+        <label for="schoolBatchDepartment">Avdeling</label>
+        <select id="schoolBatchDepartment" required>
+          <option value="">Velg avdeling</option>
+        </select>
+      </div>
+
+      <div class="col-3">
+        <label for="schoolBatchName">Semesternavn</label>
+        <input id="schoolBatchName" type="text" placeholder="For eksempel Høst 2026" required />
+      </div>
+
+      <div class="col-3">
+        <label for="schoolBatchStatus">Status</label>
+        <select id="schoolBatchStatus">
+          <option value="Planlagt">Planlagt</option>
+          <option value="Aktiv">Aktiv</option>
+          <option value="Avsluttet">Avsluttet</option>
+        </select>
+      </div>
+
+      <div class="col-3">
+        <label>&nbsp;</label>
+        <button class="btn-primary" type="submit">Opprett semester</button>
+      </div>
+
+      <div class="col-3">
+        <label for="schoolBatchStartDate">Startdato</label>
+        <input id="schoolBatchStartDate" type="date" />
+      </div>
+
+      <div class="col-3">
+        <label for="schoolBatchEndDate">Sluttdato</label>
+        <input id="schoolBatchEndDate" type="date" />
+      </div>
+
+      <div class="col-12">
+        <div class="help" id="schoolBatchMessage"></div>
+      </div>
+    </form>
+  </div>
+
   <div class="section-card">
     <div class="section-header">
       <div>
