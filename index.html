@@ -3229,9 +3229,24 @@ function renderMembers() {
       if (departmentFilter) {
         rows = rows.filter((member) => {
           const memberGroupIds = getGroupIdsForMember(member.id);
-          return state.groups.some((group) =>
-            String(group.department_id) === String(departmentFilter) && memberGroupIds.includes(group.id)
+
+          const belongsViaRegularGroup = state.groups.some((group) =>
+            sameId(group.department_id, departmentFilter) &&
+            memberGroupIds.some((groupId) => sameId(groupId, group.id))
           );
+
+          if (belongsViaRegularGroup) return true;
+
+          // Deltakere fra Skøyteskole ligger i skating_school_enrollments
+          // og kan derfor mangle vanlig member_groups-kobling.
+          if (isSchoolDepartment(departmentFilter)) {
+            return memberBelongsToSchoolDepartment(
+              member.id,
+              departmentFilter
+            );
+          }
+
+          return false;
         });
       }
 
@@ -3497,12 +3512,6 @@ function renderMembers() {
     function isSchoolDepartment(departmentId) {
       if (!departmentId) return false;
 
-      // Primær regel: avdelingen har minst ett skøyteskolesemester.
-      if (getSchoolBatchesForDepartment(departmentId).length > 0) {
-        return true;
-      }
-
-      // Fallback for eldre data.
       const department = (state.departments || []).find((item) =>
         sameId(item.id, departmentId)
       );
@@ -3514,7 +3523,11 @@ function renderMembers() {
         .replace(/å/g, "a")
         .replace(/æ/g, "ae");
 
-      return name.includes("skoyteskole");
+      // Skøyteskole identifiseres først på avdelingsnavn.
+      if (name.includes("skoyteskole")) return true;
+
+      // Fallback: avdelingen har semester registrert.
+      return getSchoolBatchesForDepartment(departmentId).length > 0;
     }
 
     function getSchoolEnrollmentBatchIdsForDepartment(departmentId) {
@@ -3527,7 +3540,17 @@ function renderMembers() {
     function memberBelongsToSchoolDepartment(memberId, departmentId) {
       if (!memberId || !departmentId) return false;
 
-      const batchIds = getSchoolEnrollmentBatchIdsForDepartment(departmentId);
+      let batchIds = getSchoolEnrollmentBatchIdsForDepartment(departmentId);
+
+      // Eldre skøyteskolesemester kan være opprettet uten department_id.
+      // Hvis valgt avdeling er Skøyteskole og ingen batch-ID-er finnes på
+      // avdelingen, bruk alle registrerte skøyteskolesemester som fallback.
+      if (!batchIds.size && isSchoolDepartment(departmentId)) {
+        batchIds = new Set(
+          (state.schoolBatches || []).map((batch) => String(batch.id))
+        );
+      }
+
       if (!batchIds.size) return false;
 
       return (state.schoolEnrollments || []).some((enrollment) =>
@@ -3542,7 +3565,22 @@ function renderMembers() {
       if (!departmentFilter || !semesterFilter) return;
 
       const departmentId = departmentFilter.value || "";
-      const batches = getSchoolBatchesForDepartment(departmentId)
+      const isSchool = isSchoolDepartment(departmentId);
+
+      let batches = [];
+
+      if (isSchool) {
+        // Bruk semester som er eksplisitt koblet til valgt avdeling.
+        batches = getSchoolBatchesForDepartment(departmentId);
+
+        // Eldre semester kan mangle department_id. Når Skøyteskole er
+        // valgt og ingen direkte treff finnes, vis alle skole-semester.
+        if (!batches.length) {
+          batches = (state.schoolBatches || []).slice();
+        }
+      }
+
+      batches = batches
         .slice()
         .sort((a, b) => {
           const aTime = new Date(a.start_date || a.created_at || 0).getTime();
@@ -3550,7 +3588,7 @@ function renderMembers() {
           return bTime - aTime;
         });
 
-      const shouldShow = !!departmentId && batches.length > 0;
+      const shouldShow = !!departmentId && isSchool;
       semesterFilter.classList.toggle("hidden", !shouldShow);
 
       if (!shouldShow) {
