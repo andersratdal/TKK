@@ -50,8 +50,8 @@
         </div>
 
         <div>
-          <label for="batch_id">Parti</label>
-          <select id="batch_id"><option value="">Alle partier</option></select>
+          <label for="batch_id">Semester</label>
+          <select id="batch_id"><option value="">Alle semester</option></select>
         </div>
 
         <div>
@@ -94,7 +94,7 @@
     <div id="listMessage" class="msg"></div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Kode</th><th>Beskrivelse</th><th>Avdeling / parti</th><th>Status</th><th>Bruk</th><th>Utløper</th><th>Opprettet</th><th>Handlinger</th></tr></thead>
+        <thead><tr><th>Kode</th><th>Beskrivelse</th><th>Avdeling / semester</th><th>Status</th><th>Bruk</th><th>Utløper</th><th>Opprettet</th><th>Handlinger</th></tr></thead>
         <tbody id="codesTableBody"><tr><td colspan="8" class="muted">Laster koder…</td></tr></tbody>
       </table>
     </div>
@@ -124,7 +124,7 @@ function renderTable(){const filtered=applyFilters(allCodes);updateSummary(allCo
 codesTableBody.innerHTML=filtered.map(code=>{const used=Number(code.used_count||0);return `<tr>
 <td><strong>${esc(code.code)}</strong></td>
 <td>${esc(code.description||"—")}</td>
-<td class="small">${esc(code.department_name||"Alle avdelinger")}<br>${esc(code.batch_name||"Alle partier")}</td>
+<td class="small">${esc(code.department_name||"Alle avdelinger")}<br>${esc(code.batch_name||"Alle semester")}</td>
 <td>${code.is_active?'<span class="pill active">Aktiv</span>':'<span class="pill inactive">Inaktiv</span>'}</td>
 <td>${used}</td>
 <td>${formatDate(code.expires_at)}</td>
