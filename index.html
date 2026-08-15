@@ -976,6 +976,93 @@
 }
 
 </style>
+
+<style>
+#authLoginView {
+  min-height: 100vh;
+  display: grid;
+  place-items: start center;
+  padding: 38px 18px;
+  background:
+    radial-gradient(circle at top left, rgba(31,79,255,0.10), transparent 32%),
+    linear-gradient(180deg, #f7faff 0%, #edf3fb 100%);
+  color: #132238;
+  font-family: Arial, Helvetica, sans-serif;
+}
+.auth-login-card {
+  width: min(100%, 520px);
+  background: #fff;
+  border: 1px solid rgba(16,35,63,0.08);
+  border-radius: 22px;
+  box-shadow: 0 18px 40px rgba(16,35,63,0.12);
+  padding: 26px;
+}
+.auth-login-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.auth-login-brand img {
+  width: 42px;
+  height: auto;
+  display: block;
+}
+.auth-login-card h1 {
+  margin: 0;
+  font-size: 32px;
+}
+.auth-login-help {
+  color: #64748b;
+  margin: 8px 0 22px;
+  line-height: 1.45;
+}
+.auth-login-card label {
+  display: block;
+  margin: 14px 0 6px;
+  font-weight: 700;
+}
+.auth-login-card input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  font: inherit;
+}
+.auth-login-actions {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.auth-login-actions button {
+  background: #003a8f;
+  color: #fff;
+  border: 0;
+  border-radius: 12px;
+  padding: 11px 16px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.auth-login-actions .auth-login-secondary {
+  background: transparent;
+  color: #003a8f;
+}
+.auth-login-message {
+  margin-top: 14px;
+  color: #991b1b;
+  white-space: pre-wrap;
+}
+.auth-login-message.ok {
+  color: #166534;
+}
+.auth-forgot-form.hidden {
+  display: none !important;
+}
+</style>
+
 </head>
 <body>
 <div class="container">
@@ -1121,11 +1208,7 @@
         logoutButton.textContent = "Logget ut";
 
         // Hard navigering til ren URL.
-        window.location.href =
-          window.location.origin +
-          window.location.pathname +
-          "?logged_out=" +
-          Date.now();
+        window.location.href = window.location.origin + window.location.pathname + "?logged_out=1";
       } catch (error) {
         console.error("Utlogging feilet:", error);
         logoutButton.disabled = false;
@@ -6514,6 +6597,360 @@ attachSortHandlers();
     </div>
   </div>
 </div>
+
+
+<script>
+(function () {
+  const AUTH_CONFIG_KEY = "skoyteutleie_supabase_config_v7";
+
+  // Samme Supabase-prosjekt som den fungerende tilgangsstyringen brukte.
+  // Lagret config i Admin overstyrer disse verdiene.
+  const AUTH_FALLBACK_CONFIG = {
+    url: "https://dcfhisxyiuatftzjtuwz.supabase.co",
+    anonKey: "sb_publishable_W_3O4m4r0aZ3ukSOJVTcHw_Gy6W6uj9"
+  };
+
+  function readAuthConfig() {
+    try {
+      const raw = localStorage.getItem(AUTH_CONFIG_KEY);
+      const cfg = raw ? JSON.parse(raw) : {};
+      return {
+        url: cfg.url || AUTH_FALLBACK_CONFIG.url,
+        anonKey: cfg.anonKey || AUTH_FALLBACK_CONFIG.anonKey
+      };
+    } catch (_) {
+      return AUTH_FALLBACK_CONFIG;
+    }
+  }
+
+  function getAuthGuardClient() {
+    try {
+      if (window.supabase && window.supabase.createClient) {
+        const cfg = readAuthConfig();
+        if (cfg.url && cfg.anonKey) {
+          return window.supabase.createClient(cfg.url, cfg.anonKey);
+        }
+      }
+    } catch (error) {
+      console.error("Kunne ikke opprette auth-klient:", error);
+    }
+    return null;
+  }
+
+  function clearSupabaseAuthStorage() {
+    function clean(storage) {
+      try {
+        const keys = [];
+        for (let i = 0; i < storage.length; i += 1) {
+          const key = storage.key(i);
+          if (!key || key === AUTH_CONFIG_KEY) continue;
+          const lower = key.toLowerCase();
+
+          if (
+            lower.startsWith("sb-") ||
+            lower.includes("supabase.auth") ||
+            lower.includes("auth-token") ||
+            lower.includes("auth.session") ||
+            key === "skoyteutleie_current_user"
+          ) {
+            keys.push(key);
+          }
+        }
+        keys.forEach((key) => storage.removeItem(key));
+      } catch (_) {}
+    }
+
+    clean(window.localStorage);
+    clean(window.sessionStorage);
+  }
+
+  function setMainAppVisible(visible) {
+    const app = document.querySelector("body > .container");
+    if (app) app.style.display = visible ? "" : "none";
+  }
+
+  function removeAuthLoginView() {
+    const old = document.getElementById("authLoginView");
+    if (old) old.remove();
+  }
+
+  function showAuthLoginView(message) {
+    removeAuthLoginView();
+    setMainAppVisible(false);
+
+    const view = document.createElement("div");
+    view.id = "authLoginView";
+    view.innerHTML = `
+      <div class="auth-login-card">
+        <div class="auth-login-brand">
+          <img src="logo.png" alt="Trondheim Kortbaneklubb">
+          <strong>TKK Skøyteutleie</strong>
+        </div>
+
+        <h1>Logg inn</h1>
+        <p class="auth-login-help">Logg inn med e-post og passord for å bruke appen.</p>
+
+        <form id="authLoginForm">
+          <label for="authLoginEmail">E-post</label>
+          <input id="authLoginEmail" type="email" autocomplete="email" required>
+
+          <label for="authLoginPassword">Passord</label>
+          <input id="authLoginPassword" type="password" autocomplete="current-password" required>
+
+          <div class="auth-login-actions">
+            <button type="submit">Logg inn</button>
+            <button type="button" class="auth-login-secondary" id="authForgotPasswordBtn">
+              Glemt passord
+            </button>
+          </div>
+
+          <div id="authLoginMessage" class="auth-login-message">${message || ""}</div>
+        </form>
+
+        <form id="authForgotPasswordForm" class="auth-forgot-form hidden">
+          <p class="auth-login-help">Skriv inn e-postadressen din, så sender vi en lenke for å velge nytt passord.</p>
+
+          <label for="authForgotEmail">E-post</label>
+          <input id="authForgotEmail" type="email" autocomplete="email" required>
+
+          <div class="auth-login-actions">
+            <button type="submit">Send passordlenke</button>
+            <button type="button" class="auth-login-secondary" id="authForgotBackBtn">Tilbake</button>
+          </div>
+
+          <div id="authForgotMessage" class="auth-login-message"></div>
+        </form>
+      </div>
+    `;
+
+    document.body.appendChild(view);
+
+    const form = document.getElementById("authLoginForm");
+    const messageBox = document.getElementById("authLoginMessage");
+    const forgotButton = document.getElementById("authForgotPasswordBtn");
+    const forgotForm = document.getElementById("authForgotPasswordForm");
+    const forgotBack = document.getElementById("authForgotBackBtn");
+    const forgotMessage = document.getElementById("authForgotMessage");
+
+    forgotButton.addEventListener("click", function () {
+      forgotForm.classList.remove("hidden");
+      const loginEmail = document.getElementById("authLoginEmail");
+      const forgotEmail = document.getElementById("authForgotEmail");
+      if (loginEmail.value) forgotEmail.value = loginEmail.value;
+      forgotEmail.focus();
+    });
+
+    forgotBack.addEventListener("click", function () {
+      forgotForm.classList.add("hidden");
+      forgotMessage.textContent = "";
+      forgotMessage.classList.remove("ok");
+    });
+
+    forgotForm.addEventListener("submit", async function (event) {
+      event.preventDefault();
+      const client = getAuthGuardClient();
+      const email = document.getElementById("authForgotEmail").value.trim();
+
+      if (!client || !client.auth) {
+        forgotMessage.textContent = "Supabase Auth er ikke tilgjengelig.";
+        return;
+      }
+
+      forgotMessage.textContent = "Sender passordlenke ...";
+      forgotMessage.classList.remove("ok");
+
+      try {
+        const redirectTo =
+          window.location.origin + window.location.pathname + "?reset=1";
+
+        const result = await client.auth.resetPasswordForEmail(email, {
+          redirectTo
+        });
+
+        if (result.error) throw result.error;
+
+        forgotMessage.textContent =
+          "Passordlenke er sendt hvis e-postadressen finnes som bruker.";
+        forgotMessage.classList.add("ok");
+      } catch (error) {
+        forgotMessage.textContent =
+          "Kunne ikke sende passordlenke.\n\n" + (error.message || error);
+      }
+    });
+
+    form.addEventListener("submit", async function (event) {
+      event.preventDefault();
+
+      const client = getAuthGuardClient();
+      if (!client || !client.auth) {
+        messageBox.textContent = "Supabase Auth er ikke tilgjengelig.";
+        return;
+      }
+
+      const email = document.getElementById("authLoginEmail").value.trim();
+      const password = document.getElementById("authLoginPassword").value;
+
+      messageBox.textContent = "Logger inn ...";
+
+      try {
+        const result = await client.auth.signInWithPassword({
+          email,
+          password
+        });
+
+        if (result.error) throw result.error;
+
+        removeAuthLoginView();
+        setMainAppVisible(true);
+
+        if (window.history && window.history.replaceState) {
+          window.history.replaceState(
+            {},
+            document.title,
+            window.location.origin + window.location.pathname
+          );
+        }
+
+        // Oppdater brukernavnet i toppmenyen uten å være avhengig av hovedscriptet.
+        const label = document.getElementById("appUserLabel");
+        if (label && result.data && result.data.user) {
+          label.textContent = result.data.user.email || "Konto";
+        }
+
+        // Last inn data når hovedappens funksjoner finnes.
+        try {
+          if (typeof loadAll === "function") await loadAll();
+          if (typeof startAutoRefresh === "function") startAutoRefresh();
+        } catch (error) {
+          console.warn("Kunne ikke laste appdata etter innlogging:", error);
+        }
+      } catch (error) {
+        messageBox.textContent =
+          "Kunne ikke logge inn.\n\n" + (error.message || error);
+      }
+    });
+  }
+
+  async function handleLogoutOrMissingSession() {
+    const params = new URLSearchParams(window.location.search);
+    const loggedOut = params.get("logged_out") === "1";
+    const client = getAuthGuardClient();
+
+    if (loggedOut) {
+      try {
+        if (client && client.auth) {
+          await client.auth.signOut({ scope: "local" });
+        }
+      } catch (_) {}
+
+      clearSupabaseAuthStorage();
+
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState(
+          {},
+          document.title,
+          window.location.origin + window.location.pathname
+        );
+      }
+
+      showAuthLoginView("Du er logget ut.");
+      return;
+    }
+
+    try {
+      if (!client || !client.auth) {
+        showAuthLoginView("Kunne ikke starte innlogging.");
+        return;
+      }
+
+      const result = await client.auth.getSession();
+      const session = result && result.data ? result.data.session : null;
+
+      if (!session) {
+        showAuthLoginView("");
+      } else {
+        setMainAppVisible(true);
+        const label = document.getElementById("appUserLabel");
+        if (label && session.user) {
+          label.textContent = session.user.email || "Konto";
+        }
+      }
+    } catch (error) {
+      console.error("Session-kontroll feilet:", error);
+      showAuthLoginView("Kunne ikke kontrollere innlogging.");
+    }
+  }
+
+  async function handlePasswordReset() {
+    const params = new URLSearchParams(window.location.search);
+    const reset =
+      params.get("reset") === "1" ||
+      params.get("type") === "recovery";
+
+    if (!reset) return false;
+
+    const client = getAuthGuardClient();
+
+    if (!client || !client.auth) {
+      showAuthLoginView("Supabase Auth er ikke tilgjengelig.");
+      return true;
+    }
+
+    const password = window.prompt("Skriv nytt passord (minst 8 tegn):");
+
+    if (!password) {
+      showAuthLoginView("Passordet ble ikke endret.");
+      return true;
+    }
+
+    if (password.length < 8) {
+      showAuthLoginView("Passordet må være minst 8 tegn.");
+      return true;
+    }
+
+    try {
+      const result = await client.auth.updateUser({ password });
+      if (result.error) throw result.error;
+
+      try {
+        await client.auth.signOut({ scope: "local" });
+      } catch (_) {}
+
+      clearSupabaseAuthStorage();
+
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState(
+          {},
+          document.title,
+          window.location.origin + window.location.pathname
+        );
+      }
+
+      showAuthLoginView("Passordet er endret. Logg inn med det nye passordet.");
+      return true;
+    } catch (error) {
+      showAuthLoginView(
+        "Kunne ikke endre passord.\n\n" + (error.message || error)
+      );
+      return true;
+    }
+  }
+
+  async function startAuthGuard() {
+    const handledReset = await handlePasswordReset();
+    if (!handledReset) {
+      await handleLogoutOrMissingSession();
+    }
+  }
+
+  // Kjør etter at dokumentet er tilgjengelig.
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", startAuthGuard);
+  } else {
+    startAuthGuard();
+  }
+})();
+</script>
 
 </body>
 </html>
