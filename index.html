@@ -3497,11 +3497,11 @@ function renderMembers() {
       }
 
       const table = document.createElement("table");
-      table.innerHTML = "<thead><tr><th>Avdeling</th><th>Skøyte</th><th>Utlånt</th><th>Handling</th></tr></thead>";
+      table.innerHTML = "<thead><tr><th>Avdeling</th><th>Skøyte</th><th>Medlem</th><th>Kontakt</th><th>Utlånt</th><th>Handling</th></tr></thead>";
       const tbody = document.createElement("tbody");
       for (const loan of rows) {
         const tr = document.createElement("tr");
-        tr.innerHTML = "<td data-label='Avdeling'></td><td data-label='Skøyte'></td><td data-label='Utlånt'></td><td data-label='Handling'></td>";
+        tr.innerHTML = "<td data-label='Avdeling'></td><td data-label='Skøyte'></td><td data-label='Medlem'></td><td data-label='Kontakt'></td><td data-label='Utlånt'></td><td data-label='Handling'></td>";
         let skateLabel = safeText(loan.skates && loan.skates.skate_code);
         if (loan.skates && loan.skates.size) skateLabel += " (str " + loan.skates.size + ")";
         tr.children[0].textContent = safeText(loan.departments && loan.departments.name);
