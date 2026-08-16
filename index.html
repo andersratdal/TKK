@@ -7618,6 +7618,45 @@ attachSortHandlers();
         if (tabName === "admin") {
           renderSchoolBatchAdminList();
         }
+
+        if (tabName === "school") {
+          // Deltakere skal som standard vise semesteret som er Aktivt.
+          const activeBatch = (state.schoolBatches || []).find(
+            (batch) => String(batch.status || "").trim().toLowerCase() === "aktiv"
+          );
+
+          const picker = byId("schoolBatchPicker");
+
+          if (picker && activeBatch) {
+            picker.value = String(activeBatch.id);
+            setUiPref("schoolBatchPicker", String(activeBatch.id));
+          }
+
+          updateSchoolParticipantMemberPicker();
+          renderSchoolBatchOverview();
+          renderSchoolParticipants();
+
+          // Hent ferske medlemmer/enrollments når fanen åpnes.
+          if (supabaseClient) {
+            loadAll().then(() => {
+              const refreshedActiveBatch = (state.schoolBatches || []).find(
+                (batch) => String(batch.status || "").trim().toLowerCase() === "aktiv"
+              );
+
+              const refreshedPicker = byId("schoolBatchPicker");
+              if (refreshedPicker && refreshedActiveBatch) {
+                refreshedPicker.value = String(refreshedActiveBatch.id);
+                setUiPref("schoolBatchPicker", String(refreshedActiveBatch.id));
+              }
+
+              updateSchoolParticipantMemberPicker();
+              renderSchoolBatchOverview();
+              renderSchoolParticipants();
+            }).catch((error) => {
+              console.error("Kunne ikke oppdatere deltakere:", error);
+            });
+          }
+        }
       }
 
       tabs.forEach((tab) => {
