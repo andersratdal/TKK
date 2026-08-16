@@ -22,10 +22,21 @@
     .table-wrap{overflow-x:auto}.pill{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700}.active{background:#f0fdf4;color:#166534}.inactive{background:#fef2f2;color:#b91c1c}
     .inline{display:flex;gap:8px;flex-wrap:wrap}.small{font-size:13px}
     .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px}.box{border:1px solid #d1d5db;border-radius:12px;padding:14px;background:#fcfcfd}.label{color:#6b7280;font-size:14px}.value{font-size:28px;font-weight:700}
+    .school-nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;padding:8px;background:#fff;border:1px solid #d1d5db;border-radius:14px;box-shadow:0 8px 24px rgba(0,0,0,.04)}
+    .school-nav a{display:inline-block;padding:10px 14px;border-radius:10px;text-decoration:none;font-weight:700;color:#374151}
+    .school-nav a:hover{background:#f3f4f6}
+    .school-nav a.current{background:#0f766e;color:#fff}
   </style>
 </head>
 <body>
 <div class="wrap">
+  <nav class="school-nav" aria-label="Skøyteskolemeny">
+    <a href="index.html?section=skating-school&tab=admin">Admin</a>
+    <a href="index.html?section=skating-school&tab=school">Deltakere</a>
+    <a href="admin-koder-bulk.html" class="current">Påmeldingskoder</a>
+    <a href="index.html?section=skating-school&tab=signupForms">Påmeldingsskjema</a>
+  </nav>
+
   <h1>Administrer koder</h1>
   <p class="muted">Opprett mange koder samtidig for gratis påmelding til skøyteskolen.</p>
 
@@ -50,8 +61,8 @@
         </div>
 
         <div>
-          <label for="batch_id">Semester</label>
-          <select id="batch_id"><option value="">Alle semester</option></select>
+          <label for="batch_id">Parti</label>
+          <select id="batch_id"><option value="">Alle partier</option></select>
         </div>
 
         <div>
@@ -94,7 +105,7 @@
     <div id="listMessage" class="msg"></div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Kode</th><th>Beskrivelse</th><th>Avdeling / semester</th><th>Status</th><th>Bruk</th><th>Utløper</th><th>Opprettet</th><th>Handlinger</th></tr></thead>
+        <thead><tr><th>Kode</th><th>Beskrivelse</th><th>Avdeling / parti</th><th>Status</th><th>Bruk</th><th>Utløper</th><th>Opprettet</th><th>Handlinger</th></tr></thead>
         <tbody id="codesTableBody"><tr><td colspan="8" class="muted">Laster koder…</td></tr></tbody>
       </table>
     </div>
@@ -124,7 +135,7 @@ function renderTable(){const filtered=applyFilters(allCodes);updateSummary(allCo
 codesTableBody.innerHTML=filtered.map(code=>{const used=Number(code.used_count||0);return `<tr>
 <td><strong>${esc(code.code)}</strong></td>
 <td>${esc(code.description||"—")}</td>
-<td class="small">${esc(code.department_name||"Alle avdelinger")}<br>${esc(code.batch_name||"Alle semester")}</td>
+<td class="small">${esc(code.department_name||"Alle avdelinger")}<br>${esc(code.batch_name||"Alle partier")}</td>
 <td>${code.is_active?'<span class="pill active">Aktiv</span>':'<span class="pill inactive">Inaktiv</span>'}</td>
 <td>${used}</td>
 <td>${formatDate(code.expires_at)}</td>
