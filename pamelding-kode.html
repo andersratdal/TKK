@@ -180,9 +180,9 @@
 <body>
   <div class="container">
     <div class="card">
-      <h1>Påmelding til skøyteskole med kode</h1>
+      <h1>Påmelding via Idrettsrådet i Trondheim</h1>
       <p class="muted">
-        Denne siden er for deltakere som har fått tildelt en gyldig påmeldingskode.
+        Denne siden er for deltakere som har fått tildelt en kode og derfor ikke skal betale ved påmelding.
       </p>
 
       <form id="signupForm">
@@ -224,8 +224,13 @@
 
       <div class="grid grid-2">
         <div>
-          <label>Barnets navn <span class="required">*</span></label>
-          <input type="text" class="child-name" required />
+          <label>Fornavn <span class="required">*</span></label>
+          <input type="text" class="child-first-name" autocomplete="given-name" required />
+        </div>
+
+        <div>
+          <label>Etternavn <span class="required">*</span></label>
+          <input type="text" class="child-last-name" autocomplete="family-name" required />
         </div>
 
         <div>
@@ -237,10 +242,6 @@
           <label>Ønsket skøytestørrelse</label>
           <select class="requested-skate-size">
             <option value="">Velg størrelse</option>
-            <option value="24">24</option>
-            <option value="25">25</option>
-            <option value="26">26</option>
-            <option value="27">27</option>
             <option value="28">28</option>
             <option value="29">29</option>
             <option value="30">30</option>
@@ -260,12 +261,7 @@
             <option value="44">44</option>
             <option value="45">45</option>
           </select>
-          <div class="small muted">La stå tom hvis barnet har egne skøyter.</div>
-        </div>
-
-        <div>
-          <label>&nbsp;</label>
-          <div class="checkbox-row">
+          <div class="checkbox-row" style="margin-top:8px;">
             <input type="checkbox" class="has-own-skates" />
             <span>Har egne skøyter</span>
           </div>
@@ -275,7 +271,9 @@
   </template>
 
   <script>
-const form = document.getElementById("signupForm");
+    const ACTIVE_BATCH_NAME = "Høst 2026";
+
+    const form = document.getElementById("signupForm");
     const childrenContainer = document.getElementById("childrenContainer");
     const addChildBtn = document.getElementById("addChildBtn");
     const submitBtn = document.getElementById("submitBtn");
@@ -336,12 +334,21 @@ const form = document.getElementById("signupForm");
     function collectChildren() {
       const cards = childrenContainer.querySelectorAll(".child-card");
 
-      return Array.from(cards).map((card) => ({
-        child_name: card.querySelector(".child-name").value.trim(),
-        birth_date: card.querySelector(".birth-date").value,
-        requested_skate_size: card.querySelector(".requested-skate-size").value || null,
-        has_own_skates: card.querySelector(".has-own-skates").checked
-      }));
+      return Array.from(cards).map((card) => {
+        const firstName = card.querySelector(".child-first-name").value.trim();
+        const lastName = card.querySelector(".child-last-name").value.trim();
+
+        return {
+          first_name: firstName,
+          last_name: lastName,
+          // Backend/databasen bruker fortsatt child_name, så vi setter sammen
+          // fornavn og etternavn før påmeldingen sendes.
+          child_name: `${firstName} ${lastName}`.trim(),
+          birth_date: card.querySelector(".birth-date").value,
+          requested_skate_size: card.querySelector(".requested-skate-size").value || null,
+          has_own_skates: card.querySelector(".has-own-skates").checked
+        };
+      });
     }
 
     function validateChildren(children) {
@@ -353,8 +360,12 @@ const form = document.getElementById("signupForm");
         const child = children[i];
         const nr = i + 1;
 
-        if (!child.child_name) {
-          return `Barn ${nr}: Du må fylle inn barnets navn.`;
+        if (!child.first_name) {
+          return `Barn ${nr}: Du må fylle inn fornavn.`;
+        }
+
+        if (!child.last_name) {
+          return `Barn ${nr}: Du må fylle inn etternavn.`;
         }
 
         if (!child.birth_date) {
@@ -376,7 +387,13 @@ const form = document.getElementById("signupForm");
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       clearMessage();
-const access_code = document.getElementById("access_code").value.trim();
+
+      if (!ACTIVE_BATCH_NAME || ACTIVE_BATCH_NAME === "SETT INN NAVN PÅ AKTIVT PARTI HER") {
+        showMessage("Du må sette riktig ACTIVE_BATCH_NAME i HTML-filen før siden kan brukes.");
+        return;
+      }
+
+      const access_code = document.getElementById("access_code").value.trim();
       const email = document.getElementById("email").value.trim();
       const phone = document.getElementById("phone").value.trim();
       const children = collectChildren();
@@ -416,7 +433,8 @@ const access_code = document.getElementById("access_code").value.trim();
             access_code,
             email,
             phone,
-children
+            batch_name: ACTIVE_BATCH_NAME,
+            children
           })
         });
 
@@ -426,7 +444,7 @@ children
           throw new Error(data.error || "Kunne ikke sende påmeldingen.");
         }
 
-        showMessage("Påmeldingen ble registrert.", "success");
+        showMessage("Påmeldingen ble registrert. Sender videre...", "success");
 
         window.location.href = data.redirect_url || "/betaling-fullfort-tkk.html";
       } catch (error) {
