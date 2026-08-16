@@ -1612,14 +1612,6 @@
       </div>
       <div class="toolbar">
         <input id="schoolSignupSearch" placeholder="Søk på navn, telefon eller e-post..." />
-        <select id="schoolSignupStatusFilter">
-          <option value="">Alle statuser</option>
-          <option value="Ny" selected>Ny</option>
-          <option value="Behandles">Behandles</option>
-          <option value="Klar for medlem">Klar for medlem</option>
-          <option value="Ferdig">Ferdig</option>
-          <option value="Avvist">Avvist</option>
-        </select>
         
         
         <button class="btn-primary btn-small" id="btnMoveSelectedSchoolSignups" type="button">Flytt valgte til deltakere</button>
@@ -4334,8 +4326,9 @@ function formatPaymentStatus(signup) {
 
 function getFilteredSchoolSignups() {
   let rows = Array.isArray(state.schoolSignups) ? state.schoolSignups.slice() : [];
-  const search = byId("schoolSignupSearch") ? String(byId("schoolSignupSearch").value || "").trim().toLowerCase() : "";
-  const statusFilter = byId("schoolSignupStatusFilter") ? String(byId("schoolSignupStatusFilter").value || "") : "";
+  const search = byId("schoolSignupSearch")
+    ? String(byId("schoolSignupSearch").value || "").trim().toLowerCase()
+    : "";
 
   if (search) {
     rows = rows.filter((row) =>
@@ -4344,11 +4337,13 @@ function getFilteredSchoolSignups() {
       String(row.email || "").toLowerCase().includes(search)
     );
   }
-  if (statusFilter) {
-    rows = rows.filter((row) => String(row.status || "") === statusFilter);
-  }
 
-  rows.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+  rows.sort(
+    (a, b) =>
+      new Date(b.created_at || 0).getTime() -
+      new Date(a.created_at || 0).getTime()
+  );
+
   return rows;
 }
 
@@ -4789,9 +4784,7 @@ function renderSchoolSignups() {
       const meta2 = document.createElement("div");
       meta2.className = "help";
       meta2.style.marginTop = "4px";
-      meta2.textContent =
-        "Status: " + String(row.status || "Ny") +
-        " | Påmeldingskode: " + formatSignupAccessCode(row);
+      meta2.textContent = "Påmeldingskode: " + formatSignupAccessCode(row);
       card.appendChild(meta2);
 
       const meta3 = document.createElement("div");
@@ -4815,7 +4808,6 @@ function renderSchoolSignups() {
     "<th>Barn</th>" +
     "<th>Født</th>" +
     "<th>Skøyter</th>" +
-    "<th>Status</th>" +
     "<th>Påmeldingskode</th>" +
     "<th>Mottatt</th>" +
     "</tr></thead>";
@@ -4829,7 +4821,6 @@ function renderSchoolSignups() {
       "<td data-label='Barn'></td>" +
       "<td data-label='Født'></td>" +
       "<td data-label='Skøyter'></td>" +
-      "<td data-label='Status'></td>" +
       "<td data-label='Påmeldingskode'></td>" +
       "<td data-label='Mottatt'></td>";
 
@@ -4845,9 +4836,8 @@ function renderSchoolSignups() {
     tr.children[1].textContent = String(row.child_name || "-");
     tr.children[2].textContent = formatBirthDate(row.birth_date);
     tr.children[3].textContent = formatSkateRequest(row);
-    tr.children[4].textContent = String(row.status || "Ny");
-    tr.children[5].textContent = formatSignupAccessCode(row);
-    tr.children[6].textContent = formatSignupReceivedAt(row);
+    tr.children[4].textContent = formatSignupAccessCode(row);
+    tr.children[5].textContent = formatSignupReceivedAt(row);
 
     tbody.appendChild(tr);
   });
@@ -7265,11 +7255,7 @@ async function loadAll() {
 
     if (byId("schoolParticipantSearch")) byId("schoolParticipantSearch").addEventListener("input", updateSchoolParticipantMemberPicker);
     if (byId("schoolSignupSearch")) byId("schoolSignupSearch").addEventListener("input", renderSchoolSignups);
-    if (byId("schoolSignupStatusFilter")) {
-      byId("schoolSignupStatusFilter").value = "Ny";
-      byId("schoolSignupStatusFilter").addEventListener("change", renderSchoolSignups);
-    }
-    if (byId("btnMoveSelectedSchoolSignups")) byId("btnMoveSelectedSchoolSignups").addEventListener("click", moveSelectedSchoolSignupsToParticipants);
+if (byId("btnMoveSelectedSchoolSignups")) byId("btnMoveSelectedSchoolSignups").addEventListener("click", moveSelectedSchoolSignupsToParticipants);
 
     if (byId("btnAddSchoolParticipant")) byId("btnAddSchoolParticipant").addEventListener("click", async function () {
       if (!supabaseClient) return;
