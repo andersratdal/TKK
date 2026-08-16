@@ -1489,8 +1489,9 @@
   <div class="school-tabs-card">
     <div class="school-tabs" role="tablist" aria-label="Skøyteskole faner">
       <button type="button" class="school-tab active" data-school-tab="admin">Admin</button>
-      <button type="button" class="school-tab" data-school-tab="school">Skøyteskole</button>
+      <button type="button" class="school-tab" data-school-tab="school">Deltakere</button>
       <button type="button" class="school-tab" id="schoolSignupCodesLink">Påmeldingskoder</button>
+    <button type="button" class="school-tab" data-school-tab="signupForms">Påmeldingsskjema</button>
     </div>
   </div>
 
@@ -1627,6 +1628,27 @@
     <div class="help" id="schoolSignupMessage" style="margin-top:10px;"></div>
     <div id="schoolSignupsWrap"></div>
   </div>
+  </div>
+
+
+  <div class="section-card hidden" id="schoolSignupFormsPanel" data-school-panel="signupForms">
+    <div class="section-header">
+      <div>
+        <h2>Påmeldingsskjema</h2>
+        <div class="help" style="margin-top:8px;">
+          Velg hvilket påmeldingsskjema du vil åpne.
+        </div>
+      </div>
+    </div>
+
+    <div class="toolbar" style="margin-top:16px;">
+      <a href="pamelding-kode.html" target="_blank" class="btn-primary" style="text-decoration:none; display:inline-block;">
+        Med kode
+      </a>
+      <a href="pamelding.html" target="_blank" class="btn-secondary" style="text-decoration:none; display:inline-block;">
+        Vanlig påmelding
+      </a>
+    </div>
   </div>
 
 </div>
@@ -7990,6 +8012,57 @@ attachSortHandlers();
     startAuthGuard();
   }
 })();
+
+
+    function initSchoolSubmenu() {
+      const tabRoot = byId("skatingSchoolTab");
+      if (!tabRoot) return;
+
+      const buttons = Array.from(tabRoot.querySelectorAll("[data-school-tab]"));
+      const signupPanel = byId("schoolSignupFormsPanel");
+
+      buttons.forEach((button) => {
+        if (button.dataset.schoolSignupBound === "1") return;
+        button.dataset.schoolSignupBound = "1";
+
+        button.addEventListener("click", function () {
+          const targetName = String(button.dataset.schoolTab || "");
+
+          if (signupPanel) {
+            signupPanel.classList.toggle("hidden", targetName !== "signupForms");
+          }
+
+          // Når Påmeldingsskjema velges skjules de vanlige skøyteskolepanelene.
+          if (targetName === "signupForms") {
+            Array.from(tabRoot.children).forEach((child) => {
+              if (
+                child === signupPanel ||
+                child.classList.contains("school-tabs-card") ||
+                child.classList.contains("school-tabs")
+              ) {
+                return;
+              }
+
+              // Ikke skjul selve menyområdet.
+              if (child.querySelector && child.querySelector("[data-school-tab]")) {
+                return;
+              }
+
+              if (child.classList.contains("section-card")) {
+                child.classList.add("hidden");
+              }
+            });
+
+            if (signupPanel) signupPanel.classList.remove("hidden");
+          } else {
+            if (signupPanel) signupPanel.classList.add("hidden");
+          }
+        });
+      });
+    }
+
+
+    document.addEventListener("DOMContentLoaded", initSchoolSubmenu);
 </script>
 
 </body>
