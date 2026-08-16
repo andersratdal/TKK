@@ -1681,7 +1681,7 @@
 </div>
 <div class="section-card">
 <h2>Spond-import</h2>
-<div class="help" style="margin-top:8px;">Last opp Excel-eksport fra Spond. Velg avdeling først. Bare grupper som hører til valgt avdeling blir opprettet eller oppdatert.</div>
+<div class="help" style="margin-top:8px;">Last opp Excel-eksport fra Spond. For Skøyteskole må semester først opprettes og settes til Aktiv. Bare barn med X i kolonnen som matcher aktivt semester importeres.</div>
 <div class="form-grid" style="margin-top: 14px;">
 <div class="col-4">
 
@@ -5384,56 +5384,180 @@ function parseBirthYearFromSpondValue(rawValue) {
       return { created: true, updated: false };
     }
 
+
+    function normalizeSemesterName(value) {
+      return String(value || "")
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, " ")
+        .replace(/å/g, "a")
+        .replace(/ø/g, "o")
+        .replace(/æ/g, "ae");
+    }
+
+    function getActiveSchoolSemesterForDepartment(departmentId) {
+      const rows = (state.schoolBatches || []).filter((batch) =>
+        sameId(batch.department_id, departmentId) &&
+        String(batch.status || "").trim().toLowerCase() === "aktiv"
+      );
+
+      if (rows.length === 0) {
+        throw new Error(
+          "Det finnes ikke noe aktivt semester for valgt avdeling. " +
+          "Opprett semester under Skøyteskole → Admin og sett status til Aktiv før import."
+        );
+      }
+
+      if (rows.length > 1) {
+        throw new Error(
+          "Det finnes flere aktive semester for valgt avdeling. " +
+          "Sett kun ett semester til Aktiv før import."
+        );
+      }
+
+      return rows[0];
+    }
+
     async function importSpond() {
-      if (!supabaseClient) { alert("Lagre innstillinger først."); return; }
+      if (!supabaseClient) {
+        alert("Lagre innstillinger først.");
+        return;
+      }
+
       const departmentId = byId("spondDepartment").value;
       const file = byId("spondFile").files[0];
-      if (!departmentId) { alert("Velg avdeling for import først."); return; }
-      if (!file) { alert("Velg en Excel-fil først."); return; }
+
+      if (!departmentId) {
+        alert("Velg avdeling for import først.");
+        return;
+      }
+
+      if (!file) {
+        alert("Velg en Excel-fil først.");
+        return;
+      }
+
       setImportStatus("Import pågår ...", false);
       suppressAutoRefresh = true;
 
       try {
+        const isSchoolImport = isSchoolDepartment(departmentId);
+
+        // For Skøyteskole er semester alltid styrt av appen.
+        let activeSemester = null;
+
+        if (isSchoolImport) {
+          activeSemester = getActiveSchoolSemesterForDepartment(departmentId);
+        }
+
         const buffer = await file.arrayBuffer();
         const workbook = XLSX.read(buffer, { type: "array" });
-        const sheetName = workbook.SheetNames.includes("For import") ? "For import" : workbook.SheetNames[0];
+        const sheetName = workbook.SheetNames.includes("For import")
+          ? "For import"
+          : workbook.SheetNames[0];
+
         const sheet = workbook.Sheets[sheetName];
         const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
-        if (!rows.length) throw new Error("Fant ingen rader i arket.");
+
+        if (!rows.length) {
+          throw new Error("Fant ingen rader i arket.");
+        }
 
         const headers = Object.keys(rows[0]);
-        const nameHeader = headers.includes("Barnets navn") ? "Barnets navn" : null;
-        if (!nameHeader) throw new Error("Fant ikke kolonnen 'Barnets navn'.");
-        const groupHeaders = headers.slice(0, headers.indexOf(nameHeader)).filter(Boolean);
+        const nameHeader = headers.includes("Barnets navn")
+          ? "Barnets navn"
+          : null;
+
+        if (!nameHeader) {
+          throw new Error("Fant ikke kolonnen 'Barnets navn'.");
+        }
+
+        const groupHeaders = headers
+          .slice(0, headers.indexOf(nameHeader))
+          .filter(Boolean);
+
         const birthDateHeader = getBirthDateHeader(headers);
 
+        let activeSemesterHeader = null;
+
+        if (isSchoolImport) {
+          const wantedSemesterName = normalizeSemesterName(activeSemester.name);
+
+          activeSemesterHeader = groupHeaders.find((header) =>
+            normalizeSemesterName(header) === wantedSemesterName
+          ) || null;
+
+          if (!activeSemesterHeader) {
+            throw new Error(
+              'Aktivt semester "' +
+              String(activeSemester.name || "") +
+              '" finnes ikke som kolonne i Spond-filen. ' +
+              "Semesternavnet i appen må matche kolonnenavnet i Spond."
+            );
+          }
+        }
+
         let imported = 0;
+        let skippedWithoutX = 0;
         let schoolEnrollmentCount = 0;
-        let schoolBatchCount = 0;
-        const schoolBatchNames = new Set();
+
         const missingContact = [];
         const missingBirthDate = [];
         const similarNameWarnings = [];
 
+        // Sørg for at standardgruppene finnes i det aktive semesteret.
+        let activeSemesterGroups = [];
+
+        if (isSchoolImport) {
+          activeSemesterGroups = await ensureDefaultSchoolGroups(
+            activeSemester.id
+          );
+        }
+
         for (const row of rows) {
           const name = getCellValue(row, "Barnets navn");
+
+          if (!name) continue;
+
+          // Skøyteskole:
+          // importer bare barn som har X i kolonnen som matcher aktivt semester.
+          if (
+            isSchoolImport &&
+            !isX(row[activeSemesterHeader])
+          ) {
+            skippedWithoutX += 1;
+            continue;
+          }
+
           const childEmail = getCellValue(row, "Barnets e-post");
           const childPhone = getCellValue(row, "Barnets mobil");
           const guardianEmail = getCellValue(row, "Foresatt 1's e-post");
           const guardianPhone = getCellValue(row, "Foresatt 1's mobilnummer");
+
           const email = childEmail || guardianEmail || null;
           const phone = childPhone || guardianPhone || null;
-          const rawBirthDate = birthDateHeader ? row[birthDateHeader] : "";
+
+          const rawBirthDate = birthDateHeader
+            ? row[birthDateHeader]
+            : "";
+
           const birthYear = parseBirthYearFromSpondValue(rawBirthDate);
 
-          if (!name) continue;
-          if (!email && !phone) missingContact.push(name);
-          if (!birthYear) missingBirthDate.push(name);
+          if (!email && !phone) {
+            missingContact.push(name);
+          }
+
+          if (!birthYear) {
+            missingBirthDate.push(name);
+          }
 
           const memberLookup = await findMemberByImportedName(name);
           let member = memberLookup.member;
 
-          if (memberLookup.ambiguous && memberLookup.ambiguous.length) {
+          if (
+            memberLookup.ambiguous &&
+            memberLookup.ambiguous.length
+          ) {
             similarNameWarnings.push({
               importedName: name,
               matches: memberLookup.ambiguous.slice(0, 5)
@@ -5441,65 +5565,119 @@ function parseBirthYearFromSpondValue(rawValue) {
           }
 
           if (member) {
+            const updatePayload = {
+              name,
+              email,
+              phone
+            };
+
+            // Medlemmer som importeres fra Skøyteskole markeres som Skøyteskole.
+            if (isSchoolImport) {
+              updatePayload.role = "Skøyteskole";
+            }
+
             const upd = await supabaseClient
               .from("members")
-              .update({ name: name, email: email, phone: phone })
+              .update(updatePayload)
               .eq("id", member.id)
               .select()
               .single();
+
             if (upd.error) throw upd.error;
+
             member = upd.data;
-            state.members = state.members.map((item) => String(item.id) === String(member.id) ? member : item);
+
+            state.members = state.members.map((item) =>
+              String(item.id) === String(member.id)
+                ? member
+                : item
+            );
           } else {
+            const insertPayload = {
+              name,
+              email,
+              phone
+            };
+
+            if (isSchoolImport) {
+              insertPayload.role = "Skøyteskole";
+            }
+
             const ins = await supabaseClient
               .from("members")
-              .insert([{ name: name, email: email, phone: phone }])
+              .insert([insertPayload])
               .select()
               .single();
+
             if (ins.error) throw ins.error;
+
             member = ins.data;
             state.members.push(member);
           }
 
-          const activeGroups = groupHeaders.filter((h) => isX(row[h]));
-          await setMemberGroups(member.id, activeGroups, departmentId);
+          if (isSchoolImport) {
+            // IKKE opprett semester fra Excel.
+            // IKKE lag semester-navnet som vanlig member_group.
+            // Barnet kobles direkte til semesteret som er Aktiv i appen.
 
-          for (const batchName of activeGroups) {
-            const batchResult = await ensureSchoolBatchForImport(batchName, departmentId);
-            const batch = batchResult.batch;
-            if (!batch) continue;
-
-            if (batchResult.created) schoolBatchCount += 1;
-            schoolBatchNames.add(String(batch.id));
-
-            const schoolGroups = await ensureDefaultSchoolGroups(batch.id);
-            const previousAssignment = getPreviousSchoolGroupAssignment(member.id, batch.id, departmentId);
+            const previousAssignment = getPreviousSchoolGroupAssignment(
+              member.id,
+              activeSemester.id,
+              departmentId
+            );
 
             let resolvedGroupName = null;
             let assignmentReason = "";
 
-            if (previousAssignment && previousAssignment.groupName) {
+            if (
+              previousAssignment &&
+              previousAssignment.groupName
+            ) {
               resolvedGroupName = previousAssignment.groupName;
               assignmentReason = previousAssignment.assignmentReason;
             } else {
               resolvedGroupName = getSchoolGroupNameByBirthYear(birthYear);
+
               assignmentReason = birthYear
-                ? (resolvedGroupName ? "Automatisk basert på fødselsår (" + birthYear + ")" : "Mangler regel for fødselsår (" + birthYear + ")")
+                ? (
+                    resolvedGroupName
+                      ? "Automatisk basert på fødselsår (" + birthYear + ")"
+                      : "Mangler regel for fødselsår (" + birthYear + ")"
+                  )
                 : "Mangler fødselsdato fra Spond";
             }
 
-            const resolvedGroup = schoolGroups.find((group) =>
-              String(group.name || "").trim().toLowerCase() === String(resolvedGroupName || "").trim().toLowerCase()
+            const resolvedGroup = activeSemesterGroups.find((group) =>
+              String(group.name || "").trim().toLowerCase() ===
+              String(resolvedGroupName || "").trim().toLowerCase()
             );
 
-            const enrollmentResult = await upsertSchoolEnrollmentFromImport(
-              batch.id,
-              member.id,
-              birthYear,
-              resolvedGroup ? resolvedGroup.id : null,
-              assignmentReason
+            const enrollmentResult =
+              await upsertSchoolEnrollmentFromImport(
+                activeSemester.id,
+                member.id,
+                birthYear,
+                resolvedGroup ? resolvedGroup.id : null,
+                assignmentReason
+              );
+
+            if (
+              enrollmentResult.created ||
+              enrollmentResult.updated
+            ) {
+              schoolEnrollmentCount += 1;
+            }
+          } else {
+            // Andre avdelinger beholder vanlig Spond-gruppelogikk.
+            const activeGroups = groupHeaders.filter((header) =>
+              isX(row[header])
             );
-            if (enrollmentResult.created || enrollmentResult.updated) schoolEnrollmentCount += 1;
+
+            await setMemberGroups(
+              member.id,
+              activeGroups,
+              departmentId
+            );
           }
 
           imported += 1;
@@ -5507,36 +5685,96 @@ function parseBirthYearFromSpondValue(rawValue) {
 
         await loadAll();
 
-        let message = "Import ferdig. Importert " + imported + " medlemmer.";
-        message += "<br>Skøyteskole: oppdatert/opprettet " + schoolEnrollmentCount + " semesterdeltakelser i " + schoolBatchNames.size + " semester.";
-        if (schoolBatchCount > 0) {
-          message += "<br>Nye semester opprettet automatisk ved behov: " + schoolBatchCount + ".";
+        let message =
+          "Import ferdig. Importert " +
+          imported +
+          " medlemmer.";
+
+        if (isSchoolImport) {
+          message +=
+            "<br>Aktivt semester: <strong>" +
+            escapeHtml(String(activeSemester.name || "")) +
+            "</strong>.";
+
+          message +=
+            "<br>Oppdatert/opprettet " +
+            schoolEnrollmentCount +
+            " semesterdeltakelser.";
+
+          if (skippedWithoutX > 0) {
+            message +=
+              "<br>Hoppet over " +
+              skippedWithoutX +
+              " personer uten X i kolonnen for aktivt semester.";
+          }
+
+          message +=
+            "<br>Ingen semester ble opprettet av importen.";
         }
+
         if (missingBirthDate.length > 0) {
-          message += "<br><br>Mangler fødselsdato (" + missingBirthDate.length + "):<br>";
-          message += missingBirthDate.map((name) => escapeHtml(name)).join("<br>");
-        }
-        if (similarNameWarnings.length > 0) {
-          message += "<br><br>Mulige nesten-like navn som bør sjekkes manuelt (" + similarNameWarnings.length + "):<br>";
-          message += similarNameWarnings
-            .map((item) => escapeHtml(item.importedName) + " → " + item.matches.map((name) => escapeHtml(name)).join(", "))
+          message +=
+            "<br><br>Mangler fødselsdato (" +
+            missingBirthDate.length +
+            "):<br>";
+
+          message += missingBirthDate
+            .map((personName) => escapeHtml(personName))
             .join("<br>");
         }
-        if (missingContact.length > 0) {
-          message += "<br><br>Mangler kontaktinfo (" + missingContact.length + "):<br>";
-          message += missingContact.map((name) =>
-            '<span class="linklike missing-contact-name" data-name="' + escapeHtml(name) + '">' + escapeHtml(name) + "</span>"
-          ).join("<br>");
-          message += "<br><br>Klikk på et navn for å fylle inn medlemsskjemaet.";
+
+        if (similarNameWarnings.length > 0) {
+          message +=
+            "<br><br>Mulige nesten-like navn som bør sjekkes manuelt (" +
+            similarNameWarnings.length +
+            "):<br>";
+
+          message += similarNameWarnings
+            .map((item) =>
+              escapeHtml(item.importedName) +
+              " → " +
+              item.matches
+                .map((matchName) => escapeHtml(matchName))
+                .join(", ")
+            )
+            .join("<br>");
         }
+
+        if (missingContact.length > 0) {
+          message +=
+            "<br><br>Mangler kontaktinfo (" +
+            missingContact.length +
+            "):<br>";
+
+          message += missingContact
+            .map((personName) =>
+              '<span class="linklike missing-contact-name" data-name="' +
+              escapeHtml(personName) +
+              '">' +
+              escapeHtml(personName) +
+              "</span>"
+            )
+            .join("<br>");
+
+          message +=
+            "<br><br>Klikk på et navn for å fylle inn medlemsskjemaet.";
+        }
+
         setImportStatusHtml(message, false);
 
-        document.querySelectorAll(".missing-contact-name").forEach((el) => {
-          el.addEventListener("click", function () { fillMemberFormFromName(this.dataset.name || ""); });
-        });
+        document
+          .querySelectorAll(".missing-contact-name")
+          .forEach((el) => {
+            el.addEventListener("click", function () {
+              fillMemberFormFromName(this.dataset.name || "");
+            });
+          });
       } catch (error) {
         console.error(error);
-        setImportStatus("Import feilet: " + error.message, true);
+        setImportStatus(
+          "Import feilet: " + (error.message || error),
+          true
+        );
       } finally {
         suppressAutoRefresh = false;
       }
