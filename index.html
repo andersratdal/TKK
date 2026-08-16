@@ -7635,6 +7635,25 @@ attachSortHandlers();
       }
 
       activateSchoolTab("admin");
+
+      // Tillat direkte navigasjon fra eksterne Skøyteskole-sider,
+      // for eksempel admin-koder-bulk.html.
+      const navParams = new URLSearchParams(window.location.search);
+      const requestedSection = navParams.get("section");
+      const requestedSchoolTab = navParams.get("tab");
+
+      if (requestedSection === "skating-school") {
+        showSection("skatingSchoolTab").then(() => {
+          if (requestedSchoolTab === "admin" || requestedSchoolTab === "school") {
+            activateSchoolTab(requestedSchoolTab);
+          } else if (requestedSchoolTab === "signupForms") {
+            const signupFormsButton = document.querySelector(
+              '#skatingSchoolTab [data-school-tab="signupForms"]'
+            );
+            if (signupFormsButton) signupFormsButton.click();
+          }
+        });
+      }
     }
 
     setupSchoolTabs();
