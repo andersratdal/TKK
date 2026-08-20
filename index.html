@@ -1663,10 +1663,14 @@
     <div class="section-header">
       <div>
         <h2>Deltakere i valgt semester</h2>
-        <div class="help" style="margin-top:8px;">Viser alle deltakere som er registrert på semesteret valgt øverst på siden.</div>
+        <div class="help" style="margin-top:8px;">Her vises deltakerne fordelt på gruppene. Du kan flytte deltakere mellom Blå, Gul og Rød.</div>
       </div>
       <div class="toolbar">
-        <input id="schoolParticipantSearch" placeholder="Søk deltaker..." />
+        <input id="schoolParticipantSearch" placeholder="Søk medlem..." />
+        <select id="schoolParticipantMember">
+          <option value="">Velg medlem</option>
+        </select>
+        <button class="btn-primary" id="btnAddSchoolParticipant" type="button">Legg til deltaker</button>
       </div>
     </div>
     <div class="help" id="schoolParticipantMessage" style="margin-top:10px;"></div>
@@ -4190,95 +4194,229 @@ function renderSchoolParticipants() {
   const wrap = byId("schoolParticipantsWrap");
   if (!wrap) return;
 
-  const batchId = byId("schoolBatchPicker")
-    ? byId("schoolBatchPicker").value
-    : "";
-
+  const batchId = byId("schoolBatchPicker") ? byId("schoolBatchPicker").value : "";
   if (!batchId) {
     wrap.innerHTML = '<div class="empty">Velg et semester først.</div>';
     return;
   }
 
+  const rows = getSchoolEnrollmentsForBatch(batchId);
   const schoolGroups = getSchoolGroupsForBatch(batchId);
-  const search = byId("schoolParticipantSearch")
-    ? String(byId("schoolParticipantSearch").value || "").trim().toLowerCase()
-    : "";
-
-  let rows = getSchoolEnrollmentsForBatch(batchId).slice();
-
-  if (search) {
-    rows = rows.filter((enrollment) => {
-      const member = enrollment.members || {};
-      const group = schoolGroups.find(
-        (item) => String(item.id) === String(enrollment.school_group_id || "")
-      );
-
-      return (
-        String(member.name || "").toLowerCase().includes(search) ||
-        String(member.phone || "").toLowerCase().includes(search) ||
-        String(member.email || "").toLowerCase().includes(search) ||
-        String(enrollment.advisor_name || "").toLowerCase().includes(search) ||
-        String((group && group.name) || "").toLowerCase().includes(search)
-      );
-    });
-  }
-
-  rows.sort((a, b) =>
-    String((a.members && a.members.name) || "").localeCompare(
-      String((b.members && b.members.name) || ""),
-      "no"
-    )
-  );
+  const isMobileSchoolView = window.innerWidth <= 700;
 
   if (!rows.length) {
-    wrap.innerHTML = '<div class="empty">Ingen deltakere i valgt semester.</div>';
+    wrap.innerHTML = '<div class="empty">Ingen deltakere lagt til ennå.</div>';
     return;
   }
 
-  const table = document.createElement("table");
-  table.innerHTML =
-    "<thead><tr>" +
-      "<th>Navn</th>" +
-      "<th>Fødselsår</th>" +
-      "<th>Gruppe</th>" +
-      "<th>Veileder</th>" +
-      "<th>Telefon</th>" +
-      "<th>E-post</th>" +
-    "</tr></thead>";
-
-  const tbody = document.createElement("tbody");
-
-  rows.forEach((enrollment) => {
-    const member = enrollment.members || {};
-    const group = schoolGroups.find(
-      (item) => String(item.id) === String(enrollment.school_group_id || "")
-    );
-
-    const tr = document.createElement("tr");
-    tr.innerHTML =
-      "<td data-label='Navn'></td>" +
-      "<td data-label='Fødselsår'></td>" +
-      "<td data-label='Gruppe'></td>" +
-      "<td data-label='Veileder'></td>" +
-      "<td data-label='Telefon'></td>" +
-      "<td data-label='E-post'></td>";
-
-    tr.children[0].textContent = safeText(member.name || "-");
-    tr.children[1].textContent = enrollment.birth_year
-      ? String(enrollment.birth_year)
-      : "-";
-    tr.children[2].textContent = safeText((group && group.name) || "Ikke fordelt");
-    tr.children[3].textContent = safeText(enrollment.advisor_name || "-");
-    tr.children[4].textContent = safeText(member.phone || "-");
-    tr.children[5].textContent = safeText(member.email || "-");
-
-    tbody.appendChild(tr);
+  const groupByName = {};
+  schoolGroups.forEach((group) => {
+    groupByName[String(group.name || "").trim().toLowerCase()] = group;
   });
 
-  table.appendChild(tbody);
+  const targetColumns = [
+    { key: "blå", title: "Blå", className: "school-blue" },
+    { key: "gul", title: "Gul", className: "school-yellow" },
+    { key: "rød", title: "Rød", className: "school-red" }
+  ].map((col) => ({ ...col, group: groupByName[col.key] || null }));
+
+  const buckets = { blå: [], gul: [], rød: [], unassigned: [] };
+  rows.forEach((enrollment) => {
+    const group = schoolGroups.find((g) => String(g.id) === String(enrollment.school_group_id || ""));
+    const nameKey = String((group && group.name) || "").trim().toLowerCase();
+    if (nameKey === "blå" || nameKey === "gul" || nameKey === "rød") {
+      buckets[nameKey].push(enrollment);
+    } else {
+      buckets.unassigned.push(enrollment);
+    }
+  });
+
+  const board = document.createElement("div");
+  board.className = "school-board";
+
+  function createMoveSelect(enrollment) {
+    const select = document.createElement("select");
+    select.innerHTML = '<option value="">Velg</option>';
+    targetColumns.forEach((col) => {
+      if (!col.group) return;
+      const opt = document.createElement("option");
+      opt.value = col.group.id;
+      opt.textContent = col.title;
+      select.appendChild(opt);
+    });
+    select.value = enrollment.school_group_id ? String(enrollment.school_group_id) : "";
+    return select;
+  }
+
+  async function saveMove(enrollment, newGroupId, controls) {
+    try {
+      controls.forEach((el) => { if (el) el.disabled = true; });
+      const res = await updateSchoolEnrollmentGroup(enrollment.id, newGroupId || null);
+      if (res && res.error) throw res.error;
+      setSchoolMessage("schoolParticipantMessage", newGroupId ? "Deltaker flyttet." : "Gruppe nullstilt.", false);
+      closeMobileSchoolModal();
+      await loadAll();
+    } catch (error) {
+      console.error(error);
+      setSchoolMessage("schoolParticipantMessage", "Kunne ikke oppdatere gruppe. " + error.message, true);
+      controls.forEach((el) => { if (el) el.disabled = false; });
+    }
+  }
+
+  function openMobileSchoolModal(enrollment) {
+    const modal = byId("schoolMobileModal");
+    const title = byId("schoolMobileModalTitle");
+    const meta = byId("schoolMobileModalMeta");
+    const select = byId("schoolMobileModalSelect");
+    const saveBtn = byId("schoolMobileModalSave");
+    const closeBtn = byId("schoolMobileModalClose");
+    if (!modal || !title || !meta || !select || !saveBtn || !closeBtn) return;
+
+    title.textContent = safeText(enrollment.members && enrollment.members.name);
+    meta.textContent = "Fødselsår: " + (enrollment.birth_year ? String(enrollment.birth_year) : "-");
+    select.innerHTML = '<option value="">Velg gruppe</option>';
+    targetColumns.forEach((col) => {
+      if (!col.group) return;
+      const opt = document.createElement("option");
+      opt.value = col.group.id;
+      opt.textContent = col.title;
+      select.appendChild(opt);
+    });
+    select.value = enrollment.school_group_id ? String(enrollment.school_group_id) : "";
+
+    saveBtn.onclick = function () {
+      if (!select.value) {
+        setSchoolMessage("schoolParticipantMessage", "Velg en gruppe før du lagrer.", true);
+        return;
+      }
+      saveMove(enrollment, select.value, [select, saveBtn, closeBtn]);
+    };
+    closeBtn.onclick = closeMobileSchoolModal;
+    modal.onclick = function (e) {
+      if (e.target === modal) closeMobileSchoolModal();
+    };
+    modal.classList.remove("hidden");
+  }
+
+  function buildDesktopCard(enrollment) {
+    const memberName = safeText(enrollment.members && enrollment.members.name);
+    const birthYear = enrollment.birth_year ? String(enrollment.birth_year) : "-";
+
+    const card = document.createElement("div");
+    card.className = "school-card";
+
+    const row = document.createElement("div");
+    row.className = "school-card-row";
+
+    const name = document.createElement("div");
+    name.className = "school-card-name";
+    name.title = memberName;
+    name.textContent = memberName;
+
+    const meta = document.createElement("div");
+    meta.className = "school-card-meta";
+    meta.textContent = birthYear;
+
+    const actions = document.createElement("div");
+    actions.className = "school-card-actions";
+
+    const select = createMoveSelect(enrollment);
+
+    const moveBtn = document.createElement("button");
+    moveBtn.className = "btn-secondary btn-small";
+    moveBtn.type = "button";
+    moveBtn.textContent = "Flytt";
+    moveBtn.addEventListener("click", function () {
+      if (!select.value) {
+        setSchoolMessage("schoolParticipantMessage", "Velg en gruppe før du flytter deltakeren.", true);
+        return;
+      }
+      saveMove(enrollment, select.value, [select, moveBtn]);
+    });
+
+    actions.appendChild(select);
+    actions.appendChild(moveBtn);
+
+    row.appendChild(name);
+    row.appendChild(meta);
+    row.appendChild(actions);
+    card.appendChild(row);
+    return card;
+  }
+
+  function buildMobileItem(enrollment) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "school-mobile-item";
+
+    const name = document.createElement("div");
+    name.className = "school-mobile-item-name";
+    name.textContent = safeText(enrollment.members && enrollment.members.name);
+
+    const year = document.createElement("div");
+    year.className = "school-mobile-item-year";
+    year.textContent = "Fødselsår: " + (enrollment.birth_year ? String(enrollment.birth_year) : "-");
+
+    btn.appendChild(name);
+    btn.appendChild(year);
+    btn.addEventListener("click", function () {
+      openMobileSchoolModal(enrollment);
+    });
+    return btn;
+  }
+
+  targetColumns.forEach((col) => {
+    const column = document.createElement("div");
+    column.className = "school-column";
+
+    const header = document.createElement("div");
+    header.className = "school-column-header " + col.className;
+    header.innerHTML = "<span>" + col.title + "</span><span>" + buckets[col.key].length + "</span>";
+
+    const body = document.createElement("div");
+    body.className = "school-column-body";
+
+    if (!col.group) {
+      const empty = document.createElement("div");
+      empty.className = "empty";
+      empty.textContent = "Gruppen finnes ikke i dette semesteret ennå.";
+      body.appendChild(empty);
+    } else if (!buckets[col.key].length) {
+      const empty = document.createElement("div");
+      empty.className = "empty";
+      empty.textContent = "Ingen deltakere.";
+      body.appendChild(empty);
+    } else {
+      buckets[col.key]
+        .slice()
+        .sort((a, b) => String((a.members && a.members.name) || "").localeCompare(String((b.members && b.members.name) || ""), "no"))
+        .forEach((enrollment) => body.appendChild(isMobileSchoolView ? buildMobileItem(enrollment) : buildDesktopCard(enrollment)));
+    }
+
+    column.appendChild(header);
+    column.appendChild(body);
+    board.appendChild(column);
+  });
+
   wrap.innerHTML = "";
-  wrap.appendChild(table);
+  wrap.appendChild(board);
+
+  if (buckets.unassigned.length) {
+    const unassigned = document.createElement("div");
+    unassigned.className = "school-unassigned";
+    unassigned.innerHTML = '<strong>Ikke fordelt</strong><div class="help" style="margin-top:6px;">Velg gruppe og flytt deltakeren inn i Blå, Gul eller Rød.</div>';
+    const list = document.createElement("div");
+    list.className = "school-unassigned-list";
+    buckets.unassigned
+      .slice()
+      .sort((a, b) => String((a.members && a.members.name) || "").localeCompare(String((b.members && b.members.name) || ""), "no"))
+      .forEach((enrollment) => list.appendChild(isMobileSchoolView ? buildMobileItem(enrollment) : buildDesktopCard(enrollment)));
+    unassigned.appendChild(list);
+    wrap.appendChild(unassigned);
+  }
 }
+
+
 
 function getSignupTargetBatch(signup) {
   if (!signup) return null;
@@ -7295,7 +7433,7 @@ async function loadAll() {
       renderSchoolParticipants();
     });
 
-    if (byId("schoolParticipantSearch")) byId("schoolParticipantSearch").addEventListener("input", renderSchoolParticipants);
+    if (byId("schoolParticipantSearch")) byId("schoolParticipantSearch").addEventListener("input", () => { updateSchoolParticipantMemberPicker(); renderSchoolParticipants(); });
     if (byId("schoolSignupSearch")) byId("schoolSignupSearch").addEventListener("input", renderSchoolSignups);
 if (byId("btnMoveSelectedSchoolSignups")) byId("btnMoveSelectedSchoolSignups").addEventListener("click", moveSelectedSchoolSignupsToParticipants);
 
