@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="no">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Påmelding skøyteskole med kode</title>
+  <title>Skating school registration with code</title>
   <style>
     :root {
       --bg: #f6f8fb;
@@ -248,14 +248,14 @@
 
 .language-switch{position:absolute;top:20px;right:24px;display:flex;gap:8px;z-index:10}.language-switch a{display:inline-flex;align-items:center;justify-content:center;width:38px;height:30px;border-radius:7px;text-decoration:none;font-size:22px;border:1px solid #d1d5db;background:#fff;box-shadow:0 2px 7px rgba(0,0,0,.08)}.language-switch a.active{border:2px solid #003a8f}body{position:relative}@media(max-width:600px){.language-switch{top:10px;right:12px}}</style>
 </head>
-<body><div class="language-switch" aria-label="Velg språk"><a href="pamelding-kode.html" class="active" title="Norsk">🇳🇴</a><a href="pamelding-kode-en.html" title="English">🇬🇧</a></div>
+<body><div class="language-switch" aria-label="Choose language"><a href="pamelding-kode.html" title="Norsk">🇳🇴</a><a href="pamelding-kode-en.html" class="active" title="English">🇬🇧</a></div>
 
   <div class="app-header">
     <div class="brand">
-      <img alt="Trondheim Kortbaneklubb" src="logo.png"/>
+      <img alt="Trondheim Short Track Club" src="logo.png"/>
       <div class="brand-text">
-        <div class="eyebrow">Trondheim Kortbaneklubb</div>
-        <h1 class="brand-title">Skøyteskole</h1>
+        <div class="eyebrow">Trondheim Short Track Club</div>
+        <h1 class="brand-title">Skating School</h1>
         
       </div>
     </div>
@@ -263,39 +263,39 @@
 
   <div class="container">
     <div class="card">
-      <h1>Påmelding via Idrettsrådet i Trondheim</h1>
+      <h1>Registration via Trondheim Sports Council</h1>
       <p class="muted">
-        Denne siden er for deltakere som har fått tildelt en kode og derfor ikke skal betale ved påmelding.
+        This page is for participants who have been given a registration code and therefore do not need to pay when registering.
       </p>
 
       <form id="signupForm">
         <div class="grid grid-2">
           <div>
-            <label for="access_code">Kode <span class="required">*</span></label>
+            <label for="access_code">Code <span class="required">*</span></label>
             <input id="access_code" name="access_code" type="text" required />
           </div>
 
           <div>
-            <label for="email">E-post <span class="required">*</span></label>
+            <label for="email">Email <span class="required">*</span></label>
             <input id="email" name="email" type="email" required />
           </div>
 
           <div>
-            <label for="phone">Telefon <span class="required">*</span></label>
+            <label for="phone">Phone <span class="required">*</span></label>
             <input id="phone" name="phone" type="tel" required />
           </div>
         </div>
 
         <div style="margin-top:16px;">
-          <label for="advisor_name">Navn på veileder</label>
+          <label for="advisor_name">Name of advisor</label>
           <input id="advisor_name" name="advisor_name" type="text" />
         </div>
 
         <div id="childrenContainer"></div>
 
         <div class="actions">
-          <button type="button" class="btn-secondary" id="addChildBtn">Legg til barn</button>
-          <button type="submit" class="btn-primary" id="submitBtn">Send påmelding</button>
+          <button type="button" class="btn-secondary" id="addChildBtn">Add child</button>
+          <button type="submit" class="btn-primary" id="submitBtn">Submit registration</button>
         </div>
 
         <div id="message" class="message"></div>
@@ -306,30 +306,30 @@
   <template id="childTemplate">
     <div class="child-card">
       <div class="child-header">
-        <h3>Barn <span class="child-number"></span></h3>
-        <button type="button" class="btn-danger remove-child-btn">Fjern</button>
+        <h3>Child <span class="child-number"></span></h3>
+        <button type="button" class="btn-danger remove-child-btn">Remove</button>
       </div>
 
       <div class="grid grid-2">
         <div>
-          <label>Fornavn <span class="required">*</span></label>
+          <label>First name <span class="required">*</span></label>
           <input type="text" class="child-first-name" autocomplete="given-name" required />
         </div>
 
         <div>
-          <label>Etternavn <span class="required">*</span></label>
+          <label>Last name <span class="required">*</span></label>
           <input type="text" class="child-last-name" autocomplete="family-name" required />
         </div>
 
         <div>
-          <label>Fødselsdato <span class="required">*</span></label>
+          <label>Date of birth <span class="required">*</span></label>
           <input type="date" class="birth-date" required />
         </div>
 
         <div>
-          <label>Ønsket skøytestørrelse</label>
+          <label>Requested skate size</label>
           <select class="requested-skate-size">
-            <option value="">Velg størrelse</option>
+            <option value="">Select size</option>
             <option value="28">28</option>
             <option value="29">29</option>
             <option value="30">30</option>
@@ -351,7 +351,7 @@
           </select>
           <div class="checkbox-row" style="margin-top:8px;">
             <input type="checkbox" class="has-own-skates" />
-            <span>Har egne skøyter</span>
+            <span>Has own skates</span>
           </div>
         </div>
       </div>
@@ -441,7 +441,7 @@
 
     function validateChildren(children) {
       if (!children.length) {
-        return "Du må legge til minst ett barn.";
+        return "You must add at least one child.";
       }
 
       for (let i = 0; i < children.length; i += 1) {
@@ -449,23 +449,23 @@
         const nr = i + 1;
 
         if (!child.first_name) {
-          return `Barn ${nr}: Du må fylle inn fornavn.`;
+          return `Child ${nr}: You must enter the first name.`;
         }
 
         if (!child.last_name) {
-          return `Barn ${nr}: Du må fylle inn etternavn.`;
+          return `Child ${nr}: You must enter the last name.`;
         }
 
         if (!child.birth_date) {
-          return `Barn ${nr}: Du må fylle inn fødselsdato.`;
+          return `Child ${nr}: You must enter the date of birth.`;
         }
 
         if (!child.requested_skate_size && !child.has_own_skates) {
-          return `Barn ${nr}: Du må velge skøytestørrelse eller krysse av for egne skøyter.`;
+          return `Child ${nr}: Du må velge skøytestørrelse eller krysse av for egne skøyter.`;
         }
 
         if (child.requested_skate_size && child.has_own_skates) {
-          return `Barn ${nr}: Du kan ikke velge både størrelse og egne skøyter.`;
+          return `Child ${nr}: Du kan ikke velge både størrelse og egne skøyter.`;
         }
       }
 
@@ -529,7 +529,7 @@
         const data = await response.json();
 
         if (!response.ok) {
-          throw new Error(data.error || "Kunne ikke sende påmeldingen.");
+          throw new Error(data.error || "Could not submit the registration.");
         }
 
         showMessage("Påmeldingen ble registrert. Sender videre...", "success");
