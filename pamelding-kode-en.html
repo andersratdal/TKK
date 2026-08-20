@@ -246,11 +246,57 @@
       }
     }
 
-.language-switch{position:absolute;top:20px;right:24px;display:flex;gap:8px;z-index:10}.language-switch a{display:inline-flex;align-items:center;justify-content:center;width:38px;height:30px;border-radius:7px;text-decoration:none;font-size:22px;border:1px solid #d1d5db;background:#fff;box-shadow:0 2px 7px rgba(0,0,0,.08)}.language-switch a.active{border:2px solid #003a8f}body{position:relative}@media(max-width:600px){.language-switch{top:10px;right:12px}}</style>
+.language-switch{position:absolute;top:20px;right:24px;display:flex;gap:8px;z-index:10}.language-switch a{display:inline-flex;align-items:center;justify-content:center;width:38px;height:30px;border-radius:7px;text-decoration:none;font-size:22px;border:1px solid #d1d5db;background:#fff;box-shadow:0 2px 7px rgba(0,0,0,.08)}.language-switch a.active{border:2px solid #003a8f}body{position:relative}@media(max-width:600px){.language-switch{top:10px;right:12px}}.card,.container,.form-card,.wrap{position:relative}.language-switch{position:absolute;top:16px;right:18px;display:flex;gap:7px;align-items:center;z-index:5}.language-switch a{display:inline-flex;align-items:center;justify-content:center;width:38px;height:30px;border-radius:7px;text-decoration:none;font-size:21px;line-height:1;border:1px solid #d1d5db;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.07)}.language-switch a.active{border:2px solid #003a8f}
+    .language-switch{
+      position:absolute;
+      top:14px;
+      right:18px;
+      display:flex;
+      flex-direction:column;
+      align-items:flex-end;
+      gap:5px;
+      z-index:5;
+    }
+    .language-switch-label{
+      font-size:10px;
+      line-height:1;
+      font-weight:600;
+      color:#64748b;
+      letter-spacing:.03em;
+    }
+    .language-switch-flags{
+      display:flex;
+      gap:7px;
+      align-items:center;
+    }
+    .language-switch a{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      width:38px;
+      height:28px;
+      padding:3px;
+      box-sizing:border-box;
+      border-radius:6px;
+      text-decoration:none;
+      border:1px solid #d1d5db;
+      background:#fff;
+      box-shadow:0 2px 6px rgba(0,0,0,.07);
+    }
+    .language-switch a.active{
+      border:2px solid #003a8f;
+    }
+    .language-switch svg{
+      display:block;
+      width:100%;
+      height:100%;
+      border-radius:2px;
+    }
+    
+</style>
 </head>
-<body><div class="language-switch" aria-label="Choose language"><a href="pamelding-kode.html" title="Norsk">🇳🇴</a><a href="pamelding-kode-en.html" class="active" title="English">🇬🇧</a></div>
-
-  <div class="app-header">
+<body>
+<div class="app-header">
     <div class="brand">
       <img alt="Trondheim Short Track Club" src="logo.png"/>
       <div class="brand-text">
@@ -262,10 +308,28 @@
   </div>
 
   <div class="container">
-    <div class="card">
-      <h1>Registration via Trondheim Sports Council</h1>
+    <div class="card"><div class="language-switch" aria-label="Choose language">
+      <div class="language-switch-label">Language</div>
+      <div class="language-switch-flags">
+        <a href="pamelding-kode.html" title="Norsk" aria-label="Norsk"><svg viewBox="0 0 22 16" aria-hidden="true">
+<rect width="22" height="16" fill="#BA0C2F"/>
+<rect x="6" width="4" height="16" fill="#fff"/>
+<rect y="6" width="22" height="4" fill="#fff"/>
+<rect x="7" width="2" height="16" fill="#00205B"/>
+<rect y="7" width="22" height="2" fill="#00205B"/>
+</svg></a>
+        <a href="pamelding-kode-en.html" class="active" title="English" aria-label="English"><svg viewBox="0 0 60 30" aria-hidden="true">
+<rect width="60" height="30" fill="#012169"/>
+<path d="M0 0l60 30M60 0L0 30" stroke="#fff" stroke-width="6"/>
+<path d="M0 0l60 30M60 0L0 30" stroke="#C8102E" stroke-width="2"/>
+<path d="M30 0v30M0 15h60" stroke="#fff" stroke-width="10"/>
+<path d="M30 0v30M0 15h60" stroke="#C8102E" stroke-width="6"/>
+</svg></a>
+      </div>
+    </div>
+      <h1>Registration for TKK Skating School</h1>
       <p class="muted">
-        This page is for participants who have been given a registration code and therefore do not need to pay when registering.
+        To register through this page, you must have received a registration code from Trondheim Sports Council. Enter the code and complete the form below to submit your registration.
       </p>
 
       <form id="signupForm">
@@ -287,8 +351,8 @@
         </div>
 
         <div style="margin-top:16px;">
-          <label for="advisor_name">Name of advisor</label>
-          <input id="advisor_name" name="advisor_name" type="text" />
+          <label for="advisor_name">Name of advisor <span class="required">*</span></label>
+          <input id="advisor_name" name="advisor_name" type="text" required />
         </div>
 
         <div id="childrenContainer"></div>
@@ -486,6 +550,12 @@
       const phone = document.getElementById("phone").value.trim();
       const advisor_name = document.getElementById("advisor_name").value.trim();
       const children = collectChildren();
+
+      if (!advisor_name) {
+        showMessage("You must enter the name of the advisor.", "error");
+        document.getElementById("advisor_name").focus();
+        return;
+      }
 
       if (!access_code) {
         showMessage("Du må fylle inn kode.");
