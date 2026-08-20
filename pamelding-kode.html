@@ -350,11 +350,6 @@
           </div>
         </div>
 
-        <div style="margin-top:16px;">
-          <label for="advisor_name">Navn på veileder <span class="required">*</span></label>
-          <input id="advisor_name" name="advisor_name" type="text" required />
-        </div>
-
         <div id="childrenContainer"></div>
 
         <div class="actions">
@@ -391,6 +386,8 @@
         </div>
 
         <div>
+          <label>Ønsket språk <span class="required">*</span></label>
+          <div>
           <label>Ønsket skøytestørrelse</label>
           <select class="requested-skate-size">
             <option value="">Velg størrelse</option>
@@ -417,6 +414,22 @@
             <input type="checkbox" class="has-own-skates" />
             <span>Har egne skøyter</span>
           </div>
+        </div>
+
+        <div class="checkbox-row" style="gap:16px; flex-wrap:wrap;">
+            <label style="font-weight:400; margin:0;">
+              <input type="radio" class="preferred-language" name="preferred-language-template" value="Norsk" required />
+              Norsk
+            </label>
+            <label style="font-weight:400; margin:0;">
+              <input type="radio" class="preferred-language" name="preferred-language-template" value="Engelsk" required />
+              Engelsk
+            </label>
+          </div>
+
+        <div>
+          <label>Annen informasjon</label>
+          <textarea class="other-information" rows="3" placeholder="Valgfritt"></textarea>
         </div>
       </div>
     </div>
@@ -457,6 +470,11 @@
       const card = clone.querySelector(".child-card");
       const skateSizeSelect = card.querySelector(".requested-skate-size");
       const ownSkatesCheckbox = card.querySelector(".has-own-skates");
+      const languageRadios = card.querySelectorAll(".preferred-language");
+      const languageGroupName = "preferred-language-" + Date.now() + "-" + Math.random().toString(36).slice(2);
+      languageRadios.forEach((radio) => {
+        radio.name = languageGroupName;
+      });
       const removeBtn = card.querySelector(".remove-child-btn");
 
       ownSkatesCheckbox.addEventListener("change", () => {
@@ -490,6 +508,8 @@
         const firstName = card.querySelector(".child-first-name").value.trim();
         const lastName = card.querySelector(".child-last-name").value.trim();
 
+        const selectedLanguage = card.querySelector(".preferred-language:checked");
+
         return {
           first_name: firstName,
           last_name: lastName,
@@ -497,6 +517,8 @@
           // fornavn og etternavn før påmeldingen sendes.
           child_name: `${firstName} ${lastName}`.trim(),
           birth_date: card.querySelector(".birth-date").value,
+          preferred_language: selectedLanguage ? selectedLanguage.value : "",
+          other_information: card.querySelector(".other-information").value.trim() || null,
           requested_skate_size: card.querySelector(".requested-skate-size").value || null,
           has_own_skates: card.querySelector(".has-own-skates").checked
         };
@@ -524,6 +546,10 @@
           return `Barn ${nr}: Du må fylle inn fødselsdato.`;
         }
 
+        if (!child.preferred_language) {
+          return `Barn ${nr}: Du må velge ønsket språk.`;
+        }
+
         if (!child.requested_skate_size && !child.has_own_skates) {
           return `Barn ${nr}: Du må velge skøytestørrelse eller krysse av for egne skøyter.`;
         }
@@ -548,14 +574,7 @@
       const access_code = document.getElementById("access_code").value.trim();
       const email = document.getElementById("email").value.trim();
       const phone = document.getElementById("phone").value.trim();
-      const advisor_name = document.getElementById("advisor_name").value.trim();
       const children = collectChildren();
-
-      if (!advisor_name) {
-        showMessage("Du må fylle inn navn på veileder.", "error");
-        document.getElementById("advisor_name").focus();
-        return;
-      }
 
       if (!access_code) {
         showMessage("Du må fylle inn kode.");
@@ -592,7 +611,6 @@
             access_code,
             email,
             phone,
-            advisor_name,
             batch_name: ACTIVE_BATCH_NAME,
             children
           })
