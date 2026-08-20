@@ -484,6 +484,7 @@
       const access_code = document.getElementById("access_code").value.trim();
       const email = document.getElementById("email").value.trim();
       const phone = document.getElementById("phone").value.trim();
+      const advisor_name = document.getElementById("advisor_name").value.trim();
       const children = collectChildren();
 
       if (!access_code) {
@@ -521,6 +522,7 @@
             access_code,
             email,
             phone,
+            advisor_name,
             batch_name: ACTIVE_BATCH_NAME,
             children
           })
