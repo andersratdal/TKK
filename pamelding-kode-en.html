@@ -293,6 +293,251 @@
       border-radius:2px;
     }
     
+
+    .child-extra-field {
+      grid-column: 1 / -1;
+      margin-top: 18px;
+    }
+    .child-extra-field > label {
+      display: block;
+      margin-bottom: 10px;
+    }
+    .child-extra-field .checkbox-row {
+      margin-top: 0;
+      gap: 28px !important;
+    }
+    
+
+    .language-heading{display:block;margin:0 0 14px 0;font-weight:700}
+    .child-extra-field{margin-top:26px!important}
+    .child-extra-field + .child-extra-field{margin-top:30px!important}
+    
+    /* Tydelig inndeling mellom skøyter, språk og annen informasjon */
+    .child-extra-field{
+      grid-column:1 / -1;
+      margin-top:18px !important;
+      padding-top:22px;
+      border-top:1px solid #dbe3ee;
+    }
+    .child-extra-field:first-of-type{
+      margin-top:10px !important;
+    }
+    .child-extra-field > label,
+    .child-extra-field .language-heading{
+      display:block;
+      margin:0 0 12px 0;
+      font-weight:700;
+      color:#0f172a;
+    }
+    .child-extra-field .checkbox-row{
+      margin-top:10px;
+    }
+    .child-extra-field textarea{
+      margin-top:2px;
+    }
+
+
+    /* Ekstra luft mellom "Har egne skøyter" og språkseksjonen */
+    .child-extra-field:has(.preferred-language) {
+      margin-top: 38px !important;
+      padding-top: 26px;
+    }
+
+
+    /* Fast avstand mellom skøytevalg og språkoverskrift */
+    .language-heading {
+      display: block !important;
+      margin-top: 34px !important;
+      margin-bottom: 16px !important;
+      padding-top: 22px !important;
+      border-top: 1px solid #dbe3ee;
+    }
+
+
+    .language-heading {
+      margin-bottom: 6px !important;
+    }
+    .language-heading + .checkbox-row {
+      margin-top: 0 !important;
+    }
+    
+
+    /* Språkoverskrift uten linje og tettere på valgene */
+    .language-heading {
+      border-top: none !important;
+      padding-top: 0 !important;
+      margin-bottom: 0 !important;
+    }
+    .language-heading + .checkbox-row {
+      margin-top: -4px !important;
+    }
+
+
+    /* Skillelinjen skal ligge mellom skøyter og språk, ikke under språkoverskriften */
+    .language-heading {
+      border: 0 !important;
+      border-top: 0 !important;
+      border-bottom: 0 !important;
+      text-decoration: none !important;
+      padding-top: 0 !important;
+      margin-top: 0 !important;
+      margin-bottom: 2px !important;
+    }
+
+    .child-extra-field:has(.preferred-language) {
+      border-top: 1px solid #dbe3ee !important;
+      padding-top: 24px !important;
+      margin-top: 34px !important;
+    }
+
+    .language-heading + .checkbox-row {
+      margin-top: 0 !important;
+    }
+
+
+    /* Endelig seksjonsinndeling: linjen ligger mellom skøyter og språk */
+    .child-extra-field:has(.preferred-language) {
+      position: relative;
+      border-top: none !important;
+      padding-top: 30px !important;
+      margin-top: 30px !important;
+    }
+
+    .child-extra-field:has(.preferred-language)::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: #dbe3ee;
+    }
+
+    .language-heading {
+      border: none !important;
+      padding: 0 !important;
+      margin: 0 0 4px 0 !important;
+      text-decoration: none !important;
+    }
+
+    .language-heading + .checkbox-row {
+      margin-top: 0 !important;
+    }
+
+
+    /* Eksplisitt struktur for skøyter / språk / annen informasjon */
+    .child-section {
+      grid-column: 1 / -1;
+      border: 0 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    .child-section-skates {
+      margin-top: 10px !important;
+    }
+
+    .child-section-language {
+      margin-top: 0 !important;
+    }
+
+    .child-section-info {
+      margin-top: 0 !important;
+    }
+
+    .child-section-divider {
+      grid-column: 1 / -1;
+      height: 1px;
+      background: #dbe3ee;
+      margin: 26px 0 22px;
+    }
+
+    .child-section-language > div,
+    .child-section-language > label,
+    .child-section-language .language-heading {
+      border: 0 !important;
+      border-top: 0 !important;
+      border-bottom: 0 !important;
+      text-decoration: none !important;
+    }
+
+    .child-section-language label {
+      margin-bottom: 6px !important;
+    }
+
+    .child-section-language .checkbox-row {
+      margin-top: 0 !important;
+      gap: 28px !important;
+    }
+
+    .child-section-info label {
+      margin-bottom: 10px !important;
+    }
+    
+
+    /* Ren og eksplisitt layout for barneseksjonen */
+    .child-wide-section{
+      grid-column:1 / -1;
+      margin:0 !important;
+      padding:0 !important;
+      border:0 !important;
+    }
+
+    .section-separator{
+      height:1px;
+      background:#dbe3ee;
+      margin:24px 0 20px;
+    }
+
+    .child-wide-section > label{
+      display:block;
+      margin:0 0 10px 0 !important;
+      padding:0 !important;
+      border:0 !important;
+      text-decoration:none !important;
+      font-weight:700;
+    }
+
+    .own-skates-row{
+      display:flex !important;
+      align-items:center;
+      gap:10px;
+      margin-top:10px !important;
+      margin-bottom:0 !important;
+      font-weight:400 !important;
+    }
+
+    .own-skates-row input{
+      width:auto;
+      margin:0;
+    }
+
+    .language-options{
+      display:flex;
+      gap:34px;
+      align-items:flex-start;
+      margin-top:2px;
+    }
+
+    .language-options label{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:6px;
+      margin:0 !important;
+      font-weight:400 !important;
+    }
+
+    .language-options input{
+      width:auto;
+      margin:0;
+    }
+
+    .child-wide-section textarea{
+      width:100%;
+      min-height:110px;
+    }
+    
 </style>
 </head>
 <body>
@@ -385,9 +630,267 @@
           <input type="date" class="birth-date" required />
         </div>
 
-        <div>
-          <label>Preferred language <span class="required">*</span></label>
-          <div>
+        <div class="child-wide-section">
+          <div class="section-separator"></div>
+          <label>Requested skate size</label>
+          <select class="requested-skate-size">
+            <option value="">Select size</option>
+            <option value="28">28</option>
+            <option value="29">29</option>
+            <option value="30">30</option>
+            <option value="31">31</option>
+            <option value="32">32</option>
+            <option value="33">33</option>
+            <option value="34">34</option>
+            <option value="35">35</option>
+            <option value="36">36</option>
+            <option value="37">37</option>
+            <option value="38">38</option>
+            <option value="39">39</option>
+            <option value="40">40</option>
+            <option value="41">41</option>
+            <option value="42">42</option>
+            <option value="43">43</option>
+            <option value="44">44</option>
+            <option value="45">45</option>
+          </select>
+
+          <label class="own-skates-row">
+            <input type="checkbox" class="has-own-skates" />
+            <span>Has own skates</span>
+          </label>
+        </div>
+
+        <div class="child-wide-section">
+          <div class="section-separator"></div>
+          <label>Preferred language for participant <span class="required">*</span></label>
+          <div class="language-options">
+            <label>
+              <input type="radio" class="preferred-language" name="preferred-language-template" value="Norsk" required />
+              <span>Norwegian</span>
+            </label>
+            <label>
+              <input type="radio" class="preferred-language" name="preferred-language-template" value="Engelsk" required />
+              <span>English</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="child-wide-section">
+          <div class="section-separator"></div>
+          <label>Other information</label>
+          <textarea class="other-information" rows="4" placeholder="Optional"></textarea>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <script>
+    const ACTIVE_BATCH_NAME = "Høst 2026";
+
+    const form = document.getElementById("signupForm");
+    const childrenContainer = document.getElementById("childrenContainer");
+    const addChildBtn = document.getElementById("addChildBtn");
+    const submitBtn = document.getElementById("submitBtn");
+    const messageBox = document.getElementById("message");
+    const childTemplate = document.getElementById("childTemplate");
+
+    function showMessage(text, type = "error") {
+      messageBox.textContent = text;
+      messageBox.className = `message ${type}`;
+    }
+
+    function clearMessage() {
+      messageBox.textContent = "";
+      messageBox.className = "message";
+    }
+
+    function updateChildNumbers() {
+      const cards = childrenContainer.querySelectorAll(".child-card");
+      cards.forEach((card, index) => {
+        const numberEl = card.querySelector(".child-number");
+        const removeBtn = card.querySelector(".remove-child-btn");
+        numberEl.textContent = index + 1;
+        removeBtn.style.display = cards.length > 1 ? "inline-block" : "none";
+      });
+    }
+
+    function addChild() {
+      const clone = childTemplate.content.cloneNode(true);
+      const card = clone.querySelector(".child-card");
+      const skateSizeSelect = card.querySelector(".requested-skate-size");
+      const ownSkatesCheckbox = card.querySelector(".has-own-skates");
+      const languageRadios = card.querySelectorAll(".preferred-language");
+      const languageGroupName = "preferred-language-" + Date.now() + "-" + Math.random().toString(36).slice(2);
+      languageRadios.forEach((radio) => {
+        radio.name = languageGroupName;
+      });
+      const removeBtn = card.querySelector(".remove-child-btn");
+
+      ownSkatesCheckbox.addEventListener("change", () => {
+        if (ownSkatesCheckbox.checked) {
+          skateSizeSelect.value = "";
+          skateSizeSelect.disabled = true;
+        } else {
+          skateSizeSelect.disabled = false;
+        }
+      });
+
+      skateSizeSelect.addEventListener("change", () => {
+        if (skateSizeSelect.value) {
+          ownSkatesCheckbox.checked = false;
+        }
+      });
+
+      removeBtn.addEventListener("click", () => {
+        card.remove();
+        updateChildNumbers();
+      });
+
+      childrenContainer.appendChild(clone);
+      updateChildNumbers();
+    }
+
+    function collectChildren() {
+      const cards = childrenContainer.querySelectorAll(".child-card");
+
+      return Array.from(cards).map((card) => {
+        const firstName = card.querySelector(".child-first-name").value.trim();
+        const lastName = card.querySelector(".child-last-name").value.trim();
+
+        const selectedLanguage = card.querySelector(".preferred-language:checked");
+
+        return {
+          first_name: firstName,
+          last_name: lastName,
+          // Backend/databasen bruker fortsatt child_name, så vi setter sammen
+          // fornavn og etternavn før påmeldingen sendes.
+          child_name: `${firstName} ${lastName}`.trim(),
+          birth_date: card.querySelector(".birth-date").value,
+          preferred_language: selectedLanguage ? selectedLanguage.value : "",
+          other_information: card.querySelector(".other-information").value.trim() || null,
+          requested_skate_size: card.querySelector(".requested-skate-size").value || null,
+          has_own_skates: card.querySelector(".has-own-skates").checked
+        };
+      });
+    }
+
+    function validateChildren(children) {
+      if (!children.length) {
+        return "You must add at least one child.";
+      }
+
+      for (let i = 0; i < children.length; i += 1) {
+        const child = children[i];
+        const nr = i + 1;
+
+        if (!child.first_name) {
+          return `Child ${nr}: You must enter the first name.`;
+        }
+
+        if (!child.last_name) {
+          return `Child ${nr}: You must enter the last name.`;
+        }
+
+        if (!child.birth_date) {
+          return `Child ${nr}: You must enter the date of birth.`;
+        }
+
+        if (!child.preferred_language) {
+          return `Child ${nr}: You must select the preferred language.`;
+        }
+
+        if (!child.requested_skate_size && !child.has_own_skates) {
+          return `Child ${nr}: Du må velge skøytestørrelse eller krysse av for egne skøyter.`;
+        }
+
+        if (child.requested_skate_size && child.has_own_skates) {
+          return `Child ${nr}: Du kan ikke velge både størrelse og egne skøyter.`;
+        }
+      }
+
+      return null;
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      clearMessage();
+
+      if (!ACTIVE_BATCH_NAME || ACTIVE_BATCH_NAME === "SETT INN NAVN PÅ AKTIVT PARTI HER") {
+        showMessage("Du må sette riktig ACTIVE_BATCH_NAME i HTML-filen før siden kan brukes.");
+        return;
+      }
+
+      const access_code = document.getElementById("access_code").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const phone = document.getElementById("phone").value.trim();
+      const children = collectChildren();
+
+      if (!access_code) {
+        showMessage("Du må fylle inn kode.");
+        return;
+      }
+
+      if (!email) {
+        showMessage("Du må fylle inn e-post.");
+        return;
+      }
+
+      if (!phone) {
+        showMessage("Du må fylle inn telefon.");
+        return;
+      }
+
+      const childError = validateChildren(children);
+      if (childError) {
+        showMessage(childError);
+        return;
+      }
+
+      try {
+        form.classList.add("loading");
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Sender...";
+
+        const response = await fetch("/.netlify/functions/create-school-signup-code", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            access_code,
+            email,
+            phone,
+            batch_name: ACTIVE_BATCH_NAME,
+            children
+          })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Could not submit the registration.");
+        }
+
+        showMessage("Påmeldingen ble registrert. Sender videre...", "success");
+
+        window.location.href = data.redirect_url || "/betaling-fullfort-tkk.html";
+      } catch (error) {
+        showMessage(error.message || "Noe gikk galt. Prøv igjen.");
+      } finally {
+        form.classList.remove("loading");
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Send påmelding";
+      }
+    });
+
+    addChildBtn.addEventListener("click", addChild);
+
+    addChild();
+  </script>
+</body>
+</html><div class="child-section child-section-skates">
+<div>
           <label>Requested skate size</label>
           <select class="requested-skate-size">
             <option value="">Select size</option>
@@ -415,22 +918,18 @@
             <span>Has own skates</span>
           </div>
         </div>
+</div>
+<div class="child-section-divider"></div>
+<div class="child-section child-section-language">
 
-        <div class="checkbox-row" style="gap:16px; flex-wrap:wrap;">
-            <label style="font-weight:400; margin:0;">
-              <input type="radio" class="preferred-language" name="preferred-language-template" value="Norsk" required />
-              Norwegian
-            </label>
-            <label style="font-weight:400; margin:0;">
-              <input type="radio" class="preferred-language" name="preferred-language-template" value="Engelsk" required />
-              English
-            </label>
-          </div>
-
-        <div>
+</div>
+<div class="child-section-divider"></div>
+<div class="child-section child-section-info">
+<div>
           <label>Other information</label>
           <textarea class="other-information" rows="3" placeholder="Optional"></textarea>
         </div>
+</div>
       </div>
     </div>
   </template>
