@@ -163,17 +163,6 @@ async function findOrCreateMember(
   const childName =
     normalizeValue(child.child_name);
 
-  /*
-   * Kontaktinformasjonen i kodepåmeldingen
-   * tilhører foresatt.
-   *
-   * Derfor bruker vi ikke e-post eller telefon
-   * for å avgjøre hvilket eksisterende barn
-   * påmeldingen tilhører.
-   *
-   * Vi gjenbruker kun et medlem dersom det
-   * finnes nøyaktig ett medlem med samme navn.
-   */
   const {
     data: nameMatches,
     error: memberLookupError
@@ -202,10 +191,6 @@ async function findOrCreateMember(
     };
   }
 
-  /*
-   * Ingen entydig eksisterende person.
-   * Opprett nytt medlem.
-   */
   const {
     data: createdMember,
     error: memberInsertError
@@ -273,10 +258,6 @@ async function ensureEnrollment(
           .toLowerCase()
     );
 
-  /*
-   * Finn eventuell eksisterende
-   * semesterdeltakelse.
-   */
   const {
     data: existingEnrollment,
     error: enrollmentFetchError
@@ -308,9 +289,6 @@ async function ensureEnrollment(
     throw enrollmentFetchError;
   }
 
-  /*
-   * Deltakeren finnes allerede i semesteret.
-   */
   if (existingEnrollment) {
     const updatePayload = {
       birth_year:
@@ -323,10 +301,6 @@ async function ensureEnrollment(
         otherInformation
     };
 
-    /*
-     * Ikke overskriv gruppe dersom administrator
-     * allerede har flyttet deltakeren manuelt.
-     */
     if (
       !existingEnrollment.manual_override &&
       !existingEnrollment.school_group_id
@@ -383,9 +357,6 @@ async function ensureEnrollment(
     };
   }
 
-  /*
-   * Opprett ny semesterdeltakelse.
-   */
   const {
     data: createdEnrollment,
     error: enrollmentInsertError
@@ -455,6 +426,453 @@ async function ensureEnrollment(
     created:
       true
   };
+}
+
+function escapeHtml(value) {
+  return String(
+    value == null ? "" : value
+  )
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function formatSkateChoice(child) {
+  if (
+    child.has_own_skates === true
+  ) {
+    return "Egne skøyter";
+  }
+
+  return child.requested_skate_size
+    ? "Størrelse " +
+        child.requested_skate_size
+    : "Ikke oppgitt";
+}
+
+function getConfirmationLanguage(
+  children
+) {
+  const languages =
+    new Set(
+      (children || [])
+        .map(
+          (child) =>
+            normalizeValue(
+              child.preferred_language
+            )
+        )
+        .filter(Boolean)
+    );
+
+  if (
+    languages.size === 1 &&
+    languages.has("Engelsk")
+  ) {
+    return "en";
+  }
+
+  if (
+    languages.size === 1 &&
+    languages.has("Norsk")
+  ) {
+    return "no";
+  }
+
+  return "both";
+}
+
+function buildConfirmationEmail({
+  email,
+  phone,
+  batch,
+  children
+}) {
+  const language =
+    getConfirmationLanguage(
+      children
+    );
+
+  const childRowsNo =
+    children
+      .map((child) => {
+        const info =
+          child.other_information
+            ? "<br><strong>Annen informasjon:</strong> " +
+              escapeHtml(
+                child.other_information
+              )
+            : "";
+
+        return `
+          <li style="margin-bottom:14px;">
+            <strong>
+              ${escapeHtml(
+                child.child_name
+              )}
+            </strong>
+            <br>
+            Fødselsdato:
+            ${escapeHtml(
+              child.birth_date
+            )}
+            <br>
+            Skøyter:
+            ${escapeHtml(
+              formatSkateChoice(
+                child
+              )
+            )}
+            <br>
+            Ønsket språk:
+            ${escapeHtml(
+              child.preferred_language ||
+              "-"
+            )}
+            ${info}
+          </li>
+        `;
+      })
+      .join("");
+
+  const childRowsEn =
+    children
+      .map((child) => {
+        const skateText =
+          child.has_own_skates === true
+            ? "Own skates"
+            : child.requested_skate_size
+              ? "Size " +
+                child.requested_skate_size
+              : "Not specified";
+
+        const languageText =
+          child.preferred_language ===
+          "Engelsk"
+            ? "English"
+            : child.preferred_language ===
+              "Norsk"
+              ? "Norwegian"
+              : child.preferred_language ||
+                "-";
+
+        const info =
+          child.other_information
+            ? "<br><strong>Other information:</strong> " +
+              escapeHtml(
+                child.other_information
+              )
+            : "";
+
+        return `
+          <li style="margin-bottom:14px;">
+            <strong>
+              ${escapeHtml(
+                child.child_name
+              )}
+            </strong>
+            <br>
+            Date of birth:
+            ${escapeHtml(
+              child.birth_date
+            )}
+            <br>
+            Skates:
+            ${escapeHtml(
+              skateText
+            )}
+            <br>
+            Preferred language:
+            ${escapeHtml(
+              languageText
+            )}
+            ${info}
+          </li>
+        `;
+      })
+      .join("");
+
+  const noBlock = `
+    <h2 style="margin:0 0 12px;">
+      Påmeldingen er mottatt
+    </h2>
+
+    <p>
+      Takk for påmeldingen til
+      TKKs skøyteskole.
+    </p>
+
+    <p>
+      Vi har registrert følgende
+      påmelding for
+      <strong>
+        ${escapeHtml(
+          batch.name ||
+          "aktivt semester"
+        )}
+      </strong>:
+    </p>
+
+    <ul style="padding-left:22px;">
+      ${childRowsNo}
+    </ul>
+
+    <p>
+      Kontaktinformasjon registrert
+      på påmeldingen:
+    </p>
+
+    <p>
+      E-post:
+      ${escapeHtml(email)}
+      <br>
+      Telefon:
+      ${escapeHtml(phone)}
+    </p>
+
+    <p>
+      Du trenger ikke foreta deg
+      noe mer nå. Vi tar kontakt
+      dersom vi trenger flere
+      opplysninger.
+    </p>
+
+    <p>
+      Med vennlig hilsen
+      <br>
+      <strong>
+        Trondheim Kortbaneklubb
+      </strong>
+    </p>
+  `;
+
+  const enBlock = `
+    <h2 style="margin:0 0 12px;">
+      Registration received
+    </h2>
+
+    <p>
+      Thank you for registering
+      for TKK Skating School.
+    </p>
+
+    <p>
+      We have registered the
+      following for
+      <strong>
+        ${escapeHtml(
+          batch.name ||
+          "the active semester"
+        )}
+      </strong>:
+    </p>
+
+    <ul style="padding-left:22px;">
+      ${childRowsEn}
+    </ul>
+
+    <p>
+      Contact information
+      registered with the
+      submission:
+    </p>
+
+    <p>
+      Email:
+      ${escapeHtml(email)}
+      <br>
+      Phone:
+      ${escapeHtml(phone)}
+    </p>
+
+    <p>
+      You do not need to do
+      anything else now. We will
+      contact you if we need more
+      information.
+    </p>
+
+    <p>
+      Kind regards
+      <br>
+      <strong>
+        Trondheim Short Track Club
+      </strong>
+    </p>
+  `;
+
+  let subject;
+  let content;
+
+  if (language === "en") {
+    subject =
+      "Registration confirmed – TKK Skating School";
+
+    content =
+      enBlock;
+  } else if (
+    language === "both"
+  ) {
+    subject =
+      "Påmelding bekreftet / Registration confirmed – TKK";
+
+    content =
+      noBlock +
+      `
+        <hr
+          style="
+            border:0;
+            border-top:1px solid #d1d5db;
+            margin:28px 0;
+          "
+        >
+      ` +
+      enBlock;
+  } else {
+    subject =
+      "Påmelding bekreftet – TKKs skøyteskole";
+
+    content =
+      noBlock;
+  }
+
+  const html = `
+    <!doctype html>
+    <html>
+      <body
+        style="
+          margin:0;
+          background:#f6f8fb;
+          font-family:Arial,sans-serif;
+          color:#1f2937;
+        "
+      >
+        <div
+          style="
+            max-width:680px;
+            margin:0 auto;
+            padding:28px 16px;
+          "
+        >
+          <div
+            style="
+              background:#ffffff;
+              border:1px solid #e5e7eb;
+              border-radius:16px;
+              padding:28px;
+            "
+          >
+            <div
+              style="
+                font-size:13px;
+                font-weight:700;
+                letter-spacing:.08em;
+                text-transform:uppercase;
+                color:#003a8f;
+                margin-bottom:18px;
+              "
+            >
+              Trondheim Kortbaneklubb
+            </div>
+
+            ${content}
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  return {
+    subject,
+    html
+  };
+}
+
+async function sendConfirmationEmail({
+  email,
+  phone,
+  batch,
+  children
+}) {
+  const apiKey =
+    process.env.RESEND_API_KEY;
+
+  if (!apiKey) {
+    throw new Error(
+      "RESEND_API_KEY mangler."
+    );
+  }
+
+  const from =
+    process.env.RESEND_FROM_EMAIL ||
+    process.env.EMAIL_FROM ||
+    "Trondheim Kortbaneklubb <onboarding@resend.dev>";
+
+  const message =
+    buildConfirmationEmail({
+      email,
+      phone,
+      batch,
+      children
+    });
+
+  const response =
+    await fetch(
+      "https://api.resend.com/emails",
+      {
+        method: "POST",
+
+        headers: {
+          Authorization:
+            "Bearer " + apiKey,
+
+          "Content-Type":
+            "application/json"
+        },
+
+        body:
+          JSON.stringify({
+            from,
+
+            to: [
+              email
+            ],
+
+            subject:
+              message.subject,
+
+            html:
+              message.html
+          })
+      }
+    );
+
+  let data = null;
+
+  try {
+    data =
+      await response.json();
+  } catch (_) {
+    data = null;
+  }
+
+  if (!response.ok) {
+    const detail =
+      data &&
+      data.message
+        ? data.message
+        : "HTTP " +
+          response.status;
+
+    throw new Error(
+      "Resend-feil: " +
+      detail
+    );
+  }
+
+  return data;
 }
 
 exports.handler =
@@ -548,9 +966,6 @@ exports.handler =
           ? body.children
           : [];
 
-      /*
-       * Grunnvalidering.
-       */
       if (!accessCode) {
         return json(
           400,
@@ -591,9 +1006,6 @@ exports.handler =
         );
       }
 
-      /*
-       * Finn semesteret som er Aktivt.
-       */
       const {
         data: activeBatches,
         error: batchError
@@ -667,9 +1079,6 @@ exports.handler =
       const activeBatch =
         activeBatches[0];
 
-      /*
-       * Hent og valider påmeldingskoden.
-       */
       const {
         data: accessCodeRow,
         error: accessCodeError
@@ -736,10 +1145,6 @@ exports.handler =
         );
       }
 
-      /*
-       * Dersom koden er låst til et semester,
-       * må den tilhøre det aktive semesteret.
-       */
       if (
         accessCodeRow.batch_id &&
         String(
@@ -758,10 +1163,6 @@ exports.handler =
         );
       }
 
-      /*
-       * Dersom koden er låst til en avdeling,
-       * må den passe med semesterets avdeling.
-       */
       if (
         accessCodeRow.department_id &&
         String(
@@ -780,17 +1181,17 @@ exports.handler =
         );
       }
 
-      /*
-       * Kontroller antall tillatte bruk.
-       */
       const usedCount =
         Number(
-          accessCodeRow.used_count || 0
+          accessCodeRow.used_count ||
+          0
         );
 
       const maxUses =
-        accessCodeRow.max_uses === null ||
-        accessCodeRow.max_uses === undefined
+        accessCodeRow.max_uses ===
+          null ||
+        accessCodeRow.max_uses ===
+          undefined
           ? null
           : Number(
               accessCodeRow.max_uses
@@ -810,10 +1211,8 @@ exports.handler =
         );
       }
 
-      /*
-       * Valider og normaliser barn.
-       */
-      const normalizedChildren = [];
+      const normalizedChildren =
+        [];
 
       for (
         let index = 0;
@@ -840,7 +1239,8 @@ exports.handler =
           );
 
         const hasOwnSkates =
-          child.has_own_skates === true;
+          child.has_own_skates ===
+          true;
 
         const preferredLanguage =
           normalizeOptionalValue(
@@ -872,9 +1272,6 @@ exports.handler =
           );
         }
 
-        /*
-         * Språk er obligatorisk.
-         */
         if (!preferredLanguage) {
           return json(
             400,
@@ -886,8 +1283,10 @@ exports.handler =
         }
 
         if (
-          preferredLanguage !== "Norsk" &&
-          preferredLanguage !== "Engelsk"
+          preferredLanguage !==
+            "Norsk" &&
+          preferredLanguage !==
+            "Engelsk"
         ) {
           return json(
             400,
@@ -934,37 +1333,37 @@ exports.handler =
         });
       }
 
-      /*
-       * Sørg for standardgruppene
-       * Blå, Gul og Rød.
-       */
       const groups =
         await ensureDefaultSchoolGroups(
           supabase,
           activeBatch.id
         );
 
-      /*
-       * Felles ID for barn fra samme innsending.
-       */
       const familySignupId =
-        typeof crypto !== "undefined" &&
+        typeof crypto !==
+          "undefined" &&
         crypto.randomUUID
           ? crypto.randomUUID()
           : `${Date.now()}-${Math.random()
               .toString(36)
               .slice(2)}`;
 
-      const signupRows = [];
-      const memberResults = [];
+      const signupRows =
+        [];
 
-      /*
-       * Opprett medlem og enrollment direkte.
-       */
+      const memberResults =
+        [];
+
       for (
         const child of
         normalizedChildren
       ) {
+        const preferredLanguage =
+          child.preferred_language;
+
+        const otherInformation =
+          child.other_information;
+
         const memberResult =
           await findOrCreateMember(
             supabase,
@@ -983,8 +1382,8 @@ exports.handler =
             member,
             child,
             groups,
-            child.preferred_language,
-            child.other_information
+            preferredLanguage,
+            otherInformation
           );
 
         memberResults.push({
@@ -1005,16 +1404,12 @@ exports.handler =
             enrollmentResult.created,
 
           preferred_language:
-            child.preferred_language,
+            preferredLanguage,
 
           other_information:
-            child.other_information
+            otherInformation
         });
 
-        /*
-         * Behold også den opprinnelige
-         * påmeldingen som historikk.
-         */
         signupRows.push({
           family_signup_id:
             familySignupId,
@@ -1051,10 +1446,10 @@ exports.handler =
             child.has_own_skates,
 
           preferred_language:
-            child.preferred_language,
+            preferredLanguage,
 
           other_information:
-            child.other_information,
+            otherInformation,
 
           existing_member_id:
             member.id,
@@ -1067,9 +1462,6 @@ exports.handler =
         });
       }
 
-      /*
-       * Lagre påmeldingshistorikken.
-       */
       const {
         data: insertedSignups,
         error: insertError
@@ -1097,9 +1489,6 @@ exports.handler =
         );
       }
 
-      /*
-       * Oppdater brukstelleren på koden.
-       */
       const nextUsedCount =
         usedCount + 1;
 
@@ -1136,48 +1525,44 @@ exports.handler =
           "Access code update error:",
           codeUpdateError
         );
-
-        return json(
-          200,
-          {
-            ok: true,
-
-            warning:
-              "Påmeldingen og medlemskapet ble registrert, men brukstelleren for koden kunne ikke oppdateres.",
-
-            family_signup_id:
-              familySignupId,
-
-            semester: {
-              id:
-                activeBatch.id,
-
-              name:
-                activeBatch.name
-            },
-
-            members:
-              memberResults,
-
-            signups:
-              insertedSignups || [],
-
-            redirect_url:
-              "/pamelding-bekreftet-tkk.html"
-          }
-        );
       }
 
-      /*
-       * Alt er registrert.
-       */
+      let emailWarning =
+        null;
+
+      try {
+        await sendConfirmationEmail({
+          email,
+          phone,
+          batch:
+            activeBatch,
+          children:
+            normalizedChildren
+        });
+      } catch (emailError) {
+        console.error(
+          "Confirmation email error:",
+          emailError
+        );
+
+        emailWarning =
+          "Påmeldingen ble registrert, men bekreftelsesmailen kunne ikke sendes.";
+      }
+
       return json(
         200,
         {
-          ok: true,
+          ok:
+            true,
 
           message:
             "Påmeldingen er registrert og barnet er lagt inn som medlem og deltaker.",
+
+          email_sent:
+            !emailWarning,
+
+          email_warning:
+            emailWarning,
 
           family_signup_id:
             familySignupId,
@@ -1194,7 +1579,8 @@ exports.handler =
             memberResults,
 
           signups:
-            insertedSignups || [],
+            insertedSignups ||
+            [],
 
           redirect_url:
             "/pamelding-bekreftet-tkk.html"
