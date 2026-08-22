@@ -5695,19 +5695,32 @@ function parseBirthYearFromSpondValue(rawValue) {
           existingNormalized
         );
 
+        const existingYear = getSemesterYear(existingName);
+
+        // To gyldige semester med forskjellige årstall skal ALDRI
+        // behandles som mulige duplikater.
+        if (
+          incomingYear &&
+          existingYear &&
+          incomingYear !== existingYear
+        ) {
+          continue;
+        }
+
         const sameYear =
           incomingYear &&
-          getSemesterYear(existingName) === incomingYear;
+          existingYear === incomingYear;
 
-        // "Veldig lik" betyr liten skriveforskjell, eller samme år og
-        // svært likt semesterord.
+        // "Veldig lik" brukes bare innen samme år, eller når ett av
+        // navnene mangler et gyldig årstall. Dette fanger skrivefeil
+        // uten å blande f.eks. Vår 2025 og Vår 2026.
         const incomingTerm = incomingNormalized.replace(/\s+\d{4}$/, "");
         const existingTerm = existingNormalized.replace(/\s+\d{4}$/, "");
         const termDistance = levenshteinDistance(incomingTerm, existingTerm);
 
         const isVerySimilar =
-          distance <= 2 ||
-          (sameYear && termDistance <= 2);
+          (sameYear && termDistance <= 2) ||
+          (!incomingYear || !existingYear) && distance <= 2;
 
         if (!isVerySimilar) continue;
 
