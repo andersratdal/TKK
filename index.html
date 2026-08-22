@@ -1140,6 +1140,15 @@
       }
     }
 
+
+    .school-batch-edit-panel.hidden {
+      display: none !important;
+    }
+
+    .school-batch-edit-panel .form-grid {
+      align-items: end;
+    }
+
 </style>
 
 <style>
@@ -1736,7 +1745,7 @@
       <div>
         <h2>Eksisterende semester</h2>
         <div class="help" style="margin-top:8px;">
-          Her kan du se registrerte semester og endre status direkte.
+          Her kan du se registrerte semester, endre status og redigere navn og datoer.
         </div>
       </div>
       <div class="toolbar">
@@ -1748,7 +1757,7 @@
     <div id="schoolBatchAdminListWrap" style="margin-top:12px;"></div>
   </div>
 
-<div class="section-card" data-admin-section="departments">
+<div class="section-card" data-admin-section="settings">
 <h2>Oppsett</h2>
 <div class="notice">Lim inn Supabase URL og anon public key. Trykk deretter <strong>Lagre innstillinger</strong>.</div>
 <form class="form-grid" id="configForm" style="margin-top: 14px;">
@@ -7948,7 +7957,8 @@ attachSortHandlers();
         name.innerHTML =
           '<div class="school-batch-admin-name"></div>' +
           '<div class="school-batch-admin-meta"></div>';
-        name.querySelector(".school-batch-admin-name").textContent = batch.name || "Uten navn";
+        name.querySelector(".school-batch-admin-name").textContent =
+          batch.name || "Uten navn";
         name.querySelector(".school-batch-admin-meta").textContent =
           getDepartmentNameById(batch.department_id);
 
@@ -7956,28 +7966,33 @@ attachSortHandlers();
         start.innerHTML =
           '<div class="school-batch-admin-meta">Start</div>' +
           '<div></div>';
-        start.lastElementChild.textContent = formatSchoolBatchDate(batch.start_date);
+        start.lastElementChild.textContent =
+          formatSchoolBatchDate(batch.start_date);
 
-        const end = document.createElement("div");
-        end.innerHTML =
+        const endDate = document.createElement("div");
+        endDate.innerHTML =
           '<div class="school-batch-admin-meta">Slutt</div>' +
           '<div></div>';
-        end.lastElementChild.textContent = formatSchoolBatchDate(batch.end_date);
+        endDate.lastElementChild.textContent =
+          formatSchoolBatchDate(batch.end_date);
 
         const currentStatus = document.createElement("div");
         currentStatus.innerHTML =
           '<div class="school-batch-admin-meta">Status</div>' +
           '<div></div>';
-        currentStatus.lastElementChild.textContent = batch.status || "—";
+        currentStatus.lastElementChild.textContent =
+          batch.status || "—";
 
         const select = document.createElement("select");
         select.className = "school-batch-status-select";
+
         ["Planlagt", "Aktiv", "Avsluttet"].forEach((status) => {
           const option = document.createElement("option");
           option.value = status;
           option.textContent = status;
           select.appendChild(option);
         });
+
         select.value = batch.status || "Planlagt";
 
         select.addEventListener("change", async function () {
@@ -8006,26 +8021,39 @@ attachSortHandlers();
             batch.status = nextStatus;
             currentStatus.lastElementChild.textContent = nextStatus;
 
-            const stateBatch = (state.schoolBatches || []).find((item) => sameId(item.id, batch.id));
+            const stateBatch = (state.schoolBatches || []).find((item) =>
+              sameId(item.id, batch.id)
+            );
+
             if (stateBatch) stateBatch.status = nextStatus;
 
             setSchoolBatchListMessage(
-              'Status for "' + (batch.name || "semester") + '" er endret til ' + nextStatus + ".",
+              'Status for "' +
+              (batch.name || "semester") +
+              '" er endret til ' +
+              nextStatus +
+              ".",
               false
             );
 
-            // Oppdater øvrige semester-visninger uten å hente alt på nytt.
             try {
-              if (typeof refreshSchoolBatchPicker === "function") refreshSchoolBatchPicker();
+              if (typeof refreshSchoolBatchPicker === "function") {
+                refreshSchoolBatchPicker();
+              }
             } catch (_) {}
+
             try {
-              if (typeof renderSchoolBatchOverview === "function") renderSchoolBatchOverview();
+              if (typeof renderSchoolBatchOverview === "function") {
+                renderSchoolBatchOverview();
+              }
             } catch (_) {}
           } catch (error) {
             console.error(error);
             select.value = previousStatus;
+
             setSchoolBatchListMessage(
-              "Kunne ikke oppdatere status.\n\n" + (error.message || error),
+              "Kunne ikke oppdatere status.\n\n" +
+              (error.message || error),
               true
             );
           } finally {
@@ -8033,18 +8061,192 @@ attachSortHandlers();
           }
         });
 
+        const actions = document.createElement("div");
+        actions.style.display = "flex";
+        actions.style.gap = "8px";
+        actions.style.alignItems = "center";
+        actions.style.flexWrap = "wrap";
+
+        const editBtn = document.createElement("button");
+        editBtn.type = "button";
+        editBtn.className = "btn-secondary btn-small";
+        editBtn.textContent = "Rediger";
+
+        actions.appendChild(select);
+        actions.appendChild(editBtn);
+
         row.appendChild(name);
         row.appendChild(start);
-        row.appendChild(end);
+        row.appendChild(endDate);
         row.appendChild(currentStatus);
-        row.appendChild(select);
+        row.appendChild(actions);
+
+        const editPanel = document.createElement("div");
+        editPanel.className = "school-batch-edit-panel hidden";
+        editPanel.style.gridColumn = "1 / -1";
+        editPanel.style.marginTop = "12px";
+        editPanel.style.paddingTop = "14px";
+        editPanel.style.borderTop = "1px solid #dbe3ee";
+
+        editPanel.innerHTML =
+          '<div class="form-grid">' +
+            '<div class="col-4">' +
+              '<label>Semesternavn</label>' +
+              '<input class="school-batch-edit-name" type="text">' +
+            '</div>' +
+            '<div class="col-3">' +
+              '<label>Startdato</label>' +
+              '<input class="school-batch-edit-start" type="date">' +
+            '</div>' +
+            '<div class="col-3">' +
+              '<label>Sluttdato</label>' +
+              '<input class="school-batch-edit-end" type="date">' +
+            '</div>' +
+            '<div class="col-2">' +
+              '<label>&nbsp;</label>' +
+              '<div style="display:flex; gap:8px; flex-wrap:wrap;">' +
+                '<button type="button" class="btn-primary btn-small school-batch-save-edit">Lagre</button>' +
+                '<button type="button" class="btn-secondary btn-small school-batch-cancel-edit">Avbryt</button>' +
+              '</div>' +
+            '</div>' +
+          '</div>';
+
+        const nameInput = editPanel.querySelector(".school-batch-edit-name");
+        const startInput = editPanel.querySelector(".school-batch-edit-start");
+        const endInput = editPanel.querySelector(".school-batch-edit-end");
+        const saveBtn = editPanel.querySelector(".school-batch-save-edit");
+        const cancelBtn = editPanel.querySelector(".school-batch-cancel-edit");
+
+        function resetEditFields() {
+          nameInput.value = batch.name || "";
+          startInput.value = batch.start_date || "";
+          endInput.value = batch.end_date || "";
+        }
+
+        resetEditFields();
+
+        editBtn.addEventListener("click", function () {
+          resetEditFields();
+          editPanel.classList.toggle("hidden");
+
+          if (!editPanel.classList.contains("hidden")) {
+            nameInput.focus();
+          }
+        });
+
+        cancelBtn.addEventListener("click", function () {
+          resetEditFields();
+          editPanel.classList.add("hidden");
+        });
+
+        saveBtn.addEventListener("click", async function () {
+          const nextName = String(nameInput.value || "").trim();
+          const nextStart = startInput.value || null;
+          const nextEnd = endInput.value || null;
+
+          if (!nextName) {
+            setSchoolBatchListMessage("Semesternavn kan ikke være tomt.", true);
+            nameInput.focus();
+            return;
+          }
+
+          if (nextStart && nextEnd && nextEnd < nextStart) {
+            setSchoolBatchListMessage(
+              "Sluttdato kan ikke være før startdato.",
+              true
+            );
+            return;
+          }
+
+          saveBtn.disabled = true;
+          cancelBtn.disabled = true;
+          editBtn.disabled = true;
+          setSchoolBatchListMessage("Lagrer semester ...", false);
+
+          try {
+            if (!supabaseClient) {
+              throw new Error("Supabase-oppsett mangler.");
+            }
+
+            const result = await supabaseClient
+              .from("skating_school_batches")
+              .update({
+                name: nextName,
+                start_date: nextStart,
+                end_date: nextEnd
+              })
+              .eq("id", batch.id)
+              .select("id, name, department_id, status, start_date, end_date, created_at")
+              .maybeSingle();
+
+            if (result.error) throw result.error;
+            if (!result.data) throw new Error("Fant ikke semesteret som skulle oppdateres.");
+
+            Object.assign(batch, result.data);
+
+            const stateBatch = (state.schoolBatches || []).find((item) =>
+              sameId(item.id, batch.id)
+            );
+
+            if (stateBatch) {
+              Object.assign(stateBatch, result.data);
+            }
+
+            name.querySelector(".school-batch-admin-name").textContent =
+              batch.name || "Uten navn";
+
+            start.lastElementChild.textContent =
+              formatSchoolBatchDate(batch.start_date);
+
+            endDate.lastElementChild.textContent =
+              formatSchoolBatchDate(batch.end_date);
+
+            editPanel.classList.add("hidden");
+
+            setSchoolBatchListMessage(
+              'Semesteret "' + batch.name + '" er oppdatert.',
+              false
+            );
+
+            try {
+              if (typeof updateSchoolBatchPicker === "function") {
+                updateSchoolBatchPicker();
+              }
+            } catch (_) {}
+
+            try {
+              if (typeof renderSchoolBatchOverview === "function") {
+                renderSchoolBatchOverview();
+              }
+            } catch (_) {}
+
+            try {
+              if (typeof renderSchoolParticipants === "function") {
+                renderSchoolParticipants();
+              }
+            } catch (_) {}
+          } catch (error) {
+            console.error(error);
+
+            setSchoolBatchListMessage(
+              "Kunne ikke oppdatere semester.\n\n" +
+              (error.message || error),
+              true
+            );
+          } finally {
+            saveBtn.disabled = false;
+            cancelBtn.disabled = false;
+            editBtn.disabled = false;
+          }
+        });
+
+        row.appendChild(editPanel);
         list.appendChild(row);
       });
 
       wrap.innerHTML = "";
       wrap.appendChild(list);
     }
-
     async function refreshSchoolBatchAdminList() {
       if (!supabaseClient) {
         setSchoolBatchListMessage("Supabase-oppsett mangler.", true);
