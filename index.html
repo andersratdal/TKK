@@ -1561,87 +1561,15 @@
 
   <div class="school-tabs-card">
     <div class="school-tabs" role="tablist" aria-label="Skøyteskole faner">
-      <button type="button" class="school-tab active" data-school-tab="admin">Admin</button>
-      <button type="button" class="school-tab" data-school-tab="school">Deltakere</button>
+      <button type="button" class="school-tab active" data-school-tab="school">Deltakere</button>
       <button type="button" class="school-tab" id="schoolSignupCodesLink">Påmeldingskoder</button>
     <button type="button" class="school-tab" data-school-tab="signupForms">Påmeldingsskjema</button>
     </div>
   </div>
 
-  <div id="schoolAdminSection">
-<div class="section-card">
-    <div class="section-header">
-      <div>
-        <h2>Opprett semester</h2>
-        <div class="help" style="margin-top:8px;">
-          Opprett et nytt semester for skøyteskolen. Standardgruppene Blå, Gul og Rød opprettes sammen med semesteret.
-        </div>
-      </div>
-    </div>
+  
 
-    <form class="form-grid" id="schoolBatchForm" style="margin-top:14px;">
-      <div class="col-3">
-        <label for="schoolBatchDepartment">Avdeling</label>
-        <select id="schoolBatchDepartment" required>
-          <option value="">Velg avdeling</option>
-        </select>
-      </div>
-
-      <div class="col-3">
-        <label for="schoolBatchName">Semesternavn</label>
-        <input id="schoolBatchName" type="text" placeholder="For eksempel Høst 2026" required />
-      </div>
-
-      <div class="col-3">
-        <label for="schoolBatchStatus">Status</label>
-        <select id="schoolBatchStatus">
-          <option value="Planlagt">Planlagt</option>
-          <option value="Aktiv">Aktiv</option>
-          <option value="Avsluttet">Avsluttet</option>
-        </select>
-      </div>
-
-      <div class="col-3">
-        <label>&nbsp;</label>
-        <button class="btn-primary" type="submit">Opprett semester</button>
-      </div>
-
-      <div class="col-3">
-        <label for="schoolBatchStartDate">Startdato</label>
-        <input id="schoolBatchStartDate" type="date" />
-      </div>
-
-      <div class="col-3">
-        <label for="schoolBatchEndDate">Sluttdato</label>
-        <input id="schoolBatchEndDate" type="date" />
-      </div>
-
-      <div class="col-12">
-        <div class="help" id="schoolBatchMessage"></div>
-      </div>
-    </form>
-  </div>
-
-  <div class="section-card">
-    <div class="section-header">
-      <div>
-        <h2>Eksisterende semester</h2>
-        <div class="help" style="margin-top:8px;">
-          Her kan du se registrerte semester og endre status direkte.
-        </div>
-      </div>
-      <div class="toolbar">
-        <button class="btn-secondary btn-small" id="btnRefreshSchoolBatches" type="button">Oppdater</button>
-      </div>
-    </div>
-
-    <div class="help" id="schoolBatchListMessage" style="margin-top:10px;"></div>
-    <div id="schoolBatchAdminListWrap" style="margin-top:12px;"></div>
-  </div>
-
-  </div>
-
-  <div id="schoolMainSection" class="school-section-hidden">
+  <div id="schoolMainSection">
 
 
   <div class="section-card">
@@ -1748,7 +1676,79 @@
 </form>
 <div id="departmentsWrap"></div>
 </div>
-<div class="section-card">
+
+<!-- Skøyteskoleadministrasjon flyttet fra Skøyteskole -> Admin til Admin -> Avdelinger -->
+<div class="section-card" data-admin-section="departments">
+    <div class="section-header">
+      <div>
+        <h2>Opprett semester</h2>
+        <div class="help" style="margin-top:8px;">
+          Opprett et nytt semester for skøyteskolen. Standardgruppene Blå, Gul og Rød opprettes sammen med semesteret.
+        </div>
+      </div>
+    </div>
+
+    <form class="form-grid" id="schoolBatchForm" style="margin-top:14px;">
+      <div class="col-3">
+        <label for="schoolBatchDepartment">Avdeling</label>
+        <select id="schoolBatchDepartment" required>
+          <option value="">Velg avdeling</option>
+        </select>
+      </div>
+
+      <div class="col-3">
+        <label for="schoolBatchName">Semesternavn</label>
+        <input id="schoolBatchName" type="text" placeholder="For eksempel Høst 2026" required />
+      </div>
+
+      <div class="col-3">
+        <label for="schoolBatchStatus">Status</label>
+        <select id="schoolBatchStatus">
+          <option value="Planlagt">Planlagt</option>
+          <option value="Aktiv">Aktiv</option>
+          <option value="Avsluttet">Avsluttet</option>
+        </select>
+      </div>
+
+      <div class="col-3">
+        <label>&nbsp;</label>
+        <button class="btn-primary" type="submit">Opprett semester</button>
+      </div>
+
+      <div class="col-3">
+        <label for="schoolBatchStartDate">Startdato</label>
+        <input id="schoolBatchStartDate" type="date" />
+      </div>
+
+      <div class="col-3">
+        <label for="schoolBatchEndDate">Sluttdato</label>
+        <input id="schoolBatchEndDate" type="date" />
+      </div>
+
+      <div class="col-12">
+        <div class="help" id="schoolBatchMessage"></div>
+      </div>
+    </form>
+  </div>
+
+  <div class="section-card" data-admin-section="departments">
+    <div class="section-header">
+      <div>
+        <h2>Eksisterende semester</h2>
+        <div class="help" style="margin-top:8px;">
+          Her kan du se registrerte semester og endre status direkte.
+        </div>
+      </div>
+      <div class="toolbar">
+        <button class="btn-secondary btn-small" id="btnRefreshSchoolBatches" type="button">Oppdater</button>
+      </div>
+    </div>
+
+    <div class="help" id="schoolBatchListMessage" style="margin-top:10px;"></div>
+    <div id="schoolBatchAdminListWrap" style="margin-top:12px;"></div>
+  </div>
+
+<div class="section-card" data-admin-section="departments">
 <h2>Oppsett</h2>
 <div class="notice">Lim inn Supabase URL og anon public key. Trykk deretter <strong>Lagre innstillinger</strong>.</div>
 <form class="form-grid" id="configForm" style="margin-top: 14px;">
@@ -2948,7 +2948,11 @@ function attachSortHandlers() {
         title.includes("qr-koder for medlemmer")
       ) return "labels";
 
-      if (title.includes("avdelinger")) return "departments";
+      if (
+        title.includes("avdelinger") ||
+        title.includes("opprett semester") ||
+        title.includes("eksisterende semester")
+      ) return "departments";
 
       if (title.includes("medlem")) return "members";
 
@@ -7815,26 +7819,19 @@ attachSortHandlers();
     }
 
     function setupSchoolTabs() {
-      const tabs = Array.from(document.querySelectorAll(".school-tab"));
-      const adminSection = byId("schoolAdminSection");
+      const tabs = Array.from(document.querySelectorAll("#skatingSchoolTab .school-tab"));
       const schoolSection = byId("schoolMainSection");
 
-      if (!tabs.length || !adminSection || !schoolSection) return;
+      if (!tabs.length || !schoolSection) return;
 
       function activateSchoolTab(tabName) {
         tabs.forEach((tab) => {
           tab.classList.toggle("active", tab.dataset.schoolTab === tabName);
         });
 
-        adminSection.classList.toggle("school-section-hidden", tabName !== "admin");
-        schoolSection.classList.toggle("school-section-hidden", tabName !== "school");
-
-        if (tabName === "admin") {
-          renderSchoolBatchAdminList();
-        }
-
         if (tabName === "school") {
-          // Deltakere skal som standard vise semesteret som er Aktivt.
+          schoolSection.classList.remove("school-section-hidden");
+
           const activeBatch = (state.schoolBatches || []).find(
             (batch) => String(batch.status || "").trim().toLowerCase() === "aktiv"
           );
@@ -7850,7 +7847,6 @@ attachSortHandlers();
           renderSchoolBatchOverview();
           renderSchoolParticipants();
 
-          // Hent ferske medlemmer/enrollments når fanen åpnes.
           if (supabaseClient) {
             loadAll().then(() => {
               const refreshedActiveBatch = (state.schoolBatches || []).find(
@@ -7875,8 +7871,24 @@ attachSortHandlers();
 
       tabs.forEach((tab) => {
         if (!tab.dataset.schoolTab) return;
+
         tab.addEventListener("click", () => {
-          activateSchoolTab(tab.dataset.schoolTab || "admin");
+          if (tab.dataset.schoolTab === "signupForms") {
+            const signupPanel = byId("schoolSignupFormsPanel");
+            if (signupPanel) {
+              signupPanel.classList.remove("hidden");
+              schoolSection.classList.add("school-section-hidden");
+            }
+            tabs.forEach((item) => {
+              item.classList.toggle("active", item === tab);
+            });
+            return;
+          }
+
+          const signupPanel = byId("schoolSignupFormsPanel");
+          if (signupPanel) signupPanel.classList.add("hidden");
+
+          activateSchoolTab(tab.dataset.schoolTab || "school");
         });
       });
 
@@ -7887,28 +7899,34 @@ attachSortHandlers();
         });
       }
 
-      activateSchoolTab("admin");
+      activateSchoolTab("school");
 
-      // Tillat direkte navigasjon fra eksterne Skøyteskole-sider,
-      // for eksempel admin-koder-bulk.html.
+      // Bakoverkompatibilitet for lenker fra Påmeldingskoder.
+      // "Admin" går nå til Admin -> Avdelinger.
       const navParams = new URLSearchParams(window.location.search);
       const requestedSection = navParams.get("section");
       const requestedSchoolTab = navParams.get("tab");
 
       if (requestedSection === "skating-school") {
-        showSection("skatingSchoolTab").then(() => {
-          if (requestedSchoolTab === "admin" || requestedSchoolTab === "school") {
-            activateSchoolTab(requestedSchoolTab);
-          } else if (requestedSchoolTab === "signupForms") {
-            const signupFormsButton = document.querySelector(
-              '#skatingSchoolTab [data-school-tab="signupForms"]'
-            );
-            if (signupFormsButton) signupFormsButton.click();
-          }
-        });
+        if (requestedSchoolTab === "admin") {
+          showSection("adminTab").then(() => {
+            showAdminSubtab("departments");
+            renderSchoolBatchAdminList();
+          });
+        } else {
+          showSection("skatingSchoolTab").then(() => {
+            if (requestedSchoolTab === "signupForms") {
+              const signupFormsButton = document.querySelector(
+                '#skatingSchoolTab [data-school-tab="signupForms"]'
+              );
+              if (signupFormsButton) signupFormsButton.click();
+            } else {
+              activateSchoolTab("school");
+            }
+          });
+        }
       }
     }
-
     setupSchoolTabs();
 
     const refreshSchoolBatchesBtn = byId("btnRefreshSchoolBatches");
