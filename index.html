@@ -7931,9 +7931,21 @@ attachSortHandlers();
       el.className = isError ? "help msg-error" : "help msg-ok";
     }
 
+    let editingSchoolBatchId = null;
+
     function renderSchoolBatchAdminList() {
       const wrap = byId("schoolBatchAdminListWrap");
       if (!wrap) return;
+
+      // Auto-refresh kjører jevnlig i appen. Mens et semester redigeres
+      // skal listen ikke bygges på nytt, ellers forsvinner redigeringsfeltet
+      // og ulagrede endringer.
+      if (
+        editingSchoolBatchId &&
+        wrap.querySelector(".school-batch-edit-panel:not(.hidden)")
+      ) {
+        return;
+      }
 
       const rows = (state.schoolBatches || []).slice().sort((a, b) => {
         const aDate = new Date(a.start_date || a.created_at || 0).getTime();
@@ -8126,17 +8138,31 @@ attachSortHandlers();
         resetEditFields();
 
         editBtn.addEventListener("click", function () {
-          resetEditFields();
-          editPanel.classList.toggle("hidden");
+          const willOpen = editPanel.classList.contains("hidden");
 
-          if (!editPanel.classList.contains("hidden")) {
+          if (willOpen) {
+            // Lukk eventuell annen semesterredigering først.
+            const openPanel = wrap.querySelector(
+              ".school-batch-edit-panel:not(.hidden)"
+            );
+            if (openPanel && openPanel !== editPanel) {
+              openPanel.classList.add("hidden");
+            }
+
+            resetEditFields();
+            editPanel.classList.remove("hidden");
+            editingSchoolBatchId = batch.id;
             nameInput.focus();
+          } else {
+            editPanel.classList.add("hidden");
+            editingSchoolBatchId = null;
           }
         });
 
         cancelBtn.addEventListener("click", function () {
           resetEditFields();
           editPanel.classList.add("hidden");
+          editingSchoolBatchId = null;
         });
 
         saveBtn.addEventListener("click", async function () {
@@ -8202,6 +8228,7 @@ attachSortHandlers();
               formatSchoolBatchDate(batch.end_date);
 
             editPanel.classList.add("hidden");
+            editingSchoolBatchId = null;
 
             setSchoolBatchListMessage(
               'Semesteret "' + batch.name + '" er oppdatert.',
