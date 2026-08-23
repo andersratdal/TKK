@@ -366,12 +366,15 @@ async function getLogoDataUrl(){
   }
 }
 
-async function exportCodesToExcel(){
-  if(typeof XLSX==="undefined"){
-    showMessage(listMessage,"Excel-biblioteket kunne ikke lastes.","error");
-    return;
-  }
+async function excelEscape(value){
+  return String(value == null ? "" : value)
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;");
+}
 
+function exportCodesToExcel(){
   const rows=applyFilters(allCodes);
 
   if(!rows.length){
@@ -381,127 +384,142 @@ async function exportCodesToExcel(){
 
   const signupUrl = window.location.origin + "/pamelding-kode.html";
 
-  const aoa = [
-    ["Trondheim Kortbaneklubb"],
-    ["Påmeldingskoder – skøyteskole"],
-    ["Påmeldingsside:", signupUrl],
-    [],
-    ["Beskrivelse","Kode","Utløpsdato","Aktivitetsguide","Familie","Kommentar"]
-  ];
+  const bodyRows = rows.map(code=>{
+    const expires = code.expires_at ? formatDate(code.expires_at) : "";
+    return `
+      <tr>
+        <td>${excelEscape(code.description || "")}</td>
+        <td class="code">${excelEscape(code.code || "")}</td>
+        <td>${excelEscape(expires)}</td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+    `;
+  }).join("");
 
-  rows.forEach(code=>{
-    aoa.push([
-      code.description || "",
-      code.code || "",
-      formatExcelDate(code.expires_at),
-      "",
-      "",
-      ""
-    ]);
-  });
+  const excelHtml = `
+  <!DOCTYPE html>
+  <html xmlns:o="urn:schemas-microsoft-com:office:office"
+        xmlns:x="urn:schemas-microsoft-com:office:excel"
+        xmlns="http://www.w3.org/TR/REC-html40">
+  <head>
+    <meta charset="UTF-8">
+    <!--[if gte mso 9]>
+    <xml>
+      <x:ExcelWorkbook>
+        <x:ExcelWorksheets>
+          <x:ExcelWorksheet>
+            <x:Name>Påmeldingskoder</x:Name>
+            <x:WorksheetOptions>
+              <x:DisplayGridlines/>
+              <x:FreezePanes/>
+              <x:FrozenNoSplit/>
+              <x:SplitHorizontal>5</x:SplitHorizontal>
+              <x:TopRowBottomPane>5</x:TopRowBottomPane>
+              <x:ActivePane>2</x:ActivePane>
+              <x:ProtectContents>False</x:ProtectContents>
+              <x:ProtectObjects>False</x:ProtectObjects>
+              <x:ProtectScenarios>False</x:ProtectScenarios>
+            </x:WorksheetOptions>
+          </x:ExcelWorksheet>
+        </x:ExcelWorksheets>
+      </x:ExcelWorkbook>
+    </xml>
+    <![endif]-->
+    <style>
+      body{
+        font-family:Arial,Helvetica,sans-serif;
+        color:#1f2937;
+      }
+      table{
+        border-collapse:collapse;
+        width:100%;
+      }
+      td,th{
+        border:1px solid #d1d5db;
+        padding:8px 10px;
+        vertical-align:top;
+      }
+      .title{
+        font-size:20pt;
+        font-weight:700;
+        color:#003a8f;
+        border:none;
+        padding-bottom:2px;
+      }
+      .subtitle{
+        font-size:12pt;
+        font-weight:700;
+        color:#334155;
+        border:none;
+      }
+      .link-label{
+        font-weight:700;
+        border:none;
+      }
+      .link{
+        color:#0563c1;
+        text-decoration:underline;
+        border:none;
+      }
+      .spacer{
+        border:none;
+        height:10px;
+      }
+      th{
+        background:#003a8f;
+        color:#ffffff;
+        font-weight:700;
+        text-align:left;
+      }
+      .code{
+        mso-number-format:"\@";
+        font-family:Consolas,monospace;
+      }
+      .w-description{width:260px;}
+      .w-code{width:145px;}
+      .w-date{width:120px;}
+      .w-guide{width:170px;}
+      .w-family{width:190px;}
+      .w-comment{width:300px;}
+    </style>
+  </head>
+  <body>
+    <table>
+      <tr>
+        <td class="title" colspan="6">Trondheim Kortbaneklubb</td>
+      </tr>
+      <tr>
+        <td class="subtitle" colspan="6">Påmeldingskoder – skøyteskole</td>
+      </tr>
+      <tr>
+        <td class="link-label">Påmeldingsside:</td>
+        <td class="link" colspan="5">
+          <a href="${excelEscape(signupUrl)}">${excelEscape(signupUrl)}</a>
+        </td>
+      </tr>
+      <tr><td class="spacer" colspan="6"></td></tr>
+      <tr>
+        <th class="w-description">Beskrivelse</th>
+        <th class="w-code">Kode</th>
+        <th class="w-date">Utløpsdato</th>
+        <th class="w-guide">Aktivitetsguide</th>
+        <th class="w-family">Familie</th>
+        <th class="w-comment">Kommentar</th>
+      </tr>
+      ${bodyRows}
+    </table>
+  </body>
+  </html>`;
 
-  const worksheet = XLSX.utils.aoa_to_sheet(aoa);
+  const blob = new Blob(
+    ["\ufeff", excelHtml],
+    {type:"application/vnd.ms-excel;charset=utf-8;"}
+  );
 
-  worksheet["!merges"] = [
-    { s:{r:0,c:0}, e:{r:0,c:5} },
-    { s:{r:1,c:0}, e:{r:1,c:5} }
-  ];
-
-  worksheet["!cols"] = [
-    {wch:36},
-    {wch:20},
-    {wch:16},
-    {wch:22},
-    {wch:24},
-    {wch:42}
-  ];
-
-  worksheet["!rows"] = [
-    {hpt:28},
-    {hpt:22},
-    {hpt:20},
-    {hpt:8},
-    {hpt:22}
-  ];
-
-  if(worksheet["A1"]){
-    worksheet["A1"].s = {
-      font:{bold:true,sz:18,color:{rgb:"003A8F"}},
-      alignment:{vertical:"center"}
-    };
-  }
-
-  if(worksheet["A2"]){
-    worksheet["A2"].s = {
-      font:{bold:true,sz:13,color:{rgb:"334155"}}
-    };
-  }
-
-  if(worksheet["A3"]){
-    worksheet["A3"].s = {
-      font:{bold:true,color:{rgb:"334155"}}
-    };
-  }
-
-  if(worksheet["B3"]){
-    worksheet["B3"].l = { Target: signupUrl, Tooltip: "Åpne påmeldingssiden" };
-    worksheet["B3"].s = {
-      font:{color:{rgb:"0563C1"},underline:true}
-    };
-  }
-
-  const headerRow = 4; // zero-based row 5
-  for(let c=0;c<6;c+=1){
-    const ref = XLSX.utils.encode_cell({r:headerRow,c});
-    if(worksheet[ref]){
-      worksheet[ref].s = {
-        font:{bold:true,color:{rgb:"FFFFFF"}},
-        fill:{fgColor:{rgb:"003A8F"}},
-        alignment:{vertical:"center"},
-        border:{
-          bottom:{style:"thin",color:{rgb:"D1D5DB"}}
-        }
-      };
-    }
-  }
-
-  for(let r=5;r<aoa.length;r+=1){
-    const dateCell = worksheet[XLSX.utils.encode_cell({r,c:2})];
-    if(dateCell && dateCell.v instanceof Date){
-      dateCell.t="d";
-      dateCell.z="dd.mm.yyyy";
-    }
-  }
-
-  worksheet["!autofilter"] = {
-    ref: "A5:F" + aoa.length
-  };
-
-  worksheet["!freeze"] = {
-    xSplit: 0,
-    ySplit: 5,
-    topLeftCell: "A6",
-    activePane: "bottomLeft",
-    state: "frozen"
-  };
-
-  worksheet["!pageSetup"] = {
-    orientation:"landscape",
-    fitToWidth:1,
-    fitToHeight:0
-  };
-
-  worksheet["!margins"] = {
-    left:0.35,
-    right:0.35,
-    top:0.5,
-    bottom:0.5,
-    header:0.2,
-    footer:0.2
-  };
-
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook,worksheet,"Påmeldingskoder");
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
 
   const now=new Date();
   const dateStamp=
@@ -509,15 +527,18 @@ async function exportCodesToExcel(){
     String(now.getMonth()+1).padStart(2,"0")+"-"+
     String(now.getDate()).padStart(2,"0");
 
-  XLSX.writeFile(
-    workbook,
-    "pameldingskoder-"+dateStamp+".xlsx",
-    {cellDates:true, cellStyles:true}
-  );
+  link.href=url;
+  link.download="pameldingskoder-"+dateStamp+".xls";
+
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
 
   showMessage(
     listMessage,
-    "Eksporterte "+rows.length+" koder til Excel.",
+    "Eksporterte "+rows.length+" filtrerte koder til Excel.",
     "success"
   );
 }
