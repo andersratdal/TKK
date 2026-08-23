@@ -367,7 +367,7 @@ async function getLogoDataUrl(){
 }
 
 async function exportCodesToExcel(){
-  if(typeof ExcelJS==="undefined"){
+  if(typeof XLSX==="undefined"){
     showMessage(listMessage,"Excel-biblioteket kunne ikke lastes.","error");
     return;
   }
@@ -379,158 +379,147 @@ async function exportCodesToExcel(){
     return;
   }
 
-  exportExcelBtn.disabled=true;
-  const oldText=exportExcelBtn.textContent;
-  exportExcelBtn.textContent="Lager Excel …";
+  const signupUrl = window.location.origin + "/pamelding-kode.html";
 
-  try{
-    const workbook=new ExcelJS.Workbook();
-    workbook.creator="Trondheim Kortbaneklubb";
-    workbook.company="Trondheim Kortbaneklubb";
-    workbook.subject="Påmeldingskoder til TKKs skøyteskole";
-    workbook.title="Påmeldingskoder";
-    workbook.created=new Date();
+  const aoa = [
+    ["Trondheim Kortbaneklubb"],
+    ["Påmeldingskoder – skøyteskole"],
+    ["Påmeldingsside:", signupUrl],
+    [],
+    ["Beskrivelse","Kode","Utløpsdato","Aktivitetsguide","Familie","Kommentar"]
+  ];
 
-    const sheet=workbook.addWorksheet("Påmeldingskoder",{
-      views:[{showGridLines:false,state:"frozen",ySplit:6}]
-    });
+  rows.forEach(code=>{
+    aoa.push([
+      code.description || "",
+      code.code || "",
+      formatExcelDate(code.expires_at),
+      "",
+      "",
+      ""
+    ]);
+  });
 
-    // Kolonnebredder
-    sheet.getColumn("A").width=34;
-    sheet.getColumn("B").width=20;
-    sheet.getColumn("C").width=17;
-    sheet.getColumn("D").width=25;
+  const worksheet = XLSX.utils.aoa_to_sheet(aoa);
 
-    // Logo
-    const logoDataUrl=await getLogoDataUrl();
-    if(logoDataUrl){
-      const logoId=workbook.addImage({base64:logoDataUrl,extension:"png"});
-      sheet.addImage(logoId,{
-        tl:{col:0.15,row:0.15},
-        ext:{width:115,height:70}
-      });
-    }
+  worksheet["!merges"] = [
+    { s:{r:0,c:0}, e:{r:0,c:5} },
+    { s:{r:1,c:0}, e:{r:1,c:5} }
+  ];
 
-    // Tittelområde
-    sheet.mergeCells("B1:D1");
-    const title=sheet.getCell("B1");
-    title.value="Trondheim Kortbaneklubb";
-    title.font={name:"Aptos Display",size:18,bold:true,color:{argb:"FF003A8F"}};
-    title.alignment={vertical:"middle"};
+  worksheet["!cols"] = [
+    {wch:36},
+    {wch:20},
+    {wch:16},
+    {wch:22},
+    {wch:24},
+    {wch:42}
+  ];
 
-    sheet.mergeCells("B2:D2");
-    const subtitle=sheet.getCell("B2");
-    subtitle.value="Påmeldingskoder – TKKs skøyteskole";
-    subtitle.font={name:"Aptos",size:13,bold:true,color:{argb:"FF1F2937"}};
+  worksheet["!rows"] = [
+    {hpt:28},
+    {hpt:22},
+    {hpt:20},
+    {hpt:8},
+    {hpt:22}
+  ];
 
-    sheet.mergeCells("B3:D3");
-    const info=sheet.getCell("B3");
-    info.value="Eksportert "+new Date().toLocaleDateString("no-NO")+" • "+rows.length+" kode"+(rows.length===1?"":"r");
-    info.font={name:"Aptos",size:10,color:{argb:"FF64748B"}};
-
-    sheet.mergeCells("A5:D5");
-    const notice=sheet.getCell("A5");
-    notice.value="Del kun denne filen med personer som skal distribuere påmeldingskoder.";
-    notice.font={name:"Aptos",size:10,italic:true,color:{argb:"FF475569"}};
-    notice.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFF1F5F9"}};
-    notice.alignment={vertical:"middle"};
-    sheet.getRow(5).height=24;
-
-    // Tabellhode
-    const headerRow=sheet.getRow(6);
-    headerRow.values=["Beskrivelse","Kode","Utløpsdato","Påmeldingsside"];
-    headerRow.height=26;
-    headerRow.eachCell(cell=>{
-      cell.font={name:"Aptos",size:11,bold:true,color:{argb:"FFFFFFFF"}};
-      cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FF003A8F"}};
-      cell.alignment={vertical:"middle",horizontal:"left"};
-      cell.border={bottom:{style:"thin",color:{argb:"FF002C6D"}}};
-    });
-
-    const signupUrl=new URL("pamelding-kode.html",window.location.href).href;
-
-    rows.forEach((code,index)=>{
-      const rowNumber=7+index;
-      const excelRow=sheet.getRow(rowNumber);
-      excelRow.height=23;
-
-      excelRow.getCell(1).value=code.description||"";
-      excelRow.getCell(2).value=code.code||"";
-
-      const expiry=formatExcelDate(code.expires_at);
-      excelRow.getCell(3).value=expiry||"";
-      if(expiry){
-        excelRow.getCell(3).numFmt="dd.mm.yyyy";
-      }
-
-      excelRow.getCell(4).value={
-        text:"Åpne påmeldingsside",
-        hyperlink:signupUrl,
-        tooltip:"Åpne TKKs påmeldingsside"
-      };
-
-      excelRow.getCell(1).font={name:"Aptos",size:10,color:{argb:"FF008000"}};
-      excelRow.getCell(2).font={name:"Aptos",size:11,bold:true,color:{argb:"FF003A8F"}};
-      excelRow.getCell(3).font={name:"Aptos",size:10,color:{argb:"FF008000"}};
-      excelRow.getCell(4).font={name:"Aptos",size:10,color:{argb:"FF0563C1"},underline:true};
-
-      excelRow.eachCell(cell=>{
-        cell.alignment={vertical:"middle",wrapText:true};
-        cell.border={bottom:{style:"hair",color:{argb:"FFE2E8F0"}}};
-      });
-
-      if(index%2===1){
-        excelRow.eachCell(cell=>{
-          cell.fill={type:"pattern",pattern:"solid",fgColor:{argb:"FFF8FAFC"}};
-        });
-      }
-    });
-
-    // Autofilter i selve Excel-filen
-    sheet.autoFilter={from:"A6",to:"D"+(6+rows.length)};
-
-    // Utskriftsoppsett
-    sheet.pageSetup={
-      orientation:"landscape",
-      fitToPage:true,
-      fitToWidth:1,
-      fitToHeight:0,
-      margins:{left:0.3,right:0.3,top:0.5,bottom:0.5,header:0.2,footer:0.2}
+  if(worksheet["A1"]){
+    worksheet["A1"].s = {
+      font:{bold:true,sz:18,color:{rgb:"003A8F"}},
+      alignment:{vertical:"center"}
     };
-    sheet.headerFooter.oddFooter="&LTrondheim Kortbaneklubb&C&F&RSide &P av &N";
-
-    const buffer=await workbook.xlsx.writeBuffer();
-    const blob=new Blob([buffer],{
-      type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    });
-    const url=URL.createObjectURL(blob);
-    const link=document.createElement("a");
-
-    const now=new Date();
-    const dateStamp=
-      now.getFullYear()+"-"+
-      String(now.getMonth()+1).padStart(2,"0")+"-"+
-      String(now.getDate()).padStart(2,"0");
-
-    link.href=url;
-    link.download="TKK-pameldingskoder-"+dateStamp+".xlsx";
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    setTimeout(()=>URL.revokeObjectURL(url),1000);
-
-    showMessage(
-      listMessage,
-      "Eksporterte "+rows.length+" filtrerte koder til Excel.",
-      "success"
-    );
-  }catch(error){
-    console.error(error);
-    showMessage(listMessage,"Kunne ikke lage Excel-fil: "+(error.message||error),"error");
-  }finally{
-    exportExcelBtn.disabled=false;
-    exportExcelBtn.textContent=oldText;
   }
+
+  if(worksheet["A2"]){
+    worksheet["A2"].s = {
+      font:{bold:true,sz:13,color:{rgb:"334155"}}
+    };
+  }
+
+  if(worksheet["A3"]){
+    worksheet["A3"].s = {
+      font:{bold:true,color:{rgb:"334155"}}
+    };
+  }
+
+  if(worksheet["B3"]){
+    worksheet["B3"].l = { Target: signupUrl, Tooltip: "Åpne påmeldingssiden" };
+    worksheet["B3"].s = {
+      font:{color:{rgb:"0563C1"},underline:true}
+    };
+  }
+
+  const headerRow = 4; // zero-based row 5
+  for(let c=0;c<6;c+=1){
+    const ref = XLSX.utils.encode_cell({r:headerRow,c});
+    if(worksheet[ref]){
+      worksheet[ref].s = {
+        font:{bold:true,color:{rgb:"FFFFFF"}},
+        fill:{fgColor:{rgb:"003A8F"}},
+        alignment:{vertical:"center"},
+        border:{
+          bottom:{style:"thin",color:{rgb:"D1D5DB"}}
+        }
+      };
+    }
+  }
+
+  for(let r=5;r<aoa.length;r+=1){
+    const dateCell = worksheet[XLSX.utils.encode_cell({r,c:2})];
+    if(dateCell && dateCell.v instanceof Date){
+      dateCell.t="d";
+      dateCell.z="dd.mm.yyyy";
+    }
+  }
+
+  worksheet["!autofilter"] = {
+    ref: "A5:F" + aoa.length
+  };
+
+  worksheet["!freeze"] = {
+    xSplit: 0,
+    ySplit: 5,
+    topLeftCell: "A6",
+    activePane: "bottomLeft",
+    state: "frozen"
+  };
+
+  worksheet["!pageSetup"] = {
+    orientation:"landscape",
+    fitToWidth:1,
+    fitToHeight:0
+  };
+
+  worksheet["!margins"] = {
+    left:0.35,
+    right:0.35,
+    top:0.5,
+    bottom:0.5,
+    header:0.2,
+    footer:0.2
+  };
+
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook,worksheet,"Påmeldingskoder");
+
+  const now=new Date();
+  const dateStamp=
+    now.getFullYear()+"-"+
+    String(now.getMonth()+1).padStart(2,"0")+"-"+
+    String(now.getDate()).padStart(2,"0");
+
+  XLSX.writeFile(
+    workbook,
+    "pameldingskoder-"+dateStamp+".xlsx",
+    {cellDates:true, cellStyles:true}
+  );
+
+  showMessage(
+    listMessage,
+    "Eksporterte "+rows.length+" koder til Excel.",
+    "success"
+  );
 }
 
 async function loadLookups(){try{const response=await fetch("/.netlify/functions/list-school-code-lookups");const data=await response.json();if(!response.ok)throw new Error(data.error||"Kunne ikke hente oppslagsdata.");
