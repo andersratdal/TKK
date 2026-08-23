@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Påmelding skøyteskole</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --text: #132238;
+      --muted: #64748b;
+      --line: #dbe4f0;
+      --accent: #003a8f;
+      --accent-dark: #002b68;
+      --accent-soft: #eef4ff;
+      --danger: #991b1b;
+      --danger-bg: #fee2e2;
+      --success: #166534;
+      --success-bg: #dcfce7;
+      --shadow: 0 18px 40px rgba(16, 35, 63, 0.12);
+      --radius: 22px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(31,79,255,0.10), transparent 32%),
+        linear-gradient(180deg, #f7faff 0%, #edf3fb 100%);
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 24px 16px 48px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .brand img {
+      height: 48px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .brand-text {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .eyebrow {
+      font-size: 12px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .brand-title {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.1;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid rgba(16,35,63,.06);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 24px;
+    }
+
+    h1, h2, h3 { margin-top: 0; }
+
+    h1 {
+      font-size: 34px;
+      margin-bottom: 8px;
+    }
+
+    p {
+      line-height: 1.55;
+    }
+
+    .muted { color: var(--muted); }
+
+    .notice {
+      margin-top: 18px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 1px solid #bfdbfe;
+      background: #eff6ff;
+      line-height: 1.5;
+    }
+
+    .section {
+      margin-top: 24px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px;
+      background: #f8fbff;
+    }
+
+    .section-title {
+      font-size: 20px;
+      margin-bottom: 6px;
+    }
+
+    .section-help {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .col-4 { grid-column: span 4; }
+    .col-6 { grid-column: span 6; }
+    .col-12 { grid-column: span 12; }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    input, select, button {
+      font: inherit;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    input:focus, select:focus {
+      outline: 3px solid rgba(31,79,255,.12);
+      border-color: #7da3ef;
+    }
+
+    input[type="checkbox"] {
+      width: auto;
+    }
+
+    .child-card {
+      margin-top: 16px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #fff;
+    }
+
+    .child-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 4px;
+    }
+
+    .child-title {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 12px;
+      font-weight: 700;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    button {
+      border: none;
+      border-radius: 12px;
+      padding: 12px 16px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .btn-primary:hover { background: var(--accent-dark); }
+
+    .btn-secondary {
+      background: #e7edf5;
+      color: var(--text);
+    }
+
+    .btn-danger {
+      background: #fff1f2;
+      color: #b42318;
+      border: 1px solid #fecdd3;
+    }
+
+    button[disabled] {
+      opacity: .65;
+      cursor: default;
+    }
+
+    .message {
+      margin-top: 18px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      display: none;
+      white-space: pre-wrap;
+      line-height: 1.5;
+    }
+
+    .message.show { display: block; }
+
+    .message.error {
+      background: var(--danger-bg);
+      color: var(--danger);
+      border: 1px solid #fca5a5;
+    }
+
+    .message.success {
+      background: var(--success-bg);
+      color: var(--success);
+      border: 1px solid #86efac;
+    }
+
+    .required { color: var(--danger); }
+
+    .confirmation {
+      display: none;
+      text-align: center;
+      padding: 20px 4px 6px;
+    }
+
+    .confirmation.show { display: block; }
+
+    .confirmation-icon {
+      width: 68px;
+      height: 68px;
+      margin: 0 auto 16px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: var(--success-bg);
+      color: var(--success);
+      font-size: 34px;
+      font-weight: 700;
+    }
+
+    @media (max-width: 700px) {
+      .container { padding: 16px 12px 36px; }
+      .card { padding: 18px; }
+      h1 { font-size: 28px; }
+      .col-4, .col-6 { grid-column: span 12; }
+      .child-header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+      .brand img { height: 40px; }
+      .brand-title { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="brand">
+      <img src="logo.png" alt="Trondheim Kortbaneklubb" />
+      <div class="brand-text">
+        <div class="eyebrow">Trondheim Kortbaneklubb</div>
+        <h2 class="brand-title">Skøyteskole</h2>
+      </div>
+    </div>
+
+    <div class="card">
+      <div id="formView">
+        <h1>Påmelding til skøyteskole</h1>
+        <p class="muted">
+          For å sende inn påmelding må du ha mottatt en gyldig påmeldingskode fra Trondheim Kortbaneklubb.
+        </p>
+
+        <div class="notice">
+          Koden kontrolleres når du sender inn skjemaet. Dersom koden er ugyldig,
+          utløpt eller allerede brukt opp, blir påmeldingen ikke registrert.
+        </div>
+
+        <form id="signupForm">
+          <div class="section">
+            <h2 class="section-title">Påmeldingskode</h2>
+            <div class="grid">
+              <div class="col-12">
+                <label for="access_code">Kode <span class="required">*</span></label>
+                <input
+                  id="access_code"
+                  name="access_code"
+                  type="text"
+                  autocomplete="off"
+                  placeholder="For eksempel TKK-ABC123"
+                  required
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h2 class="section-title">Kontaktinformasjon foresatt</h2>
+            <div class="section-help">
+              Opplysningene brukes for alle barna i denne påmeldingen.
+            </div>
+
+            <div class="grid">
+              <div class="col-6">
+                <label for="email">E-post <span class="required">*</span></label>
+                <input id="email" name="email" type="email" autocomplete="email" required />
+              </div>
+
+              <div class="col-6">
+                <label for="phone">Telefon <span class="required">*</span></label>
+                <input id="phone" name="phone" type="tel" autocomplete="tel" required />
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <h2 class="section-title">Barn som skal meldes på</h2>
+            <div class="section-help">
+              Du kan legge til flere søsken i samme påmelding.
+            </div>
+
+            <div id="childrenContainer"></div>
+
+            <div class="actions">
+              <button type="button" class="btn-secondary" id="addChildBtn">+ Legg til barn</button>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button type="submit" class="btn-primary" id="submitBtn">Send påmelding</button>
+          </div>
+
+          <div id="message" class="message"></div>
+        </form>
+      </div>
+
+      <div id="confirmationView" class="confirmation">
+        <div class="confirmation-icon">✓</div>
+        <h1>Påmeldingen er mottatt</h1>
+        <p>
+          Takk. Påmeldingen er registrert hos Trondheim Kortbaneklubb.
+        </p>
+        <p class="muted">
+          Dere vil få mer informasjon fra klubben når påmeldingen er behandlet.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <template id="childTemplate">
+    <div class="child-card">
+      <div class="child-header">
+        <div class="child-title">Barn <span class="child-number"></span></div>
+        <button type="button" class="btn-danger remove-child-btn">Fjern barn</button>
+      </div>
+
+      <div class="grid">
+        <div class="col-12">
+          <label>Barnets navn <span class="required">*</span></label>
+          <input type="text" class="child-name" autocomplete="name" required />
+        </div>
+
+        <div class="col-4">
+          <label>Fødselsdato <span class="required">*</span></label>
+          <input type="date" class="birth-date" required />
+        </div>
+
+        <div class="col-4">
+          <label>Ønsket skøytestørrelse</label>
+          <select class="requested-skate-size">
+            <option value="">Velg størrelse</option>
+            <option value="24">24</option>
+            <option value="25">25</option>
+            <option value="26">26</option>
+            <option value="27">27</option>
+            <option value="28">28</option>
+            <option value="29">29</option>
+            <option value="30">30</option>
+            <option value="31">31</option>
+            <option value="32">32</option>
+            <option value="33">33</option>
+            <option value="34">34</option>
+            <option value="35">35</option>
+            <option value="36">36</option>
+            <option value="37">37</option>
+            <option value="38">38</option>
+            <option value="39">39</option>
+            <option value="40">40</option>
+            <option value="41">41</option>
+            <option value="42">42</option>
+            <option value="43">43</option>
+            <option value="44">44</option>
+            <option value="45">45</option>
+          </select>
+        </div>
+
+        <div class="col-4" style="display:flex; align-items:flex-end;">
+          <label class="checkbox-label">
+            <input type="checkbox" class="has-own-skates" />
+            Har egne skøyter
+          </label>
+        </div>
+
+        <div class="col-12 section-help">
+          Velg skøytestørrelse dersom barnet trenger å låne skøyter. Hvis barnet har egne skøyter,
+          krysser du av for dette i stedet.
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <script>
+    const ACTIVE_BATCH_NAME = "Høst 2026";
+
+    const form = document.getElementById("signupForm");
+    const formView = document.getElementById("formView");
+    const confirmationView = document.getElementById("confirmationView");
+    const childrenContainer = document.getElementById("childrenContainer");
+    const addChildBtn = document.getElementById("addChildBtn");
+    const submitBtn = document.getElementById("submitBtn");
+    const messageBox = document.getElementById("message");
+    const childTemplate = document.getElementById("childTemplate");
+
+    function showMessage(text, type = "error") {
+      messageBox.textContent = text;
+      messageBox.className = `message show ${type}`;
+    }
+
+    function clearMessage() {
+      messageBox.textContent = "";
+      messageBox.className = "message";
+    }
+
+    function updateChildNumbers() {
+      const cards = childrenContainer.querySelectorAll(".child-card");
+
+      cards.forEach((card, index) => {
+        card.querySelector(".child-number").textContent = index + 1;
+        card.querySelector(".remove-child-btn").style.display =
+          cards.length > 1 ? "inline-block" : "none";
+      });
+    }
+
+    function addChild() {
+      const clone = childTemplate.content.cloneNode(true);
+      const card = clone.querySelector(".child-card");
+      const skateSizeSelect = card.querySelector(".requested-skate-size");
+      const ownSkatesCheckbox = card.querySelector(".has-own-skates");
+      const removeBtn = card.querySelector(".remove-child-btn");
+
+      ownSkatesCheckbox.addEventListener("change", () => {
+        if (ownSkatesCheckbox.checked) {
+          skateSizeSelect.value = "";
+          skateSizeSelect.disabled = true;
+        } else {
+          skateSizeSelect.disabled = false;
+        }
+      });
+
+      skateSizeSelect.addEventListener("change", () => {
+        if (skateSizeSelect.value) {
+          ownSkatesCheckbox.checked = false;
+        }
+      });
+
+      removeBtn.addEventListener("click", () => {
+        card.remove();
+        updateChildNumbers();
+      });
+
+      childrenContainer.appendChild(clone);
+      updateChildNumbers();
+    }
+
+    function collectChildren() {
+      return Array.from(childrenContainer.querySelectorAll(".child-card")).map((card) => ({
+        child_name: card.querySelector(".child-name").value.trim(),
+        birth_date: card.querySelector(".birth-date").value,
+        requested_skate_size: card.querySelector(".requested-skate-size").value || null,
+        has_own_skates: card.querySelector(".has-own-skates").checked
+      }));
+    }
+
+    function validateChildren(children) {
+      if (!children.length) {
+        return "Du må legge til minst ett barn.";
+      }
+
+      for (let i = 0; i < children.length; i += 1) {
+        const child = children[i];
+        const number = i + 1;
+
+        if (!child.child_name) {
+          return `Barn ${number}: Du må fylle inn barnets navn.`;
+        }
+
+        if (!child.birth_date) {
+          return `Barn ${number}: Du må fylle inn fødselsdato.`;
+        }
+
+        if (!child.requested_skate_size && !child.has_own_skates) {
+          return `Barn ${number}: Du må velge skøytestørrelse eller krysse av for egne skøyter.`;
+        }
+
+        if (child.requested_skate_size && child.has_own_skates) {
+          return `Barn ${number}: Du kan ikke velge både størrelse og egne skøyter.`;
+        }
+      }
+
+      return null;
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      clearMessage();
+
+      const access_code = document.getElementById("access_code").value.trim().toUpperCase();
+      const email = document.getElementById("email").value.trim();
+      const phone = document.getElementById("phone").value.trim();
+      const children = collectChildren();
+
+      if (!access_code) {
+        showMessage("Du må fylle inn påmeldingskode.");
+        return;
+      }
+
+      if (!email) {
+        showMessage("Du må fylle inn e-post.");
+        return;
+      }
+
+      if (!phone) {
+        showMessage("Du må fylle inn telefon.");
+        return;
+      }
+
+      const childError = validateChildren(children);
+      if (childError) {
+        showMessage(childError);
+        return;
+      }
+
+      try {
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Sender...";
+
+        const response = await fetch("/.netlify/functions/create-school-signup-code", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            access_code,
+            email,
+            phone,
+            batch_name: ACTIVE_BATCH_NAME,
+            children
+          })
+        });
+
+        const data = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(data.error || "Kunne ikke sende påmeldingen.");
+        }
+
+        formView.style.display = "none";
+        confirmationView.classList.add("show");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } catch (error) {
+        showMessage(error.message || "Noe gikk galt. Prøv igjen.");
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Send påmelding";
+      }
+    });
+
+    addChildBtn.addEventListener("click", addChild);
+
+    addChild();
+  </script>
+</body>
+</html>

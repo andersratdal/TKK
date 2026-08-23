@@ -1,0 +1,593 @@
+<!doctype html>
+<html lang="no">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Idrettsrådet – TKK skøyteskole</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="env-config.js"></script>
+  <style>
+    :root{
+      --blue:#003a8f;
+      --bg:#f4f7fb;
+      --line:#dbe3ee;
+      --text:#16243a;
+      --muted:#64748b;
+      --ok:#166534;
+      --error:#991b1b;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Arial,Helvetica,sans-serif;
+      background:var(--bg);
+      color:var(--text);
+    }
+    button,input,textarea,select{font:inherit}
+    .hidden{display:none!important}
+    .page{max-width:1500px;margin:0 auto;padding:24px}
+    .header{
+      display:flex;justify-content:space-between;align-items:center;gap:20px;
+      background:#fff;border:1px solid var(--line);border-radius:18px;
+      padding:18px 22px;margin-bottom:18px;
+    }
+    .brand{display:flex;align-items:center;gap:14px}
+    .brand img{width:52px;height:auto}
+    h1{font-size:25px;margin:0 0 4px}
+    .muted{color:var(--muted);font-size:14px}
+    .userbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .btn{
+      border:0;border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:700
+    }
+    .btn-primary{background:var(--blue);color:#fff}
+    .btn-secondary{background:#eef2f7;color:#1e293b}
+    .card{
+      background:#fff;border:1px solid var(--line);border-radius:18px;
+      padding:20px;margin-bottom:18px;
+    }
+    .toolbar{
+      display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin-top:14px
+    }
+    .field{display:flex;flex-direction:column;gap:6px}
+    label{font-weight:700;font-size:13px}
+    input,select,textarea{
+      border:1px solid #cbd5e1;border-radius:9px;padding:9px 10px;background:#fff;
+    }
+    textarea{resize:vertical;min-height:64px}
+    .status{min-height:22px;margin-top:10px;font-size:14px}
+    .status.ok{color:var(--ok)}
+    .status.error{color:var(--error)}
+    .table-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px}
+    table{width:100%;border-collapse:collapse;min-width:1180px;background:#fff}
+    th,td{
+      text-align:left;vertical-align:top;padding:11px 10px;
+      border-bottom:1px solid #e5e7eb;
+    }
+    th{
+      position:sticky;top:0;background:#f8fafc;z-index:1;
+      color:#334155;font-size:12px;text-transform:uppercase;letter-spacing:.03em
+    }
+    td{font-size:14px}
+    td .edit-input{width:190px}
+    td .edit-comment{width:280px;min-height:58px}
+    .saving{opacity:.65}
+    .saved-note{font-size:11px;color:var(--ok);margin-top:4px;min-height:13px}
+    .code{font-family:monospace;font-size:12px}
+    .login-shell{
+      min-height:100vh;display:grid;place-items:start center;padding:48px 18px;
+      background:linear-gradient(180deg,#f7faff,#edf3fb)
+    }
+    .login-card{
+      width:min(100%,480px);background:#fff;border:1px solid var(--line);
+      border-radius:20px;padding:26px;box-shadow:0 18px 40px rgba(16,35,63,.12)
+    }
+    .login-brand{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+    .login-brand img{width:50px}
+    .login-card h1{font-size:30px}
+    .login-card .field{margin-top:14px}
+    .login-actions{display:flex;gap:10px;margin-top:20px}
+    @media(max-width:700px){
+      .page{padding:12px}
+      .header{align-items:flex-start;flex-direction:column}
+    }
+  </style>
+</head>
+<body>
+
+<div id="loginView" class="login-shell hidden">
+  <div class="login-card">
+    <div class="login-brand">
+      <img src="logo.png" alt="TKK">
+      <div><strong>Trondheim Kortbaneklubb</strong><div class="muted">Idrettsrådet</div></div>
+    </div>
+    <h1>Logg inn</h1>
+    <p class="muted">Kun brukere med tilgang til Idrettsrådets oversikt kan åpne siden.</p>
+
+    <form id="loginForm">
+      <div class="field">
+        <label for="loginEmail">E-post</label>
+        <input id="loginEmail" type="email" autocomplete="email" required>
+      </div>
+      <div class="field">
+        <label for="loginPassword">Passord</label>
+        <input id="loginPassword" type="password" autocomplete="current-password" required>
+      </div>
+      <div class="login-actions">
+        <button class="btn btn-primary" type="submit">Logg inn</button>
+      </div>
+      <div id="loginMessage" class="status"></div>
+    </form>
+  </div>
+</div>
+
+<main id="appView" class="page hidden">
+  <header class="header">
+    <div class="brand">
+      <img src="logo.png" alt="Trondheim Kortbaneklubb">
+      <div>
+        <h1>Påmeldte via Idrettsrådet</h1>
+        <div class="muted">TKKs skøyteskole</div>
+      </div>
+    </div>
+    <div class="userbar">
+      <span id="userEmail" class="muted"></span>
+      <button id="logoutBtn" class="btn btn-secondary" type="button">Logg ut</button>
+    </div>
+  </header>
+
+  <section class="card">
+    <strong>Påmeldte barn</strong>
+    <div class="muted" style="margin-top:5px">
+      Viser bare påmeldinger registrert med påmeldingskode. Navn veileder og kommentar lagres automatisk.
+    </div>
+
+    <div class="toolbar">
+      <div class="field">
+        <label for="searchInput">Søk</label>
+        <input id="searchInput" placeholder="Barn, kode, veileder ...">
+      </div>
+      <div class="field">
+        <label for="semesterFilter">Semester</label>
+        <select id="semesterFilter"><option value="">Alle semester</option></select>
+      </div>
+      <button id="refreshBtn" class="btn btn-secondary" type="button">Oppdater</button>
+      <button id="exportBtn" class="btn btn-secondary" type="button">Eksporter CSV</button>
+    </div>
+
+    <div id="status" class="status"></div>
+  </section>
+
+  <section class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Barn</th>
+            <th>Født</th>
+            <th>Skøyter</th>
+            <th>Påmeldingskode</th>
+            <th>Semester</th>
+            <th>Mottatt</th>
+            <th>Språk</th>
+            <th>Annen informasjon</th>
+            <th>Navn veileder</th>
+            <th>Kommentar</th>
+            <th>Medlemsavgift</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<script>
+  const env = window.TKK_ENV || {};
+  const SUPABASE_URL = String(env.SUPABASE_URL || "").trim();
+  const SUPABASE_ANON_KEY = String(env.SUPABASE_PUBLISHABLE_KEY || "").trim();
+
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    throw new Error(
+      "Frontend-konfigurasjon mangler. Kontroller SUPABASE_URL og SUPABASE_PUBLISHABLE_KEY i Netlify."
+    );
+  }
+
+  const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const loginView = document.getElementById("loginView");
+  const appView = document.getElementById("appView");
+  const loginForm = document.getElementById("loginForm");
+  const loginMessage = document.getElementById("loginMessage");
+  const tableBody = document.getElementById("tableBody");
+  const statusEl = document.getElementById("status");
+  const searchInput = document.getElementById("searchInput");
+  const semesterFilter = document.getElementById("semesterFilter");
+  const userEmail = document.getElementById("userEmail");
+
+  let signups = [];
+  let currentRole = "";
+
+  function esc(value) {
+    return String(value == null ? "" : value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
+  function formatDate(value) {
+    if (!value) return "—";
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return String(value);
+    return new Intl.DateTimeFormat("no-NO", {
+      day: "2-digit", month: "2-digit", year: "numeric"
+    }).format(d);
+  }
+
+  function formatReceived(value) {
+    if (!value) return "—";
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return String(value);
+    return new Intl.DateTimeFormat("no-NO", {
+      day: "2-digit", month: "2-digit", year: "numeric",
+      hour: "2-digit", minute: "2-digit"
+    }).format(d);
+  }
+
+  function formatSkates(row) {
+    if (row.has_own_skates === true) return "Egne skøyter";
+    return row.requested_skate_size ? "Str. " + row.requested_skate_size : "—";
+  }
+
+  function setStatus(text, type = "") {
+    statusEl.textContent = text || "";
+    statusEl.className = "status" + (type ? " " + type : "");
+  }
+
+  async function getRole(email) {
+    const result = await client
+      .from("app_user_roles")
+      .select("role")
+      .eq("email", String(email || "").trim().toLowerCase())
+      .maybeSingle();
+
+    if (result.error) throw result.error;
+    return result.data ? String(result.data.role || "") : "";
+  }
+
+  async function requireAccess(session) {
+    if (!session || !session.user || !session.user.email) return false;
+
+    currentRole = await getRole(session.user.email);
+
+    if (!["idrettsrad", "admin"].includes(currentRole)) {
+      await client.auth.signOut();
+      throw new Error("Brukeren har ikke tilgang til Idrettsrådets oversikt.");
+    }
+
+    userEmail.textContent = session.user.email;
+    return true;
+  }
+
+  async function loadSignups() {
+    setStatus("Henter påmeldinger ...");
+
+    const result = await client
+      .from("skating_school_signups")
+      .select(
+        "id, child_name, birth_date, requested_skate_size, has_own_skates, " +
+        "access_code, access_code_id, batch_name, created_at, preferred_language, " +
+        "other_information, guide_name, council_comment, existing_member_id"
+      )
+      .or("access_code_id.not.is.null,access_code.not.is.null")
+      .order("created_at", { ascending: false });
+
+    if (result.error) throw result.error;
+
+    signups = result.data || [];
+
+    const memberIds = Array.from(new Set(
+      signups.map(row => row.existing_member_id).filter(Boolean)
+    ));
+
+    const feeByMemberId = new Map();
+
+    if (memberIds.length) {
+      const membersResult = await client
+        .from("members")
+        .select("id, membership_fee_paid")
+        .in("id", memberIds);
+
+      if (membersResult.error) throw membersResult.error;
+
+      (membersResult.data || []).forEach(member => {
+        feeByMemberId.set(String(member.id), member.membership_fee_paid === true);
+      });
+    }
+
+    signups.forEach(row => {
+      row.membership_fee_paid = row.existing_member_id
+        ? feeByMemberId.get(String(row.existing_member_id)) === true
+        : false;
+    });
+
+    rebuildSemesterFilter();
+    renderTable();
+    setStatus("Fant " + signups.length + " påmelding" + (signups.length === 1 ? "" : "er") + ".", "ok");
+  }
+
+  function rebuildSemesterFilter() {
+    const old = semesterFilter.value;
+    const values = Array.from(new Set(
+      signups.map(row => String(row.batch_name || "").trim()).filter(Boolean)
+    )).sort((a,b) => b.localeCompare(a, "no"));
+
+    semesterFilter.innerHTML = '<option value="">Alle semester</option>';
+    values.forEach(value => {
+      const opt = document.createElement("option");
+      opt.value = value;
+      opt.textContent = value;
+      semesterFilter.appendChild(opt);
+    });
+
+    if (values.includes(old)) semesterFilter.value = old;
+  }
+
+  function filteredRows() {
+    const q = searchInput.value.trim().toLowerCase();
+    const semester = semesterFilter.value;
+
+    return signups.filter(row => {
+      if (semester && String(row.batch_name || "") !== semester) return false;
+      if (!q) return true;
+
+      const haystack = [
+        row.child_name,
+        row.access_code,
+        row.batch_name,
+        row.preferred_language,
+        row.other_information,
+        row.guide_name,
+        row.council_comment
+      ].map(x => String(x || "").toLowerCase()).join(" ");
+
+      return haystack.includes(q);
+    });
+  }
+
+  function renderTable() {
+    tableBody.innerHTML = "";
+
+    const rows = filteredRows();
+
+    if (!rows.length) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = '<td colspan="11" class="muted">Ingen påmeldinger matcher filteret.</td>';
+      tableBody.appendChild(tr);
+      return;
+    }
+
+    rows.forEach(row => {
+      const tr = document.createElement("tr");
+
+      tr.innerHTML = `
+        <td><strong>${esc(row.child_name || "—")}</strong></td>
+        <td>${esc(formatDate(row.birth_date))}</td>
+        <td>${esc(formatSkates(row))}</td>
+        <td class="code">${esc(row.access_code || "—")}</td>
+        <td>${esc(row.batch_name || "—")}</td>
+        <td>${esc(formatReceived(row.created_at))}</td>
+        <td>${esc(row.preferred_language || "—")}</td>
+        <td>${esc(row.other_information || "—")}</td>
+        <td>
+          <input class="edit-input guide-input" value="${esc(row.guide_name || "")}" placeholder="Navn veileder">
+          <div class="saved-note"></div>
+        </td>
+        <td>
+          <textarea class="edit-comment comment-input" placeholder="Kommentar">${esc(row.council_comment || "")}</textarea>
+          <div class="saved-note"></div>
+        </td>
+        <td class="membership-fee-cell">—</td>
+      `;
+
+      const guide = tr.querySelector(".guide-input");
+      const comment = tr.querySelector(".comment-input");
+      const guideNote = guide.nextElementSibling;
+      const commentNote = comment.nextElementSibling;
+      const feeCell = tr.querySelector(".membership-fee-cell");
+
+      if (row.existing_member_id) {
+        feeCell.textContent = row.membership_fee_paid === true
+          ? "Betalt"
+          : "Ikke betalt";
+      } else {
+        feeCell.innerHTML = '<span class="muted">Ikke koblet til medlem</span>';
+      }
+
+      let guideOriginal = guide.value;
+      let commentOriginal = comment.value;
+
+      async function save() {
+        const nextGuide = guide.value.trim();
+        const nextComment = comment.value.trim();
+
+        if (nextGuide === guideOriginal && nextComment === commentOriginal) return;
+
+        guide.disabled = true;
+        comment.disabled = true;
+        tr.classList.add("saving");
+        guideNote.textContent = "Lagrer ...";
+        commentNote.textContent = "";
+
+        try {
+          const result = await client.rpc("idrettsrad_update_signup", {
+            p_signup_id: row.id,
+            p_guide_name: nextGuide || null,
+            p_council_comment: nextComment || null
+          });
+
+          if (result.error) throw result.error;
+
+          row.guide_name = nextGuide || null;
+          row.council_comment = nextComment || null;
+          guideOriginal = nextGuide;
+          commentOriginal = nextComment;
+
+          guideNote.textContent = "Lagret";
+          commentNote.textContent = "Lagret";
+
+          setTimeout(() => {
+            guideNote.textContent = "";
+            commentNote.textContent = "";
+          }, 1800);
+        } catch (error) {
+          guideNote.textContent = "";
+          commentNote.textContent = "";
+          setStatus("Kunne ikke lagre: " + (error.message || error), "error");
+        } finally {
+          guide.disabled = false;
+          comment.disabled = false;
+          tr.classList.remove("saving");
+        }
+      }
+
+      guide.addEventListener("change", save);
+      comment.addEventListener("change", save);
+
+      tableBody.appendChild(tr);
+    });
+  }
+
+
+  function csvEscape(value) {
+    const text = String(value == null ? "" : value);
+    if (/[;"\n\r]/.test(text)) {
+      return '"' + text.replace(/"/g, '""') + '"';
+    }
+    return text;
+  }
+
+  function exportVisibleRowsToCsv() {
+    const rows = filteredRows();
+
+    if (!rows.length) {
+      setStatus("Ingen rader å eksportere.", "error");
+      return;
+    }
+
+    const headers = [
+      "Barn",
+      "Født",
+      "Skøyter",
+      "Påmeldingskode",
+      "Semester",
+      "Mottatt",
+      "Språk",
+      "Annen informasjon",
+      "Navn veileder",
+      "Kommentar",
+      "Medlemsavgift"
+    ];
+
+    const lines = [headers.map(csvEscape).join(";")];
+
+    rows.forEach(row => {
+      lines.push([
+        row.child_name || "",
+        formatDate(row.birth_date),
+        formatSkates(row),
+        row.access_code || "",
+        row.batch_name || "",
+        formatReceived(row.created_at),
+        row.preferred_language || "",
+        row.other_information || "",
+        row.guide_name || "",
+        row.council_comment || "",
+        row.existing_member_id ? (row.membership_fee_paid ? "Betalt" : "Ikke betalt") : "Ikke koblet til medlem"
+      ].map(csvEscape).join(";"));
+    });
+
+    const csv = "\ufeff" + lines.join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    const semesterPart = semesterFilter.value
+      ? "-" + semesterFilter.value.replace(/\s+/g, "-").toLowerCase()
+      : "";
+
+    link.href = url;
+    link.download = "idrettsrad-pameldte" + semesterPart + ".csv";
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+
+    setStatus("Eksporterte " + rows.length + " rader.", "ok");
+  }
+
+  loginForm.addEventListener("submit", async event => {
+    event.preventDefault();
+    loginMessage.textContent = "Logger inn ...";
+    loginMessage.className = "status";
+
+    try {
+      const email = document.getElementById("loginEmail").value.trim();
+      const password = document.getElementById("loginPassword").value;
+
+      const result = await client.auth.signInWithPassword({ email, password });
+      if (result.error) throw result.error;
+
+      await requireAccess(result.data.session);
+
+      loginView.classList.add("hidden");
+      appView.classList.remove("hidden");
+      await loadSignups();
+    } catch (error) {
+      loginMessage.textContent = error.message || String(error);
+      loginMessage.className = "status error";
+    }
+  });
+
+  document.getElementById("logoutBtn").addEventListener("click", async () => {
+    await client.auth.signOut();
+    appView.classList.add("hidden");
+    loginView.classList.remove("hidden");
+    loginMessage.textContent = "";
+  });
+
+  document.getElementById("refreshBtn").addEventListener("click", () => {
+    loadSignups().catch(error => setStatus(error.message || String(error), "error"));
+  });
+
+  document.getElementById("exportBtn").addEventListener("click", exportVisibleRowsToCsv);
+
+  searchInput.addEventListener("input", renderTable);
+  semesterFilter.addEventListener("change", renderTable);
+
+  (async function init() {
+    try {
+      const result = await client.auth.getSession();
+      const session = result.data ? result.data.session : null;
+
+      if (!session) {
+        loginView.classList.remove("hidden");
+        return;
+      }
+
+      await requireAccess(session);
+      appView.classList.remove("hidden");
+      await loadSignups();
+    } catch (error) {
+      await client.auth.signOut();
+      appView.classList.add("hidden");
+      loginView.classList.remove("hidden");
+      loginMessage.textContent = error.message || String(error);
+      loginMessage.className = "status error";
+    }
+  })();
+</script>
+</body>
+</html>

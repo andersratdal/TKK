@@ -165,7 +165,7 @@
 
     .landing-grid {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 18px;
     }
     .landing-card {
@@ -885,144 +885,561 @@
 }
 
 
-
-/* Tilgangsstyring */
-.auth-gate {
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  padding: 24px 16px;
-  background:
-    radial-gradient(circle at top left, rgba(31,79,255,0.10), transparent 32%),
-    linear-gradient(180deg, #f7faff 0%, #edf3fb 100%);
-}
-.auth-card {
-  width: min(100%, 520px);
-  background: #fff;
-  border: 1px solid rgba(16,35,63,0.08);
-  border-radius: 24px;
-  box-shadow: var(--shadow, 0 18px 40px rgba(16,35,63,0.12));
-  padding: 24px;
-}
-.auth-card h1 { margin: 0; font-size: 28px; }
-.auth-card .auth-subtitle { margin-top: 8px; color: var(--muted); line-height: 1.5; }
-.auth-grid { display: grid; gap: 12px; margin-top: 18px; }
-.auth-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; align-items: center; }
-.auth-message { margin-top: 14px; white-space: pre-wrap; }
-.auth-topbar {
+/* Aktiv bruker / kontomeny - uten ekstra logo */
+.app-header {
   display: flex;
-  justify-content: space-between;
-  gap: 12px;
   align-items: center;
-  margin-bottom: 14px;
+  justify-content: flex-end;
+  min-height: 46px;
+  margin: 0 0 10px;
+  padding: 4px 0;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: rgba(247, 250, 255, 0.96);
+  backdrop-filter: blur(10px);
 }
-.auth-user-pill {
+
+.app-user-menu {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.app-user-button {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 10px;
-  border-radius: 999px;
-  background: #eef4ff;
+  background: transparent;
+  color: var(--text);
+  border: 0;
+  padding: 7px 8px;
+  font-size: 14px;
+  font-weight: 600;
+  max-width: 260px;
+}
+
+.app-user-button:hover {
   color: var(--accent);
-  font-size: 13px;
-  font-weight: 700;
+  background: var(--accent-soft);
 }
-.access-table-wrap { overflow-x: auto; }
-.access-role-badge {
-  display: inline-block;
-  padding: 5px 9px;
+
+.app-user-icon {
+  width: 30px;
+  height: 30px;
+  border: 1px solid #bfd2ef;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  font-size: 17px;
+  background: #fff;
+}
+
+.app-user-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app-user-dropdown {
+  position: absolute;
+  top: calc(100% + 7px);
+  right: 0;
+  min-width: 185px;
+  background: #fff;
+  border: 1px solid rgba(16,35,63,0.10);
+  border-radius: 14px;
+  box-shadow: 0 14px 34px rgba(16,35,63,0.18);
+  padding: 8px;
+  z-index: 1400;
+}
+
+.app-user-dropdown button {
+  width: 100%;
+  display: block;
+  text-align: left;
+  background: transparent;
+  color: var(--text);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.app-user-dropdown button:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+@media (max-width: 600px) {
+  .app-header { margin-bottom: 6px; }
+  .app-user-label { max-width: 145px; }
+}
+
+
+/* Underfaner for Skøyteskole */
+.school-tabs-card {
+  background: var(--card);
+  border: 1px solid rgba(16,35,63,0.06);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 12px;
+  margin-bottom: 14px;
+}
+
+.school-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.school-tab {
+  background: #e7edf5;
+  color: var(--text);
   border-radius: 999px;
-  background: #eef2ff;
-  color: #3730a3;
-  font-size: 12px;
+  padding: 9px 13px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.school-tab.active {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.school-section-hidden {
+  display: none !important;
+}
+
+@media (max-width: 600px) {
+  .school-tabs-card {
+    padding: 10px;
+    border-radius: 16px;
+  }
+
+  .school-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .school-tab {
+    border-radius: 12px;
+    padding: 10px 8px;
+    font-size: 13px;
+  }
+}
+
+
+/* Semesteradministrasjon */
+.school-batch-admin-list {
+  display: grid;
+  gap: 10px;
+}
+
+.school-batch-admin-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.5fr) minmax(140px, 1fr) 120px 120px minmax(150px, 0.8fr);
+  gap: 10px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.school-batch-admin-name {
   font-weight: 700;
 }
+
+.school-batch-admin-meta {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.school-batch-status-select {
+  width: 100%;
+}
+
+@media (max-width: 760px) {
+  .school-batch-admin-row {
+    grid-template-columns: 1fr;
+    gap: 7px;
+  }
+}
+
+
+    .school-overview-chart {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 34px;
+      flex-wrap: wrap;
+      margin-top: 18px;
+      padding: 10px 0 4px;
+    }
+    .school-pie-wrap {
+      width: 280px;
+      max-width: 100%;
+      aspect-ratio: 1 / 1;
+      position: relative;
+    }
+    .school-pie-wrap canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .school-overview-total {
+      min-width: 150px;
+      text-align: center;
+    }
+    .school-overview-total-label {
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .school-overview-total-number {
+      font-size: 48px;
+      line-height: 1;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .school-pie-legend {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 14px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .school-pie-legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .school-pie-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      display: inline-block;
+    }
+    .school-pie-dot.blue { background: #60a5fa; }
+    .school-pie-dot.yellow { background: #facc15; }
+    .school-pie-dot.red { background: #f87171; }
+
+    @media (max-width: 600px) {
+      .school-overview-chart {
+        gap: 18px;
+      }
+      .school-pie-wrap {
+        width: 230px;
+      }
+      .school-overview-total-number {
+        font-size: 40px;
+      }
+    }
+
+
+    .school-batch-edit-panel.hidden {
+      display: none !important;
+    }
+
+    .school-batch-edit-panel .form-grid {
+      align-items: end;
+    }
 
 </style>
+
+<style>
+#authLoginView {
+  min-height: 100vh;
+  display: grid;
+  place-items: start center;
+  padding: 38px 18px;
+  background:
+    radial-gradient(circle at top left, rgba(31,79,255,0.10), transparent 32%),
+    linear-gradient(180deg, #f7faff 0%, #edf3fb 100%);
+  color: #132238;
+  font-family: Arial, Helvetica, sans-serif;
+}
+.auth-login-card {
+  width: min(100%, 520px);
+  background: #fff;
+  border: 1px solid rgba(16,35,63,0.08);
+  border-radius: 22px;
+  box-shadow: 0 18px 40px rgba(16,35,63,0.12);
+  padding: 26px;
+}
+.auth-login-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.auth-login-brand img {
+  width: 42px;
+  height: auto;
+  display: block;
+}
+.auth-login-card h1 {
+  margin: 0;
+  font-size: 32px;
+}
+.auth-login-help {
+  color: #64748b;
+  margin: 8px 0 22px;
+  line-height: 1.45;
+}
+.auth-login-card label {
+  display: block;
+  margin: 14px 0 6px;
+  font-weight: 700;
+}
+.auth-login-card input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  font: inherit;
+}
+.auth-login-actions {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.auth-login-actions button {
+  background: #003a8f;
+  color: #fff;
+  border: 0;
+  border-radius: 12px;
+  padding: 11px 16px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.auth-login-actions .auth-login-secondary {
+  background: transparent;
+  color: #003a8f;
+}
+.auth-login-message {
+  margin-top: 14px;
+  color: #991b1b;
+  white-space: pre-wrap;
+}
+.auth-login-message.ok {
+  color: #166534;
+}
+.auth-forgot-form.hidden {
+  display: none !important;
+}
+</style>
+
+<script src="env-config.js"></script>
 </head>
 <body>
-<div class="auth-gate" id="authGate">
-  <div class="auth-card">
-    <div class="eyebrow">Trondheim Kortbaneklubb</div>
-    <h1>Logg inn</h1>
-    <div class="auth-subtitle">Logg inn med e-post og passord for å bruke appen.</div>
+<div class="container">
 
-    <div class="auth-grid hidden" id="authConfigBox">
-      <div class="notice">Første gang på denne enheten: lim inn Supabase URL og anon public key.</div>
-      <div>
-        <label for="authSupabaseUrl">Supabase URL</label>
-        <input id="authSupabaseUrl" placeholder="https://xxxxx.supabase.co" />
-      </div>
-      <div>
-        <label for="authSupabaseAnonKey">Supabase anon public key</label>
-        <input id="authSupabaseAnonKey" placeholder="eyJ..." />
-      </div>
-      <button class="btn-secondary" id="btnSaveAuthConfig" type="button">Lagre Supabase-oppsett</button>
+<header class="app-header">
+  <div class="app-user-menu">
+    <button class="app-user-button" id="appUserButton" type="button"
+            aria-haspopup="true" aria-expanded="false" title="Brukermeny">
+      <span class="app-user-icon" aria-hidden="true">👤</span>
+      <span class="app-user-label" id="appUserLabel">Konto</span>
+      <span aria-hidden="true">⌄</span>
+    </button>
+    <div class="app-user-dropdown hidden" id="appUserDropdown">
+      <button type="button" id="appUserChangePassword">Endre passord</button>
+      <button type="button" id="appUserLogout">Logg ut</button>
     </div>
-
-    <form id="loginForm" class="auth-grid">
-      <div>
-        <label for="loginEmail">E-post</label>
-        <input id="loginEmail" type="email" autocomplete="email" required />
-      </div>
-      <div>
-        <label for="loginPassword">Passord</label>
-        <input id="loginPassword" type="password" autocomplete="current-password" required />
-      </div>
-      <div class="auth-actions">
-        <button class="btn-primary" type="submit">Logg inn</button>
-        <button class="btn-secondary" id="btnShowForgotPassword" type="button">Glemt passord</button>
-      </div>
-      <div class="help auth-message" id="loginMessage"></div>
-    </form>
-
-    <form id="forgotPasswordForm" class="auth-grid hidden">
-      <div class="notice">Skriv inn e-postadressen din, så sender vi en lenke for å lage nytt passord.</div>
-      <div>
-        <label for="forgotPasswordEmail">E-post</label>
-        <input id="forgotPasswordEmail" type="email" autocomplete="email" required />
-      </div>
-      <div class="auth-actions">
-        <button class="btn-primary" type="submit">Send passordlenke</button>
-        <button class="btn-secondary" id="btnCancelForgotPassword" type="button">Tilbake</button>
-      </div>
-      <div class="help auth-message" id="forgotPasswordMessage"></div>
-    </form>
   </div>
-</div>
+</header>
 
-<div class="modal-backdrop hidden" id="passwordModal">
-  <div class="modal-card" style="max-width:520px;">
-    <div class="modal-header">
-      <div>
-        <h2 class="modal-title" id="passwordModalTitle">Endre passord</h2>
-        <div class="help" id="passwordModalHelp" style="margin-top:8px;">Velg et nytt passord på minst 8 tegn.</div>
-      </div>
-      <button class="btn-secondary" id="btnClosePasswordModal" type="button">Lukk</button>
-    </div>
-    <form id="changePasswordForm" class="form-grid">
-      <div class="col-12">
-        <label for="newPassword">Nytt passord</label>
-        <input id="newPassword" type="password" autocomplete="new-password" required />
-      </div>
-      <div class="col-12">
-        <label for="newPasswordConfirm">Gjenta nytt passord</label>
-        <input id="newPasswordConfirm" type="password" autocomplete="new-password" required />
-      </div>
-      <div class="col-12">
-        <button class="btn-primary" type="submit">Lagre nytt passord</button>
-      </div>
-      <div class="col-12 help auth-message" id="passwordMessage"></div>
-    </form>
-  </div>
-</div>
+<script>
+(function () {
+  const CONFIG_KEY = "skoyteutleie_supabase_config_v7";
 
-<div class="container hidden" id="appShell">
-<div class="auth-topbar" id="authTopbar">
-  <div class="auth-user-pill" id="authUserPill">Ikke innlogget</div>
-  <button class="btn-secondary btn-small" id="btnChangePassword" type="button">Endre passord</button>
-  <button class="btn-secondary btn-small" id="btnLogout" type="button">Logg ut</button>
-</div>
+  function getStoredConfig() {
+    const env = window.TKK_ENV || {};
+
+    if (env.SUPABASE_URL && env.SUPABASE_PUBLISHABLE_KEY) {
+      return {
+        url: env.SUPABASE_URL,
+        anonKey: env.SUPABASE_PUBLISHABLE_KEY
+      };
+    }
+
+    try {
+      const raw = localStorage.getItem(CONFIG_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (error) {
+      console.warn("Kunne ikke lese Supabase-oppsett:", error);
+      return {};
+    }
+  }
+
+  function makeUserAuthClient() {
+    const cfg = getStoredConfig();
+
+    if (
+      !window.supabase ||
+      !window.supabase.createClient ||
+      !cfg.url ||
+      !cfg.anonKey
+    ) {
+      return null;
+    }
+
+    try {
+      return window.supabase.createClient(cfg.url, cfg.anonKey);
+    } catch (error) {
+      console.warn("Kunne ikke opprette auth-klient:", error);
+      return null;
+    }
+  }
+
+  async function initStandaloneUserMenu() {
+    const button = document.getElementById("appUserButton");
+    const label = document.getElementById("appUserLabel");
+    const dropdown = document.getElementById("appUserDropdown");
+    const logoutButton = document.getElementById("appUserLogout");
+    const passwordButton = document.getElementById("appUserChangePassword");
+
+    if (!button || !dropdown || !logoutButton) return;
+
+    const authClient = makeUserAuthClient();
+
+    // Vis aktiv bruker når vi kan hente sesjonen.
+    if (authClient && label) {
+      try {
+        const sessionResult = await authClient.auth.getSession();
+        const session = sessionResult?.data?.session || null;
+        label.textContent = session?.user?.email || "Konto";
+      } catch (error) {
+        console.warn("Kunne ikke hente bruker:", error);
+        label.textContent = "Konto";
+      }
+    }
+
+    button.onclick = function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const opening = dropdown.classList.contains("hidden");
+      dropdown.classList.toggle("hidden");
+      button.setAttribute("aria-expanded", opening ? "true" : "false");
+    };
+
+    document.addEventListener("click", function (event) {
+      if (!event.target.closest(".app-user-menu")) {
+        dropdown.classList.add("hidden");
+        button.setAttribute("aria-expanded", "false");
+      }
+    });
+
+    logoutButton.onclick = async function (event) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      dropdown.classList.add("hidden");
+      logoutButton.disabled = true;
+      logoutButton.textContent = "Logger ut...";
+
+      try {
+        // Supabase-utlogging hvis klienten kan opprettes.
+        if (authClient && authClient.auth) {
+          try {
+            const signOutResult = await authClient.auth.signOut({ scope: "local" });
+            if (signOutResult?.error) {
+              console.warn("Supabase signOut:", signOutResult.error);
+            }
+          } catch (signOutError) {
+            // Fortsett med lokal opprydding selv om Supabase-kallet feiler.
+            console.warn("Supabase signOut feilet:", signOutError);
+          }
+        }
+
+        // Rydd alle kjente Supabase auth-nøkler lokalt.
+        const clearAuthStorage = function (storage) {
+          if (!storage) return;
+          const remove = [];
+
+          for (let i = 0; i < storage.length; i += 1) {
+            const key = storage.key(i);
+            if (!key) continue;
+
+            const lower = key.toLowerCase();
+            if (
+              lower.includes("auth-token") ||
+              lower.includes("supabase.auth.token") ||
+              (lower.startsWith("sb-") && lower.includes("auth"))
+            ) {
+              remove.push(key);
+            }
+          }
+
+          remove.forEach(function (key) {
+            storage.removeItem(key);
+          });
+        };
+
+        try { clearAuthStorage(window.localStorage); } catch (_) {}
+        try { clearAuthStorage(window.sessionStorage); } catch (_) {}
+
+        // Vis tydelig at knappen faktisk ble kjørt før navigering.
+        logoutButton.textContent = "Logget ut";
+
+        // Hard navigering til ren URL.
+        window.location.href = window.location.origin + window.location.pathname + "?logged_out=1";
+      } catch (error) {
+        console.error("Utlogging feilet:", error);
+        logoutButton.disabled = false;
+        logoutButton.textContent = "Logg ut";
+        window.alert("Kunne ikke logge ut: " + (error?.message || error));
+      }
+    };
+
+    if (passwordButton) {
+      passwordButton.onclick = async function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        dropdown.classList.add("hidden");
+
+        if (!authClient || !authClient.auth) {
+          window.alert("Supabase-oppsett mangler.");
+          return;
+        }
+
+        const password = window.prompt("Skriv inn nytt passord (minst 6 tegn):");
+        if (password === null) return;
+
+        if (password.length < 6) {
+          window.alert("Passordet må ha minst 6 tegn.");
+          return;
+        }
+
+        try {
+          const result = await authClient.auth.updateUser({ password });
+          if (result?.error) throw result.error;
+          window.alert("Passordet er oppdatert.");
+        } catch (error) {
+          console.error(error);
+          window.alert("Kunne ikke endre passord: " + (error?.message || error));
+        }
+      };
+    }
+  }
+
+  // Scriptet ligger rett etter headeren, så elementene finnes allerede.
+  initStandaloneUserMenu().catch(function (error) {
+    console.error("Brukermeny kunne ikke startes:", error);
+  });
+})();
+</script>
+
+
 <div id="homeView">
 <div class="brand">
 <img alt="Trondheim Kortbaneklubb" src="logo.png"/>
@@ -1157,16 +1574,32 @@
 </div>
 
 
+
+
 <div class="section-card hidden" id="skatingSchoolTab">
+
+  <div class="school-tabs-card">
+    <div class="school-tabs" role="tablist" aria-label="Skøyteskole faner">
+      <button type="button" class="school-tab active" data-school-tab="school">Deltakere</button>
+      <button type="button" class="school-tab" id="schoolSignupCodesLink">Påmeldingskoder</button>
+    <button type="button" class="school-tab" data-school-tab="signupForms">Påmeldingsskjema</button>
+    </div>
+  </div>
+
+  
+
+  <div id="schoolMainSection">
+
+
   <div class="section-card">
     <div class="section-header">
       <div>
-        <h2>Partier</h2>
-        <div class="help" style="margin-top:8px;">Velg et parti for å se gruppeoversikten og deltakerne.</div>
+        <h2>Semester</h2>
+        <div class="help" style="margin-top:8px;">Velg et semester for å se gruppeoversikten og deltakerne.</div>
       </div>
       <div class="toolbar">
         <select id="schoolBatchPicker">
-          <option value="">Velg parti</option>
+          <option value="">Velg semester</option>
         </select>
       </div>
     </div>
@@ -1176,8 +1609,8 @@
   <div class="section-card">
     <div class="section-header">
       <div>
-        <h2>Deltakere i valgt parti</h2>
-        <div class="help" style="margin-top:8px;">Her kan du legge medlemmer inn i valgt parti og manuelt fordele dem til skøyteskolegrupper.</div>
+        <h2>Deltakere i valgt semester</h2>
+        <div class="help" style="margin-top:8px;">Her vises deltakerne fordelt på gruppene. Du kan flytte deltakere mellom Blå, Gul og Rød.</div>
       </div>
       <div class="toolbar">
         <input id="schoolParticipantSearch" placeholder="Søk medlem..." />
@@ -1199,22 +1632,37 @@
       </div>
       <div class="toolbar">
         <input id="schoolSignupSearch" placeholder="Søk på navn, telefon eller e-post..." />
-        <select id="schoolSignupStatusFilter">
-          <option value="">Alle statuser</option>
-          <option value="Ny">Ny</option>
-          <option value="Behandles">Behandles</option>
-          <option value="Klar for medlem">Klar for medlem</option>
-          <option value="Ferdig">Ferdig</option>
-          <option value="Avvist">Avvist</option>
-        </select>
-        <button class="btn-secondary btn-small" id="btnSelectAllSchoolSignups" type="button">Velg alle viste</button>
-        <button class="btn-secondary btn-small" id="btnClearSchoolSignupsSelection" type="button">Fjern valg</button>
+        
+        
         <button class="btn-primary btn-small" id="btnMoveSelectedSchoolSignups" type="button">Flytt valgte til deltakere</button>
       </div>
     </div>
     <div class="help" id="schoolSignupMessage" style="margin-top:10px;"></div>
     <div id="schoolSignupsWrap"></div>
   </div>
+  </div>
+
+
+  <div class="section-card hidden" id="schoolSignupFormsPanel" data-school-panel="signupForms">
+    <div class="section-header">
+      <div>
+        <h2>Påmeldingsskjema</h2>
+        <div class="help" style="margin-top:8px;">
+          Velg hvilket påmeldingsskjema du vil åpne.
+        </div>
+      </div>
+    </div>
+
+    <div class="toolbar" style="margin-top:16px;">
+      <a href="pamelding-kode.html" target="_blank" class="btn-primary" style="text-decoration:none; display:inline-block;">
+        Med kode
+      </a>
+      <a href="pamelding.html" target="_blank" class="btn-secondary" style="text-decoration:none; display:inline-block;">
+        Vanlig påmelding
+      </a>
+    </div>
+  </div>
+
 </div>
 
 <div class="hidden" id="adminTab">
@@ -1227,38 +1675,9 @@
     <button type="button" class="admin-tab" data-admin-tab="import">Import</button>
     <button type="button" class="admin-tab" data-admin-tab="labels">QR / NFC</button>
     <button type="button" class="admin-tab" data-admin-tab="settings">Innstillinger</button>
-    <button type="button" class="admin-tab" data-admin-tab="access">Tilgang</button>
   </div>
 </div>
 
-<div class="section-card" data-admin-section="access">
-  <h2>Tilgangsstyring</h2>
-  <div class="help" style="margin-top:8px;">Opprett nye innloggingsbrukere med midlertidig passord, og velg hvilken rolle de skal ha.</div>
-  <form class="form-grid" id="accessRoleForm" style="margin-top:14px;">
-    <div class="col-4">
-      <label for="accessEmail">E-post</label>
-      <input id="accessEmail" type="email" placeholder="navn@epost.no" required />
-    </div>
-    <div class="col-3">
-      <label for="accessPassword">Midlertidig passord</label>
-      <input id="accessPassword" type="text" placeholder="Minst 8 tegn" autocomplete="new-password" />
-    </div>
-    <div class="col-3">
-      <label for="accessRole">Rolle</label>
-      <select id="accessRole">
-        <option value="admin">Admin</option>
-        <option value="utlan">Utlån</option>
-        <option value="skoyteskole">Skøyteskole</option>
-      </select>
-    </div>
-    <div class="col-2">
-      <label>&nbsp;</label>
-      <button class="btn-primary" type="submit">Opprett bruker</button>
-    </div>
-  </form>
-  <div class="help" id="accessRoleMessage" style="margin-top:10px;"></div>
-  <div class="access-table-wrap" id="accessRolesWrap"></div>
-</div>
 
 <div class="section-card">
 <h2>Avdelinger</h2>
@@ -1276,9 +1695,81 @@
 </form>
 <div id="departmentsWrap"></div>
 </div>
-<div class="section-card">
+
+<!-- Skøyteskoleadministrasjon flyttet fra Skøyteskole -> Admin til Admin -> Avdelinger -->
+<div class="section-card" data-admin-section="departments">
+    <div class="section-header">
+      <div>
+        <h2>Opprett semester</h2>
+        <div class="help" style="margin-top:8px;">
+          Opprett et nytt semester for skøyteskolen. Standardgruppene Blå, Gul og Rød opprettes sammen med semesteret.
+        </div>
+      </div>
+    </div>
+
+    <form class="form-grid" id="schoolBatchForm" style="margin-top:14px;">
+      <div class="col-3">
+        <label for="schoolBatchDepartment">Avdeling</label>
+        <select id="schoolBatchDepartment" required>
+          <option value="">Velg avdeling</option>
+        </select>
+      </div>
+
+      <div class="col-3">
+        <label for="schoolBatchName">Semesternavn</label>
+        <input id="schoolBatchName" type="text" placeholder="For eksempel Høst 2026" required />
+      </div>
+
+      <div class="col-3">
+        <label for="schoolBatchStatus">Status</label>
+        <select id="schoolBatchStatus">
+          <option value="Planlagt">Planlagt</option>
+          <option value="Aktiv">Aktiv</option>
+          <option value="Avsluttet">Avsluttet</option>
+        </select>
+      </div>
+
+      <div class="col-3">
+        <label>&nbsp;</label>
+        <button class="btn-primary" type="submit">Opprett semester</button>
+      </div>
+
+      <div class="col-3">
+        <label for="schoolBatchStartDate">Startdato</label>
+        <input id="schoolBatchStartDate" type="date" />
+      </div>
+
+      <div class="col-3">
+        <label for="schoolBatchEndDate">Sluttdato</label>
+        <input id="schoolBatchEndDate" type="date" />
+      </div>
+
+      <div class="col-12">
+        <div class="help" id="schoolBatchMessage"></div>
+      </div>
+    </form>
+  </div>
+
+  <div class="section-card" data-admin-section="departments">
+    <div class="section-header">
+      <div>
+        <h2>Eksisterende semester</h2>
+        <div class="help" style="margin-top:8px;">
+          Her kan du se registrerte semester, endre status og redigere navn og datoer.
+        </div>
+      </div>
+      <div class="toolbar">
+        <button class="btn-secondary btn-small" id="btnRefreshSchoolBatches" type="button">Oppdater</button>
+      </div>
+    </div>
+
+    <div class="help" id="schoolBatchListMessage" style="margin-top:10px;"></div>
+    <div id="schoolBatchAdminListWrap" style="margin-top:12px;"></div>
+  </div>
+
+<div class="section-card" data-admin-section="settings">
 <h2>Oppsett</h2>
-<div class="notice">Supabase-oppsettet er lagt inn i appen. Vanlige brukere trenger ikke fylle inn URL eller nøkkel.</div>
+<div class="notice">Lim inn Supabase URL og anon public key. Trykk deretter <strong>Lagre innstillinger</strong>.</div>
 <form class="form-grid" id="configForm" style="margin-top: 14px;">
 <div class="col-6">
 <label for="supabaseUrl">Supabase URL</label>
@@ -1289,14 +1780,14 @@
 <input id="supabaseAnonKey" placeholder="eyJ..."/>
 </div>
 <div class="col-12">
-<button class="btn-primary" type="submit">Test / lagre oppsett</button>
+<button class="btn-primary" type="submit">Lagre innstillinger</button>
 <span class="help" id="configMessage"></span>
 </div>
 </form>
 </div>
 <div class="section-card">
 <h2>Spond-import</h2>
-<div class="help" style="margin-top:8px;">Last opp Excel-eksport fra Spond. Velg avdeling først. Bare grupper som hører til valgt avdeling blir opprettet eller oppdatert.</div>
+<div class="help" style="margin-top:8px;">Last opp Excel-eksport fra Spond. For Skøyteskole opprettes manglende semester automatisk fra godkjente semesterkolonner. Godkjente navn er September &lt;Årstall&gt;, Høst &lt;Årstall&gt;, Vinter &lt;Årstall&gt; og Vår &lt;Årstall&gt;. Barn importeres til semester der de har X.</div>
 <div class="form-grid" style="margin-top: 14px;">
 <div class="col-4">
 
@@ -1526,6 +2017,9 @@
 <select id="filterMemberDepartment">
 <option value="">Alle avdelinger</option>
 </select>
+<select id="filterMemberSemester" class="hidden">
+<option value="">Alle semester</option>
+</select>
 <select id="filterMemberGroup">
 <option value="">Alle grupper</option>
 </select>
@@ -1577,6 +2071,9 @@
 <div class="toolbar">
 <select id="reportDepartmentFilter">
 <option value="">Alle avdelinger</option>
+</select>
+<select id="reportSemesterFilter" class="hidden">
+<option value="">Alle semester</option>
 </select>
 </div>
 </div>
@@ -1633,14 +2130,10 @@
 
 <script>
     const CONFIG_KEY = "skoyteutleie_supabase_config_v7";
-    const HARDCODED_SUPABASE_URL = "https://dcfhisxyiuatftzjtuwz.supabase.co";
-    const HARDCODED_SUPABASE_ANON_KEY = "sb_publishable_W_3O4m4r0aZ3ukSOJVTcHw_Gy6W6uj9";
     const UI_PREFS_KEY = "skoyteutleie_ui_prefs_v1";
     let supabaseClient = null;
     let sortState = { skates: { key: null, asc: true }, members: { key: null, asc: true } };
-let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], departments: [], schoolBatches: [], schoolGroups: [], schoolEnrollments: [], schoolSignups: [], schoolSignupsLoadError: "", selectedSchoolSignupIds: [], accessRoles: [] };
-    let currentUser = null;
-    let currentRole = null;
+let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], departments: [], schoolBatches: [], schoolGroups: [], schoolEnrollments: [], schoolSignups: [], schoolSignupsLoadError: "", selectedSchoolSignupIds: [] };
     let missingContactOnly = false;
     let editingMemberId = null;
     let editingSkateId = null;
@@ -1656,206 +2149,7 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
     let returnQrLastText = "";
     let loanMemberQrLastText = "";
 
-    
-function byId(id) { return document.getElementById(id); }
-
-    function normalizeEmail(value) {
-      return String(value || "").trim().toLowerCase();
-    }
-
-    function setLoginMessage(message, isError) {
-      const el = byId("loginMessage");
-      if (!el) return;
-      el.textContent = message || "";
-      el.className = isError ? "help auth-message msg-error" : "help auth-message msg-ok";
-    }
-
-    function setForgotPasswordMessage(message, isError) {
-      const el = byId("forgotPasswordMessage");
-      if (!el) return;
-      el.textContent = message || "";
-      el.className = isError ? "help auth-message msg-error" : "help auth-message msg-ok";
-    }
-
-    function setPasswordMessage(message, isError) {
-      const el = byId("passwordMessage");
-      if (!el) return;
-      el.textContent = message || "";
-      el.className = isError ? "help auth-message msg-error" : "help auth-message msg-ok";
-    }
-
-    function showForgotPasswordForm(show) {
-      const loginForm = byId("loginForm");
-      const forgotForm = byId("forgotPasswordForm");
-      if (loginForm) loginForm.classList.toggle("hidden", !!show);
-      if (forgotForm) forgotForm.classList.toggle("hidden", !show);
-      setForgotPasswordMessage("", false);
-      if (show && byId("forgotPasswordEmail")) {
-        const loginEmail = byId("loginEmail") ? byId("loginEmail").value : "";
-        byId("forgotPasswordEmail").value = loginEmail || "";
-        byId("forgotPasswordEmail").focus();
-      }
-    }
-
-    function showPasswordModal(title, helpText) {
-      const modal = byId("passwordModal");
-      if (!modal) return;
-      if (byId("passwordModalTitle")) byId("passwordModalTitle").textContent = title || "Endre passord";
-      if (byId("passwordModalHelp")) byId("passwordModalHelp").textContent = helpText || "Velg et nytt passord på minst 8 tegn.";
-      if (byId("changePasswordForm")) byId("changePasswordForm").reset();
-      setPasswordMessage("", false);
-      modal.classList.remove("hidden");
-      setTimeout(function () { if (byId("newPassword")) byId("newPassword").focus(); }, 50);
-    }
-
-    function hidePasswordModal() {
-      const modal = byId("passwordModal");
-      if (modal) modal.classList.add("hidden");
-      setPasswordMessage("", false);
-    }
-
-    let isPasswordRecoveryMode = false;
-
-    function enterPasswordRecoveryMode(session) {
-      isPasswordRecoveryMode = true;
-      currentUser = session && session.user ? session.user : currentUser;
-      if (byId("authGate")) byId("authGate").classList.add("hidden");
-      if (byId("appShell")) byId("appShell").classList.add("hidden");
-      showPasswordModal("Lag nytt passord", "Skriv inn et nytt passord på minst 8 tegn.");
-    }
-
-    function looksLikePasswordRecoveryUrl() {
-      const hash = new URLSearchParams((window.location.hash || "").replace(/^#/, ""));
-      const search = new URLSearchParams(window.location.search || "");
-      return hash.get("type") === "recovery" || search.get("type") === "recovery" || search.get("reset") === "1" || search.has("code");
-    }
-
-    function getAuthRedirectUrl() {
-      return "https://tkkadmin.netlify.app/index.html?reset=1";
-    }
-
-    function getRoleLabel(role) {
-      if (role === "admin") return "Admin";
-      if (role === "utlan") return "Utlån";
-      if (role === "skoyteskole") return "Skøyteskole";
-      return "Ukjent";
-    }
-
-    function roleCanOpen(sectionId) {
-      if (currentRole === "admin") return true;
-      if (currentRole === "utlan") return ["loanTab", "returnTab", "reportsTab", "adminTab"].includes(sectionId);
-      if (currentRole === "skoyteskole") return sectionId === "skatingSchoolTab";
-      return false;
-    }
-
-    function roleDefaultSection() {
-      if (currentRole === "skoyteskole") return "skatingSchoolTab";
-      return "loanTab";
-    }
-
-    function applyAccessControl() {
-      const appShell = byId("appShell");
-      const authGate = byId("authGate");
-      if (authGate) authGate.classList.toggle("hidden", !!currentUser && !!currentRole);
-      if (appShell) appShell.classList.toggle("hidden", !currentUser || !currentRole);
-
-      const pill = byId("authUserPill");
-      if (pill) {
-        const email = currentUser && currentUser.email ? currentUser.email : "Ikke innlogget";
-        pill.textContent = currentRole ? email + " · " + getRoleLabel(currentRole) : email;
-      }
-
-      document.querySelectorAll("[data-target]").forEach((el) => {
-        const target = el.getAttribute("data-target");
-        const allowed = roleCanOpen(target);
-        el.classList.toggle("hidden", !allowed);
-      });
-
-      const signupLink = document.querySelector('a[href="pamelding.html"]');
-      if (signupLink && signupLink.parentElement) signupLink.parentElement.classList.toggle("hidden", currentRole !== "admin");
-
-      const admin = byId("adminTab");
-      if (admin) {
-        admin.querySelectorAll(".admin-tab").forEach((btn) => {
-          const key = btn.dataset.adminTab || "";
-          let allowed = currentRole === "admin";
-          if (currentRole === "utlan") allowed = ["skates", "members"].includes(key);
-          btn.classList.toggle("hidden", !allowed);
-        });
-
-        admin.querySelectorAll(":scope > .section-card").forEach((card) => {
-          const key = card.dataset.adminSection || getAdminSectionKey(card);
-          let allowed = currentRole === "admin";
-          if (currentRole === "utlan") allowed = ["skates", "members"].includes(key);
-          card.classList.toggle("hidden", !allowed);
-        });
-      }
-    }
-
-    async function loadCurrentRole() {
-      if (!supabaseClient) throw new Error("Supabase er ikke konfigurert.");
-      const userResult = await supabaseClient.auth.getUser();
-      if (userResult.error) throw userResult.error;
-      const user = userResult.data && userResult.data.user;
-      currentUser = user || null;
-      currentRole = null;
-
-      if (!currentUser || !currentUser.email) return false;
-
-      const { data, error } = await supabaseClient
-        .from("app_user_roles")
-        .select("role")
-        .eq("email", normalizeEmail(currentUser.email))
-        .maybeSingle();
-
-      if (error) throw error;
-      if (!data || !data.role) {
-        await supabaseClient.auth.signOut();
-        currentUser = null;
-        currentRole = null;
-        throw new Error("Brukeren er innlogget, men har ikke fått tilgangsrolle. Be en admin legge til e-postadressen i Tilgangsstyring.");
-      }
-
-      currentRole = data.role;
-      return true;
-    }
-
-    async function completeLoginFlow() {
-      const ok = await loadCurrentRole();
-      applyAccessControl();
-      if (ok) {
-        setupAdminTabs();
-        applyAccessControl();
-        await loadAll();
-        startAutoRefresh();
-        goHome();
-      }
-      return ok;
-    }
-
-    async function handleLogout() {
-      try {
-        await stopLoanQrScanner();
-        await stopReturnQrScanner();
-        await stopLoanMemberQrScanner();
-      } catch (e) {}
-      if (supabaseClient && supabaseClient.auth) await supabaseClient.auth.signOut();
-      currentUser = null;
-      currentRole = null;
-      applyAccessControl();
-      setLoginMessage("Du er logget ut.", false);
-    }
-
-
-    async function getFunctionAuthHeaders() {
-      const headers = { "Content-Type": "application/json" };
-      if (!supabaseClient || !supabaseClient.auth) return headers;
-      const { data } = await supabaseClient.auth.getSession();
-      const token = data && data.session && data.session.access_token;
-      if (token) headers.Authorization = "Bearer " + token;
-      return headers;
-    }
-
+    function byId(id) { return document.getElementById(id); }
     function safeText(value) { return value === null || value === undefined || value === "" ? "-" : String(value); }
     function escapeHtml(value) {
       return String(value)
@@ -1907,12 +2201,24 @@ function byId(id) { return document.getElementById(id); }
     }
 
     function loadConfig() {
-      return { url: HARDCODED_SUPABASE_URL, anonKey: HARDCODED_SUPABASE_ANON_KEY };
+      const env = window.TKK_ENV || {};
+
+      if (env.SUPABASE_URL && env.SUPABASE_PUBLISHABLE_KEY) {
+        return {
+          url: env.SUPABASE_URL,
+          anonKey: env.SUPABASE_PUBLISHABLE_KEY
+        };
+      }
+
+      try {
+        const raw = localStorage.getItem(CONFIG_KEY);
+        return raw ? JSON.parse(raw) : {};
+      } catch (e) {
+        console.error(e);
+        return {};
+      }
     }
-    function saveConfig(config) {
-      // Supabase-oppsett er hardkodet i appen. Beholder funksjonen for bakoverkompatibilitet.
-      try { localStorage.setItem(CONFIG_KEY, JSON.stringify(loadConfig())); } catch (e) { console.error(e); }
-    }
+    function saveConfig(config) { localStorage.setItem(CONFIG_KEY, JSON.stringify(config)); }
     function setConfigMessage(message, isError) {
       const el = byId("configMessage");
       if (!el) return;
@@ -1945,10 +2251,6 @@ function byId(id) { return document.getElementById(id); }
     }
 
     async function showSection(sectionId) {
-      if (!roleCanOpen(sectionId)) {
-        alert("Du har ikke tilgang til denne delen av appen.");
-        return;
-      }
       await stopLoanQrScanner();
       await stopReturnQrScanner();
       await stopLoanMemberQrScanner();
@@ -1978,9 +2280,12 @@ function byId(id) { return document.getElementById(id); }
 
     function initFromSavedConfig() {
       const config = loadConfig();
-      if (byId("supabaseUrl")) byId("supabaseUrl").value = config.url || "";
-      if (byId("supabaseAnonKey")) byId("supabaseAnonKey").value = config.anonKey || "";
+      byId("supabaseUrl").value = config.url || "";
+      byId("supabaseAnonKey").value = config.anonKey || "";
 
+      if (!config.url || !config.anonKey) {
+        return false;
+      }
       if (!window.supabase || !window.supabase.createClient) {
         setConfigMessage("Supabase-biblioteket ble ikke lastet.", true);
         return false;
@@ -2063,15 +2368,6 @@ function byId(id) { return document.getElementById(id); }
     function getGroupNamesForMember(memberId) {
       const groupIds = state.memberGroups.filter((mg) => mg.member_id === memberId).map((mg) => mg.group_id);
       return state.groups.filter((g) => groupIds.includes(g.id)).map((g) => g.name).sort();
-    }
-
-    function memberMatchesDepartment(member, departmentId) {
-      if (!departmentId) return true;
-      if (member && sameId(member.department_id, departmentId)) return true;
-      const memberGroupIds = state.memberGroups
-        .filter((mg) => sameId(mg.member_id, member && member.id))
-        .map((mg) => mg.group_id);
-      return state.groups.some((g) => sameId(g.department_id, departmentId) && memberGroupIds.some((groupId) => sameId(groupId, g.id)));
     }
 
     function updateStats() {
@@ -2201,7 +2497,12 @@ function byId(id) { return document.getElementById(id); }
       let members = state.members.slice();
 
       if (currentDepartmentId) {
-        members = members.filter((m) => memberMatchesDepartment(m, currentDepartmentId));
+        members = members.filter((m) => {
+          const memberGroupIds = state.memberGroups
+            .filter((mg) => sameId(mg.member_id, m.id))
+            .map((mg) => mg.group_id);
+          return state.groups.some((g) => sameId(g.department_id, currentDepartmentId) && memberGroupIds.includes(g.id));
+        });
       }
 
       if (selectedGroupId) {
@@ -2662,8 +2963,6 @@ function attachSortHandlers() {
       const heading = card.querySelector("h2");
       const title = String((heading && heading.textContent) || "").trim().toLowerCase();
 
-      if (title.includes("tilgangsstyring")) return "access";
-
       if (title.includes("oppsett")) return "settings";
 
       if (
@@ -2677,7 +2976,11 @@ function attachSortHandlers() {
         title.includes("qr-koder for medlemmer")
       ) return "labels";
 
-      if (title.includes("avdelinger")) return "departments";
+      if (
+        title.includes("avdelinger") ||
+        title.includes("opprett semester") ||
+        title.includes("eksisterende semester")
+      ) return "departments";
 
       if (title.includes("medlem")) return "members";
 
@@ -2690,9 +2993,7 @@ function attachSortHandlers() {
       const admin = byId("adminTab");
       if (!admin) return;
 
-      let target = String(tabName || "skates");
-      if (currentRole === "utlan" && !["skates", "members"].includes(target)) target = "skates";
-      if (currentRole === "skoyteskole") return;
+      const target = String(tabName || "skates");
 
       admin.querySelectorAll(".admin-tab").forEach((btn) => {
         btn.classList.toggle("active", String(btn.dataset.adminTab || "") === target);
@@ -2729,104 +3030,7 @@ function attachSortHandlers() {
     }
 
 
-
-async function loadAccessRoles() {
-      if (!supabaseClient || currentRole !== "admin") return;
-      const { data, error } = await supabaseClient
-        .from("app_user_roles")
-        .select("id, email, role, created_at")
-        .order("email", { ascending: true });
-      if (error) throw error;
-      state.accessRoles = data || [];
-      renderAccessRoles();
-    }
-
-    function setAccessRoleMessage(message, isError) {
-      const el = byId("accessRoleMessage");
-      if (!el) return;
-      el.textContent = message || "";
-      el.className = isError ? "help msg-error" : "help msg-ok";
-    }
-
-    function renderAccessRoles() {
-      const wrap = byId("accessRolesWrap");
-      if (!wrap) return;
-      if (currentRole !== "admin") {
-        wrap.innerHTML = '<div class="empty">Kun admin kan administrere tilganger.</div>';
-        return;
-      }
-      const rows = state.accessRoles || [];
-      if (!rows.length) {
-        wrap.innerHTML = '<div class="empty">Ingen brukere er lagt til ennå.</div>';
-        return;
-      }
-      wrap.innerHTML = '<table><thead><tr><th>E-post</th><th>Rolle</th><th>Opprettet</th><th>Handlinger</th></tr></thead><tbody>' +
-        rows.map((row) => {
-          return '<tr>' +
-            '<td data-label="E-post">' + escapeHtml(row.email) + '</td>' +
-            '<td data-label="Rolle"><span class="access-role-badge">' + escapeHtml(getRoleLabel(row.role)) + '</span></td>' +
-            '<td data-label="Opprettet">' + escapeHtml(formatDate(row.created_at)) + '</td>' +
-            '<td data-label="Handlinger"><div class="member-actions">' +
-              '<button class="btn-secondary btn-small" type="button" data-access-edit="' + escapeHtml(row.email) + '">Rediger</button>' +
-              '<button class="btn-secondary btn-small" type="button" data-access-delete="' + escapeHtml(row.email) + '">Slett</button>' +
-            '</div></td>' +
-          '</tr>';
-        }).join('') + '</tbody></table>';
-
-      wrap.querySelectorAll("[data-access-edit]").forEach((btn) => {
-        btn.addEventListener("click", function () {
-          const email = this.getAttribute("data-access-edit");
-          const row = (state.accessRoles || []).find((r) => r.email === email);
-          if (!row) return;
-          byId("accessEmail").value = row.email;
-          byId("accessRole").value = row.role;
-        });
-      });
-
-      wrap.querySelectorAll("[data-access-delete]").forEach((btn) => {
-        btn.addEventListener("click", async function () {
-          const email = this.getAttribute("data-access-delete");
-          if (!confirm("Slette tilgang for " + email + "?")) return;
-          try {
-            const { error } = await supabaseClient.from("app_user_roles").delete().eq("email", email);
-            if (error) throw error;
-            setAccessRoleMessage("Tilgang slettet.", false);
-            await loadAccessRoles();
-          } catch (error) {
-            console.error(error);
-            setAccessRoleMessage("Kunne ikke slette tilgang.\n\n" + error.message, true);
-          }
-        });
-      });
-    }
-
-    async function createAppUser(email, role, password) {
-      const response = await fetch("/.netlify/functions/create-app-user", {
-        method: "POST",
-        headers: await getFunctionAuthHeaders(),
-        body: JSON.stringify({ email: normalizeEmail(email), role, password })
-      });
-
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok || !result.success) {
-        throw new Error(result.error || "Kunne ikke opprette bruker.");
-      }
-      return result;
-    }
-
-    async function saveAccessRole(email, role) {
-      const payload = { email: normalizeEmail(email), role };
-      const existing = (state.accessRoles || []).find((r) => r.email === payload.email);
-      let result;
-      if (existing) {
-        result = await supabaseClient.from("app_user_roles").update({ role: payload.role, updated_at: new Date().toISOString() }).eq("email", payload.email);
-      } else {
-        result = await supabaseClient.from("app_user_roles").insert([payload]);
-      }
-      if (result.error) throw result.error;
-    }
-
-    function renderSkates() {
+function renderSkates() {
       const wrap = byId("skatesWrap");
       const search = byId("searchSkates").value.trim().toLowerCase();
       const sizeFilter = byId("filterSkateSize").value.trim().toLowerCase();
@@ -3059,9 +3263,24 @@ async function loadAccessRoles() {
       if (departmentFilter) {
         rows = rows.filter((member) => {
           const memberGroupIds = getGroupIdsForMember(member.id);
-          return state.groups.some((group) =>
-            String(group.department_id) === String(departmentFilter) && memberGroupIds.includes(group.id)
+
+          const belongsViaRegularGroup = state.groups.some((group) =>
+            sameId(group.department_id, departmentFilter) &&
+            memberGroupIds.some((groupId) => sameId(groupId, group.id))
           );
+
+          if (belongsViaRegularGroup) return true;
+
+          // Skøyteskoledeltakere ligger i skating_school_enrollments,
+          // ikke nødvendigvis i member_groups.
+          if (isSchoolDepartment(departmentFilter)) {
+            return memberBelongsToSchoolDepartment(
+              member.id,
+              departmentFilter
+            );
+          }
+
+          return false;
         });
       }
 
@@ -3073,6 +3292,46 @@ async function loadAccessRoles() {
       }
 
       return rows.slice().sort((a, b) => compareBatchNames(a.name, b.name));
+    }
+
+    function updateMemberSemesterFilter() {
+      const departmentEl = byId("filterMemberDepartment");
+      const semesterEl = byId("filterMemberSemester");
+      if (!departmentEl || !semesterEl) return;
+
+      const departmentId = departmentEl.value || "";
+      const showSemester = !!departmentId && isSchoolDepartment(departmentId);
+
+      semesterEl.classList.toggle("hidden", !showSemester);
+
+      if (!showSemester) {
+        semesterEl.innerHTML = '<option value="">Alle semester</option>';
+        semesterEl.value = "";
+        return;
+      }
+
+      let batches = getSchoolBatchesForDepartment(departmentId);
+      if (!batches.length) {
+        batches = (state.schoolBatches || []).slice();
+      }
+
+      const current = semesterEl.value || "";
+      semesterEl.innerHTML = '<option value="">Alle semester</option>';
+
+      batches
+        .slice()
+        .sort((a, b) => compareBatchNames(a.name, b.name))
+        .forEach((batch) => {
+          const opt = document.createElement("option");
+          opt.value = String(batch.id);
+          opt.textContent = String(batch.name || "Uten navn") +
+            (batch.status ? " (" + batch.status + ")" : "");
+          semesterEl.appendChild(opt);
+        });
+
+      semesterEl.value = batches.some((batch) => sameId(batch.id, current))
+        ? current
+        : "";
     }
 
     function updateMemberFilters() {
@@ -3117,6 +3376,8 @@ async function loadAccessRoles() {
       const groupStillExists = !currentGroup || relevantGroups.some((g) => String(g.id) === String(currentGroup));
       groupEl.value = groupStillExists ? currentGroup : "";
       groupEl.disabled = false;
+
+      updateMemberSemesterFilter();
     }
 
 
@@ -3125,6 +3386,7 @@ function renderMembers() {
       const wrap = byId("membersWrap");
       const search = byId("searchMembers").value.trim().toLowerCase();
       const departmentFilter = byId("filterMemberDepartment") ? byId("filterMemberDepartment").value : "";
+      const semesterFilter = byId("filterMemberSemester") ? byId("filterMemberSemester").value : "";
       const selectedGroupId = byId("filterMemberGroup") ? String(byId("filterMemberGroup").value || "") : "";
       const roleFilter = byId("filterMemberRole") ? byId("filterMemberRole").value : "";
       let rows = state.members.slice();
@@ -3132,10 +3394,37 @@ function renderMembers() {
       if (departmentFilter) {
         rows = rows.filter((member) => {
           const memberGroupIds = getGroupIdsForMember(member.id);
-          return state.groups.some((group) =>
-            String(group.department_id) === String(departmentFilter) && memberGroupIds.includes(group.id)
+
+          const belongsViaRegularGroup = state.groups.some((group) =>
+            sameId(group.department_id, departmentFilter) &&
+            memberGroupIds.some((groupId) => sameId(groupId, group.id))
           );
+
+          if (belongsViaRegularGroup) return true;
+
+          // Deltakere fra Skøyteskole ligger i skating_school_enrollments
+          // og kan derfor mangle vanlig member_groups-kobling.
+          if (isSchoolDepartment(departmentFilter)) {
+            return memberBelongsToSchoolDepartment(
+              member.id,
+              departmentFilter
+            );
+          }
+
+          return false;
         });
+      }
+
+      if (semesterFilter) {
+        const semesterMemberIds = new Set(
+          (state.schoolEnrollments || [])
+            .filter((enrollment) => sameId(enrollment.batch_id, semesterFilter))
+            .map((enrollment) => String(enrollment.member_id))
+        );
+
+        rows = rows.filter((member) =>
+          semesterMemberIds.has(String(member.id))
+        );
       }
 
       if (selectedGroupId) {
@@ -3165,14 +3454,14 @@ function renderMembers() {
       }
 
       const table = document.createElement("table");
-      table.innerHTML = '<thead><tr><th data-sort="name" data-section="members">Navn</th><th>Rolle</th><th>Grupper</th><th>Aktiv skøyte</th><th>Handling</th></tr></thead>';
+      table.innerHTML = '<thead><tr><th data-sort="name" data-section="members">Navn</th><th>Rolle</th><th>Grupper</th><th>Medlemsavgift</th><th>Aktiv skøyte</th><th>Handling</th></tr></thead>';
       const tbody = document.createElement("tbody");
       if (sortState.members.key) {
         rows = sortArray(rows, sortState.members.key, sortState.members.asc);
       }
       for (const member of rows) {
         const tr = document.createElement("tr");
-        tr.innerHTML = "<td data-label='Navn'></td><td data-label='Rolle'></td><td data-label='Grupper'></td><td data-label='Aktiv skøyte'></td><td data-label='Handling'></td>";
+        tr.innerHTML = "<td data-label='Navn'></td><td data-label='Rolle'></td><td data-label='Grupper'></td><td data-label='Medlemsavgift'></td><td data-label='Aktiv skøyte'></td><td data-label='Handling'></td>";
 
         const nameBtn = document.createElement("button");
         nameBtn.type = "button";
@@ -3186,14 +3475,94 @@ function renderMembers() {
         tr.children[1].textContent = safeText(member.role || "Aktiv");
 
         const memberGroupIds = getGroupIdsForMember(member.id);
-        const groups = state.groups
-          .filter((group) => memberGroupIds.includes(group.id))
-          .filter((group) => !departmentFilter || String(group.department_id) === String(departmentFilter))
+        let groups = state.groups
+          .filter((group) =>
+            memberGroupIds.some((groupId) => sameId(groupId, group.id))
+          )
+          .filter((group) =>
+            !departmentFilter ||
+            sameId(group.department_id, departmentFilter)
+          )
           .map((group) => group.name);
-        tr.children[2].textContent = groups.length ? groups.join(", ") : "-";
+
+        if (
+          !groups.length &&
+          departmentFilter &&
+          isSchoolDepartment(departmentFilter)
+        ) {
+          const batchIds = getSchoolEnrollmentBatchIdsForDepartment(
+            departmentFilter
+          );
+
+          groups = (state.schoolEnrollments || [])
+            .filter((enrollment) =>
+              sameId(enrollment.member_id, member.id) &&
+              batchIds.has(String(enrollment.batch_id))
+            )
+            .map((enrollment) => {
+              const batch = (state.schoolBatches || []).find((item) =>
+                sameId(item.id, enrollment.batch_id)
+              );
+              return batch ? String(batch.name || "Skøyteskole") : "Skøyteskole";
+            });
+
+          groups = Array.from(new Set(groups));
+        }
+
+        tr.children[2].textContent = groups.length
+          ? groups.join(", ")
+          : "-";
+
+        const feeLabel = document.createElement("label");
+        feeLabel.style.display = "inline-flex";
+        feeLabel.style.alignItems = "center";
+        feeLabel.style.gap = "7px";
+        feeLabel.style.cursor = "pointer";
+
+        const feeCheckbox = document.createElement("input");
+        feeCheckbox.type = "checkbox";
+        feeCheckbox.checked = member.membership_fee_paid === true;
+        feeCheckbox.setAttribute("aria-label", "Medlemsavgift betalt for " + safeText(member.name));
+
+        const feeText = document.createElement("span");
+        feeText.textContent = feeCheckbox.checked ? "Betalt" : "Ikke betalt";
+
+        feeCheckbox.addEventListener("change", async function () {
+          const wantedValue = feeCheckbox.checked;
+          feeCheckbox.disabled = true;
+
+          try {
+            const result = await supabaseClient
+              .from("members")
+              .update({ membership_fee_paid: wantedValue })
+              .eq("id", member.id)
+              .select()
+              .single();
+
+            if (result.error) throw result.error;
+
+            member.membership_fee_paid = wantedValue;
+            state.members = state.members.map((item) =>
+              sameId(item.id, member.id) ? { ...item, membership_fee_paid: wantedValue } : item
+            );
+
+            feeText.textContent = wantedValue ? "Betalt" : "Ikke betalt";
+          } catch (error) {
+            console.error(error);
+            feeCheckbox.checked = !wantedValue;
+            feeText.textContent = feeCheckbox.checked ? "Betalt" : "Ikke betalt";
+            alert("Kunne ikke oppdatere medlemsavgift.\n\n" + (error.message || error));
+          } finally {
+            feeCheckbox.disabled = false;
+          }
+        });
+
+        feeLabel.appendChild(feeCheckbox);
+        feeLabel.appendChild(feeText);
+        tr.children[3].appendChild(feeLabel);
 
         const activeLoan = getActiveLoanForMember(member.id);
-        tr.children[3].textContent = activeLoan && activeLoan.skates ? safeText(activeLoan.skates.skate_code) : "-";
+        tr.children[4].textContent = activeLoan && activeLoan.skates ? safeText(activeLoan.skates.skate_code) : "-";
 
         const actions = document.createElement("div");
         actions.className = "member-actions";
@@ -3216,7 +3585,7 @@ function renderMembers() {
         });
         actions.appendChild(editBtn);
 
-        tr.children[4].appendChild(actions);
+        tr.children[5].appendChild(actions);
         tbody.appendChild(tr);
       }
       table.appendChild(tbody);
@@ -3358,11 +3727,150 @@ function renderMembers() {
       wrap.appendChild(table);
     }
 
+    function getSchoolBatchesForDepartment(departmentId) {
+      if (!departmentId) return [];
+      return (state.schoolBatches || []).filter((batch) =>
+        sameId(batch.department_id, departmentId)
+      );
+    }
+
+    function isSchoolDepartment(departmentId) {
+      if (!departmentId) return false;
+
+      const department = (state.departments || []).find((item) =>
+        sameId(item.id, departmentId)
+      );
+
+      const name = String((department && department.name) || "")
+        .trim()
+        .toLowerCase()
+        .replace(/ø/g, "o")
+        .replace(/å/g, "a")
+        .replace(/æ/g, "ae");
+
+      // Skøyteskole identifiseres først på avdelingsnavn.
+      if (name.includes("skoyteskole")) return true;
+
+      // Fallback: avdelingen har semester registrert.
+      return getSchoolBatchesForDepartment(departmentId).length > 0;
+    }
+
+    function getSchoolEnrollmentBatchIdsForDepartment(departmentId) {
+      return new Set(
+        getSchoolBatchesForDepartment(departmentId)
+          .map((batch) => String(batch.id))
+      );
+    }
+
+    function memberBelongsToSchoolDepartment(memberId, departmentId) {
+      if (!memberId || !departmentId) return false;
+
+      let batchIds = getSchoolEnrollmentBatchIdsForDepartment(departmentId);
+
+      // Eldre skøyteskolesemester kan være opprettet uten department_id.
+      // Hvis valgt avdeling er Skøyteskole og ingen batch-ID-er finnes på
+      // avdelingen, bruk alle registrerte skøyteskolesemester som fallback.
+      if (!batchIds.size && isSchoolDepartment(departmentId)) {
+        batchIds = new Set(
+          (state.schoolBatches || []).map((batch) => String(batch.id))
+        );
+      }
+
+      if (!batchIds.size) return false;
+
+      return (state.schoolEnrollments || []).some((enrollment) =>
+        sameId(enrollment.member_id, memberId) &&
+        batchIds.has(String(enrollment.batch_id))
+      );
+    }
+
+    function updateReportSemesterFilter() {
+      const departmentFilter = byId("reportDepartmentFilter");
+      const semesterFilter = byId("reportSemesterFilter");
+      if (!departmentFilter || !semesterFilter) return;
+
+      const departmentId = departmentFilter.value || "";
+      const isSchool = isSchoolDepartment(departmentId);
+
+      let batches = [];
+
+      if (isSchool) {
+        // Bruk semester som er eksplisitt koblet til valgt avdeling.
+        batches = getSchoolBatchesForDepartment(departmentId);
+
+        // Eldre semester kan mangle department_id. Når Skøyteskole er
+        // valgt og ingen direkte treff finnes, vis alle skole-semester.
+        if (!batches.length) {
+          batches = (state.schoolBatches || []).slice();
+        }
+      }
+
+      batches = batches
+        .slice()
+        .sort((a, b) => {
+          const aTime = new Date(a.start_date || a.created_at || 0).getTime();
+          const bTime = new Date(b.start_date || b.created_at || 0).getTime();
+          return bTime - aTime;
+        });
+
+      const shouldShow = !!departmentId && isSchool;
+      semesterFilter.classList.toggle("hidden", !shouldShow);
+
+      if (!shouldShow) {
+        semesterFilter.innerHTML = '<option value="">Alle semester</option>';
+        semesterFilter.value = "";
+        return;
+      }
+
+      const previousValue = semesterFilter.value || "";
+      semesterFilter.innerHTML = '<option value="">Alle semester</option>';
+
+      batches.forEach((batch) => {
+        const option = document.createElement("option");
+        option.value = String(batch.id);
+        option.textContent =
+          String(batch.name || "Uten navn") +
+          (batch.status ? " (" + batch.status + ")" : "");
+        semesterFilter.appendChild(option);
+      });
+
+      const stillExists = batches.some((batch) =>
+        sameId(batch.id, previousValue)
+      );
+
+      semesterFilter.value = stillExists ? previousValue : "";
+    }
+
     function renderReportLoansByGroup() {
       const wrap = byId("reportLoansByGroupWrap");
       const counts = {};
-      const departmentFilter = byId("reportDepartmentFilter") ? byId("reportDepartmentFilter").value : "";
-      const loans = departmentFilter ? state.loans.filter((loan) => loan.department_id === departmentFilter) : state.loans;
+      const departmentFilter = byId("reportDepartmentFilter")
+        ? byId("reportDepartmentFilter").value
+        : "";
+
+      const semesterFilter = byId("reportSemesterFilter")
+        ? byId("reportSemesterFilter").value
+        : "";
+
+      let loans = departmentFilter
+        ? state.loans.filter((loan) =>
+            sameId(loan.department_id, departmentFilter)
+          )
+        : state.loans.slice();
+
+      if (semesterFilter) {
+        const semesterMemberIds = new Set(
+          (state.schoolEnrollments || [])
+            .filter((enrollment) =>
+              sameId(enrollment.batch_id, semesterFilter)
+            )
+            .map((enrollment) => String(enrollment.member_id))
+        );
+
+        loans = loans.filter((loan) =>
+          semesterMemberIds.has(String(loan.member_id))
+        );
+      }
 
       for (const loan of loans) {
         const groups = getGroupNamesForMember(loan.member_id);
@@ -3562,7 +4070,7 @@ function updateSchoolBatchPicker() {
   const current = picker.value || getUiPref("schoolBatchPicker", "");
   let rows = state.schoolBatches.slice();
 
-  picker.innerHTML = '<option value="">Velg parti</option>';
+  picker.innerHTML = '<option value="">Velg semester</option>';
   rows
     .slice()
     .sort((a, b) => compareBatchNames(a.name, b.name))
@@ -3622,33 +4130,140 @@ function updateSchoolParticipantMemberPicker() {
 function renderSchoolBatchOverview() {
   const wrap = byId("schoolBatchOverviewWrap");
   if (!wrap) return;
-  const batchId = byId("schoolBatchPicker") ? byId("schoolBatchPicker").value : "";
+
+  const batchId = byId("schoolBatchPicker")
+    ? byId("schoolBatchPicker").value
+    : "";
+
   if (!batchId) {
-    wrap.innerHTML = '<div class="empty">Velg et parti for å se detaljer.</div>';
+    wrap.innerHTML = '<div class="empty">Velg et semester for å se detaljer.</div>';
     return;
   }
+
   const batch = getSchoolBatchById(batchId);
+
   if (!batch) {
-    wrap.innerHTML = '<div class="empty">Fant ikke valgt parti.</div>';
+    wrap.innerHTML = '<div class="empty">Fant ikke valgt semester.</div>';
     return;
   }
-  const department = state.departments.find((d) => String(d.id) === String(batch.department_id));
+
   const schoolGroups = getSchoolGroupsForBatch(batchId);
   const enrollments = getSchoolEnrollmentsForBatch(batchId);
 
-  const groupCards = schoolGroups.map((group) => {
-    const count = enrollments.filter((e) => String(e.school_group_id || "") === String(group.id)).length;
-    return '<div class="stat"><div class="muted">' + escapeHtml(group.name || '') + '</div><div class="stat-number">' + count + '</div></div>';
-  }).join("");
+  function findGroupId(name) {
+    const target = String(name || "").trim().toLowerCase();
 
-  wrap.innerHTML = '<div class="stats">' +
-    '<div class="stat"><div class="muted">Parti</div><div class="stat-number" style="font-size:22px;">' + escapeHtml(batch.name || '-') + '</div></div>' +
-    '<div class="stat"><div class="muted">Avdeling</div><div class="stat-number" style="font-size:22px;">' + escapeHtml(department ? department.name : '-') + '</div></div>' +
-    '<div class="stat"><div class="muted">Deltakere</div><div class="stat-number">' + enrollments.length + '</div></div>' +
-    groupCards +
+    const group = schoolGroups.find((item) =>
+      String(item.name || "").trim().toLowerCase() === target
+    );
+
+    return group ? String(group.id) : "";
+  }
+
+  const blueGroupId = findGroupId("blå");
+  const yellowGroupId = findGroupId("gul");
+  const redGroupId = findGroupId("rød");
+
+  const blueCount = enrollments.filter((row) =>
+    String(row.school_group_id || "") === blueGroupId
+  ).length;
+
+  const yellowCount = enrollments.filter((row) =>
+    String(row.school_group_id || "") === yellowGroupId
+  ).length;
+
+  const redCount = enrollments.filter((row) =>
+    String(row.school_group_id || "") === redGroupId
+  ).length;
+
+  const total = enrollments.length;
+
+  wrap.innerHTML =
+    '<div class="school-overview-chart">' +
+      '<div>' +
+        '<div class="school-pie-wrap">' +
+          '<canvas id="schoolParticipantsPie" width="560" height="560"></canvas>' +
+        '</div>' +
+        '<div class="school-pie-legend">' +
+          '<span class="school-pie-legend-item"><span class="school-pie-dot blue"></span>Blå</span>' +
+          '<span class="school-pie-legend-item"><span class="school-pie-dot yellow"></span>Gul</span>' +
+          '<span class="school-pie-legend-item"><span class="school-pie-dot red"></span>Rød</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="school-overview-total">' +
+        '<div class="school-overview-total-label">Totalt antall deltakere</div>' +
+        '<div class="school-overview-total-number">' + total + '</div>' +
+      '</div>' +
     '</div>';
-}
 
+  const canvas = byId("schoolParticipantsPie");
+  if (!canvas) return;
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  const data = [
+    { label: "Blå", value: blueCount, color: "#60a5fa", textColor: "#0f172a" },
+    { label: "Gul", value: yellowCount, color: "#facc15", textColor: "#0f172a" },
+    { label: "Rød", value: redCount, color: "#f87171", textColor: "#0f172a" }
+  ];
+
+  const pieTotal = data.reduce((sum, item) => sum + item.value, 0);
+  const width = canvas.width;
+  const height = canvas.height;
+  const centerX = width / 2;
+  const centerY = height / 2;
+  const radius = Math.min(width, height) * 0.42;
+
+  ctx.clearRect(0, 0, width, height);
+
+  if (pieTotal === 0) {
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+    ctx.fillStyle = "#e5e7eb";
+    ctx.fill();
+
+    ctx.fillStyle = "#64748b";
+    ctx.font = "700 34px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("0", centerX, centerY);
+    return;
+  }
+
+  let startAngle = -Math.PI / 2;
+
+  data.forEach((item) => {
+    if (item.value <= 0) return;
+
+    const sliceAngle = (item.value / pieTotal) * Math.PI * 2;
+    const endAngle = startAngle + sliceAngle;
+
+    ctx.beginPath();
+    ctx.moveTo(centerX, centerY);
+    ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+    ctx.closePath();
+    ctx.fillStyle = item.color;
+    ctx.fill();
+
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 5;
+    ctx.stroke();
+
+    const middleAngle = startAngle + sliceAngle / 2;
+    const labelRadius = radius * 0.62;
+    const labelX = centerX + Math.cos(middleAngle) * labelRadius;
+    const labelY = centerY + Math.sin(middleAngle) * labelRadius;
+
+    ctx.fillStyle = item.textColor;
+    ctx.font = "700 40px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(String(item.value), labelX, labelY);
+
+    startAngle = endAngle;
+  });
+}
 
     function closeMobileSchoolModal() {
       const modal = byId("schoolMobileModal");
@@ -3661,7 +4276,7 @@ function renderSchoolParticipants() {
 
   const batchId = byId("schoolBatchPicker") ? byId("schoolBatchPicker").value : "";
   if (!batchId) {
-    wrap.innerHTML = '<div class="empty">Velg et parti først.</div>';
+    wrap.innerHTML = '<div class="empty">Velg et semester først.</div>';
     return;
   }
 
@@ -3844,7 +4459,7 @@ function renderSchoolParticipants() {
     if (!col.group) {
       const empty = document.createElement("div");
       empty.className = "empty";
-      empty.textContent = "Gruppen finnes ikke i dette partiet ennå.";
+      empty.textContent = "Gruppen finnes ikke i dette semesteret ennå.";
       body.appendChild(empty);
     } else if (!buckets[col.key].length) {
       const empty = document.createElement("div");
@@ -3886,12 +4501,9 @@ function renderSchoolParticipants() {
 function getSignupTargetBatch(signup) {
   if (!signup) return null;
 
-  const currentBatchId = byId("schoolBatchPicker") ? byId("schoolBatchPicker").value : "";
-  if (currentBatchId) {
-    const selectedBatch = getSchoolBatchById(currentBatchId);
-    if (selectedBatch) return selectedBatch;
-  }
-
+  // Påmeldingen er allerede knyttet til et semester i databasen.
+  // Bruk dette først, slik at den ikke ved et uhell flyttes til et annet
+  // semester bare fordi administrator har et annet semester valgt i UI-et.
   if (signup.batch_id) {
     const found = state.schoolBatches.find((b) => String(b.id) === String(signup.batch_id));
     if (found) return found;
@@ -3904,6 +4516,13 @@ function getSignupTargetBatch(signup) {
         String(signup.batch_name || "").trim().toLowerCase()
     );
     if (found) return found;
+  }
+
+  // Fallback for eldre påmeldinger uten batch_id/batch_name.
+  const currentBatchId = byId("schoolBatchPicker") ? byId("schoolBatchPicker").value : "";
+  if (currentBatchId) {
+    const selectedBatch = getSchoolBatchById(currentBatchId);
+    if (selectedBatch) return selectedBatch;
   }
 
   return null;
@@ -3931,7 +4550,31 @@ function formatSkateRequest(signup) {
   return String(signup.requested_skate_size || "-");
 }
 
+function isCodeSignup(signup) {
+  return !!(
+    signup &&
+    (
+      signup.access_code_id ||
+      String(signup.access_code || "").trim()
+    )
+  );
+}
+
+function formatSignupAccessCode(signup) {
+  if (!isCodeSignup(signup)) return "-";
+  return String(signup.access_code || "Kodepåmelding");
+}
+
+function formatSignupReceivedAt(signup) {
+  if (!signup) return "-";
+  return formatDate(signup.paid_at || signup.created_at);
+}
+
 function formatPaymentStatus(signup) {
+  if (isCodeSignup(signup)) {
+    return "Ikke betalingskrav";
+  }
+
   const status = String((signup && signup.payment_status) || "Ubetalt");
   if (status === "Betalt" && signup && signup.paid_at) {
     return "Betalt (" + formatDate(signup.paid_at) + ")";
@@ -3943,8 +4586,9 @@ function formatPaymentStatus(signup) {
 
 function getFilteredSchoolSignups() {
   let rows = Array.isArray(state.schoolSignups) ? state.schoolSignups.slice() : [];
-  const search = byId("schoolSignupSearch") ? String(byId("schoolSignupSearch").value || "").trim().toLowerCase() : "";
-  const statusFilter = byId("schoolSignupStatusFilter") ? String(byId("schoolSignupStatusFilter").value || "") : "";
+  const search = byId("schoolSignupSearch")
+    ? String(byId("schoolSignupSearch").value || "").trim().toLowerCase()
+    : "";
 
   if (search) {
     rows = rows.filter((row) =>
@@ -3953,11 +4597,13 @@ function getFilteredSchoolSignups() {
       String(row.email || "").toLowerCase().includes(search)
     );
   }
-  if (statusFilter) {
-    rows = rows.filter((row) => String(row.status || "") === statusFilter);
-  }
 
-  rows.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+  rows.sort(
+    (a, b) =>
+      new Date(b.created_at || 0).getTime() -
+      new Date(a.created_at || 0).getTime()
+  );
+
   return rows;
 }
 
@@ -3991,27 +4637,30 @@ function clearSchoolSignupSelection() {
 
 function findExistingMemberFromSignup(signup) {
   if (!signup) return null;
+
+  // Hvis påmeldingen allerede er eksplisitt koblet til et medlem,
+  // bruker vi denne koblingen.
   if (signup.existing_member_id) {
-    const linked = state.members.find((member) => String(member.id) === String(signup.existing_member_id));
+    const linked = state.members.find(
+      (member) => String(member.id) === String(signup.existing_member_id)
+    );
     if (linked) return linked;
   }
 
-  const email = String(signup.email || "").trim().toLowerCase();
-  const phone = String(signup.phone || "").trim();
+  // Kontaktinfo i påmeldingen tilhører foresatt og kan være lik for
+  // flere søsken. Derfor må e-post/telefon IKKE brukes til å avgjøre
+  // hvilket barn som er medlem.
   const name = String(signup.child_name || "").trim().toLowerCase();
 
-  if (email) {
-    const byEmail = state.members.find((member) => String(member.email || "").trim().toLowerCase() === email);
-    if (byEmail) return byEmail;
-  }
-  if (phone) {
-    const byPhone = state.members.find((member) => String(member.phone || "").trim() === phone);
-    if (byPhone) return byPhone;
-  }
   if (name) {
-    const byName = state.members.find((member) => String(member.name || "").trim().toLowerCase() === name);
-    if (byName) return byName;
+    const exactMatches = state.members.filter(
+      (member) => String(member.name || "").trim().toLowerCase() === name
+    );
+
+    // Bruk kun automatisk navnematch når den er entydig.
+    if (exactMatches.length === 1) return exactMatches[0];
   }
+
   return null;
 }
 
@@ -4035,7 +4684,7 @@ function getAutoAssignmentForSignup(signup, batch, member) {
       return {
         birthYear: birthYear,
         autoGroupId: mappedPreviousGroup.id,
-        assignmentReason: previous.assignmentReason || "Videreført fra forrige parti"
+        assignmentReason: previous.assignmentReason || "Videreført fra forrige semester"
       };
     }
   }
@@ -4062,18 +4711,20 @@ function getAutoAssignmentForSignup(signup, batch, member) {
 
 async function moveSingleSignupToParticipant(signup, options = {}) {
   const reloadAfter = options.reloadAfter !== false;
-  const signupId = String(signup && signup.id || "");
+  const signupId = String((signup && signup.id) || "");
   if (!signupId) return { ok: false, message: "Ugyldig påmelding." };
 
   const batch = getSignupTargetBatch(signup);
   if (!batch || !batch.id) {
-    return { ok: false, message: "Fant ikke parti for " + String(signup.child_name || "påmeldingen") + "." };
+    throw new Error("Fant ikke semester for " + String(signup.child_name || "påmeldingen") + ".");
   }
 
+  // 1. Finn eller opprett medlemmet.
   let member = findExistingMemberFromSignup(signup);
+  let createdMember = false;
 
   if (!member) {
-    const createdMember = await supabaseClient
+    const createdMemberRes = await supabaseClient
       .from("members")
       .insert([{
         name: signup.child_name,
@@ -4081,35 +4732,81 @@ async function moveSingleSignupToParticipant(signup, options = {}) {
         email: signup.email || null,
         role: "Skøyteskole"
       }])
-      .select()
+      .select("id, name, phone, email, role")
       .single();
-    if (createdMember.error) throw createdMember.error;
-    member = createdMember.data;
+
+    if (createdMemberRes.error) throw createdMemberRes.error;
+    if (!createdMemberRes.data || !createdMemberRes.data.id) {
+      throw new Error("Medlemmet ble ikke opprettet korrekt.");
+    }
+
+    member = createdMemberRes.data;
+    createdMember = true;
   }
 
+  // 2. Sørg for at semesterets standardgrupper finnes.
   await ensureDefaultSchoolGroups(batch.id);
 
   const assignment = getAutoAssignmentForSignup(signup, batch, member);
-  const existingEnrollment = getExistingEnrollmentForBatchAndMember(batch.id, member.id);
 
-  if (!existingEnrollment) {
-    const enrollmentRes = await upsertSchoolEnrollmentFromImport(
-      batch.id,
-      member.id,
-      assignment.birthYear || null,
-      assignment.autoGroupId || null,
-      assignment.assignmentReason || "Flyttet fra påmelding"
-    );
-    if (enrollmentRes && enrollmentRes.error) throw enrollmentRes.error;
+  // 3. Finn eksisterende deltaker direkte i databasen.
+  const existingEnrollmentRes = await supabaseClient
+    .from("skating_school_enrollments")
+    .select("id, batch_id, member_id, school_group_id, birth_year")
+    .eq("batch_id", batch.id)
+    .eq("member_id", member.id)
+    .maybeSingle();
+
+  if (existingEnrollmentRes.error) throw existingEnrollmentRes.error;
+
+  let enrollment = existingEnrollmentRes.data || null;
+  let createdEnrollment = false;
+
+  if (!enrollment) {
+    const enrollmentInsert = await supabaseClient
+      .from("skating_school_enrollments")
+      .insert([{
+        batch_id: batch.id,
+        member_id: member.id,
+        birth_year: assignment.birthYear || null,
+        school_group_id: assignment.autoGroupId || null,
+        assignment_reason: assignment.assignmentReason || "Flyttet fra påmelding",
+        manual_override: false
+      }])
+      .select("id, batch_id, member_id, school_group_id, birth_year")
+      .single();
+
+    if (enrollmentInsert.error) throw enrollmentInsert.error;
+    if (!enrollmentInsert.data || !enrollmentInsert.data.id) {
+      throw new Error("Deltakerkoblingen ble ikke opprettet korrekt.");
+    }
+
+    enrollment = enrollmentInsert.data;
+    createdEnrollment = true;
   }
 
+  // 4. Verifiser koblingen før påmeldingen merkes som ferdig.
+  const verifyEnrollment = await supabaseClient
+    .from("skating_school_enrollments")
+    .select("id, batch_id, member_id")
+    .eq("id", enrollment.id)
+    .eq("batch_id", batch.id)
+    .eq("member_id", member.id)
+    .maybeSingle();
+
+  if (verifyEnrollment.error) throw verifyEnrollment.error;
+  if (!verifyEnrollment.data) {
+    throw new Error("Kunne ikke bekrefte koblingen mellom medlem og semester.");
+  }
+
+  // 5. Først nå markerer vi påmeldingen som ferdig.
   const notesParts = [];
   const oldNotes = String(signup.notes || "").trim();
   if (oldNotes) notesParts.push(oldNotes);
   if (signup.birth_date) notesParts.push("Fødselsdato: " + String(signup.birth_date));
   if (signup.has_own_skates) notesParts.push("Har egne skøyter");
   else if (signup.requested_skate_size) notesParts.push("Ønsket skøytestørrelse: " + String(signup.requested_skate_size));
-  notesParts.push(existingEnrollment ? "Påmeldingen var allerede registrert som deltaker." : "Flyttet til deltaker " + new Date().toLocaleString("no-NO"));
+  notesParts.push(createdEnrollment ? "Flyttet til deltaker " + new Date().toLocaleString("no-NO") : "Var allerede registrert som deltaker.");
 
   const updateSignup = await supabaseClient
     .from("skating_school_signups")
@@ -4118,20 +4815,36 @@ async function moveSingleSignupToParticipant(signup, options = {}) {
       status: "Ferdig",
       notes: notesParts.join(" | ")
     })
-    .eq("id", signup.id);
+    .eq("id", signup.id)
+    .select("id, existing_member_id, status")
+    .single();
+
   if (updateSignup.error) throw updateSignup.error;
+  if (!updateSignup.data || String(updateSignup.data.existing_member_id) !== String(member.id)) {
+    throw new Error("Påmeldingen ble ikke koblet til medlemmet korrekt.");
+  }
 
   if (reloadAfter) {
-    const picker = byId("schoolBatchPicker");
-    if (picker) picker.value = String(batch.id);
     await loadAll();
+    const picker = byId("schoolBatchPicker");
+    if (picker) {
+      picker.value = String(batch.id);
+      setUiPref("schoolBatchPicker", String(batch.id));
+    }
+    renderSchoolBatchOverview();
+    updateSchoolParticipantMemberPicker();
+    renderSchoolParticipants();
   }
 
   return {
     ok: true,
+    batchId: batch.id,
     batchName: batch.name || "",
-    createdMember: !findExistingMemberFromSignup(signup),
-    existingEnrollment: !!existingEnrollment,
+    memberId: member.id,
+    enrollmentId: enrollment.id,
+    createdMember,
+    createdEnrollment,
+    existingEnrollment: !createdEnrollment,
     groupId: assignment.autoGroupId || null,
     assignmentReason: assignment.assignmentReason || ""
   };
@@ -4148,6 +4861,7 @@ async function moveSignupToParticipant(signupId) {
 
   try {
     if (
+      !isCodeSignup(signup) &&
       String(signup.payment_status || "Ubetalt") !== "Betalt" &&
       String(signup.payment_status || "Ubetalt") !== "Fritatt" &&
       signup.payment_exempt !== true
@@ -4181,7 +4895,7 @@ async function moveSelectedSchoolSignupsToParticipants() {
 
   const currentBatchId = byId("schoolBatchPicker") ? byId("schoolBatchPicker").value : "";
   if (!currentBatchId) {
-    setSchoolMessage("schoolSignupMessage", "Velg et parti først.", true);
+    setSchoolMessage("schoolSignupMessage", "Velg et semester først.", true);
     return;
   }
 
@@ -4193,6 +4907,7 @@ async function moveSelectedSchoolSignupsToParticipants() {
 
   let successCount = 0;
   const failed = [];
+  const movedBatchIds = new Set();
 
   try {
     setSchoolMessage("schoolSignupMessage", "Flytter " + rows.length + " påmelding" + (rows.length === 1 ? "" : "er") + " til deltakere ...", false);
@@ -4200,14 +4915,16 @@ async function moveSelectedSchoolSignupsToParticipants() {
     for (const signup of rows) {
       try {
         if (
-        String(signup.payment_status || "Ubetalt") !== "Betalt" &&
-        String(signup.payment_status || "Ubetalt") !== "Fritatt" &&
-        signup.payment_exempt !== true
-      ) {
+          !isCodeSignup(signup) &&
+          String(signup.payment_status || "Ubetalt") !== "Betalt" &&
+          String(signup.payment_status || "Ubetalt") !== "Fritatt" &&
+          signup.payment_exempt !== true
+        ) {
           failed.push(String(signup.child_name || "Uten navn") + ": ikke betalt ennå");
           continue;
         }
-        await moveSingleSignupToParticipant(signup, { reloadAfter: false });
+        const moved = await moveSingleSignupToParticipant(signup, { reloadAfter: false });
+        if (moved && moved.batchId) movedBatchIds.add(String(moved.batchId));
         successCount += 1;
       } catch (error) {
         failed.push(String(signup.child_name || "Uten navn") + ": " + (error && error.message ? error.message : error));
@@ -4215,6 +4932,18 @@ async function moveSelectedSchoolSignupsToParticipants() {
     }
 
     await loadAll();
+
+    // Vis semesteret påmeldingene faktisk ble flyttet til.
+    const pickerAfterReload = byId("schoolBatchPicker");
+    const movedBatchId = movedBatchIds.size === 1 ? Array.from(movedBatchIds)[0] : currentBatchId;
+    if (pickerAfterReload && movedBatchId) {
+      pickerAfterReload.value = String(movedBatchId);
+      setUiPref("schoolBatchPicker", String(movedBatchId));
+      renderSchoolBatchOverview();
+      updateSchoolParticipantMemberPicker();
+      renderSchoolParticipants();
+    }
+
     clearSchoolSignupSelection();
 
     if (failed.length) {
@@ -4244,142 +4973,131 @@ function renderSchoolSignups() {
       messageEl.className = "help msg-error";
     } else {
       const count = Array.isArray(state.schoolSignups) ? state.schoolSignups.length : 0;
-      messageEl.textContent = count ? ("Fant " + count + " påmelding" + (count === 1 ? "" : "er") + ".") : "Ingen påmeldinger ennå.";
+      messageEl.textContent = count
+        ? ("Fant " + count + " påmelding" + (count === 1 ? "" : "er") + ".")
+        : "Ingen påmeldinger ennå.";
       messageEl.className = "help";
     }
   }
 
-  let rows = getFilteredSchoolSignups();
+  const rows = getFilteredSchoolSignups();
 
   if (!rows.length) {
-    wrap.innerHTML = '<div class="empty">' + (loadError ? 'Ingen påmeldinger kunne vises.' : 'Ingen påmeldinger matcher filteret.') + '</div>';
+    wrap.innerHTML =
+      '<div class="empty">' +
+      (loadError ? "Ingen påmeldinger kunne vises." : "Ingen påmeldinger matcher filteret.") +
+      "</div>";
     return;
   }
 
-  const isMobile = window.innerWidth <= 700;
-  wrap.innerHTML = "";
   const selectedIds = getSelectedSchoolSignupIds();
+  wrap.innerHTML = "";
 
-  function getActionMeta(row) {
-    const linkedMember = findExistingMemberFromSignup(row);
-    const batch = getSignupTargetBatch(row);
-    const existingEnrollment = linkedMember && batch ? getExistingEnrollmentForBatchAndMember(batch.id, linkedMember.id) : null;
-    if (existingEnrollment) return { label: "Allerede deltaker", disabled: true };
-    if (
-      String((row && row.payment_status) || "Ubetalt") !== "Betalt" &&
-      String((row && row.payment_status) || "Ubetalt") !== "Fritatt" &&
-      row.payment_exempt !== true
-    ) return { label: "Må betales først", disabled: true };
-    return { label: "Flytt til deltaker", disabled: false };
-  }
-
-  if (isMobile) {
-    const topRow = document.createElement("div");
-    topRow.className = "help";
-    topRow.style.marginBottom = "10px";
-    topRow.textContent = "Valgt: " + selectedIds.size + " barn";
-    wrap.appendChild(topRow);
+  // Mobilvisning
+  if (window.innerWidth <= 700) {
+    const selectedInfo = document.createElement("div");
+    selectedInfo.className = "help";
+    selectedInfo.style.marginBottom = "10px";
+    selectedInfo.textContent = "Valgt: " + selectedIds.size + " barn";
+    wrap.appendChild(selectedInfo);
 
     const list = document.createElement("div");
     list.className = "loan-card-list";
+
     rows.forEach((row) => {
       const card = document.createElement("div");
       card.className = "loan-card";
 
-      const selectorRow = document.createElement("div");
-      selectorRow.style.marginBottom = "8px";
       const selector = document.createElement("label");
       selector.style.display = "flex";
       selector.style.alignItems = "center";
       selector.style.gap = "8px";
+      selector.style.marginBottom = "8px";
+
       const checkbox = document.createElement("input");
       checkbox.type = "checkbox";
       checkbox.checked = selectedIds.has(String(row.id));
-      checkbox.addEventListener("change", function () { toggleSchoolSignupSelection(row.id, checkbox.checked); renderSchoolSignups(); });
+      checkbox.addEventListener("change", function () {
+        toggleSchoolSignupSelection(row.id, checkbox.checked);
+        renderSchoolSignups();
+      });
+
       const selectorText = document.createElement("span");
       selectorText.textContent = "Velg";
       selector.appendChild(checkbox);
       selector.appendChild(selectorText);
-      selectorRow.appendChild(selector);
-      card.appendChild(selectorRow);
-
-      const linked = findExistingMemberFromSignup(row) ? "Koblet til medlem" : "Ikke medlem ennå";
-      const contact = [row.phone, row.email].filter(Boolean).join(" / ") || "Ingen kontaktinfo";
+      card.appendChild(selector);
 
       const title = document.createElement("div");
       title.className = "loan-card-title";
       title.textContent = String(row.child_name || "Uten navn");
+      card.appendChild(title);
 
       const meta1 = document.createElement("div");
       meta1.className = "help";
       meta1.style.marginTop = "8px";
-      meta1.textContent = "Født: " + formatBirthDate(row.birth_date) + " | Skøyter: " + formatSkateRequest(row);
+      meta1.textContent =
+        "Født: " + formatBirthDate(row.birth_date) +
+        " | Skøyter: " + formatSkateRequest(row);
+      card.appendChild(meta1);
 
       const meta2 = document.createElement("div");
       meta2.className = "help";
       meta2.style.marginTop = "4px";
-      meta2.textContent = contact;
+      meta2.textContent = "Påmeldingskode: " + formatSignupAccessCode(row);
+      card.appendChild(meta2);
 
       const meta3 = document.createElement("div");
       meta3.className = "help";
       meta3.style.marginTop = "4px";
-      meta3.textContent = linked + " | Status: " + String(row.status || "Ny") + " | Betaling: " + formatPaymentStatus(row) + " | Mottatt: " + formatDate(row.created_at);
-
-      card.appendChild(title);
-      card.appendChild(meta1);
-      card.appendChild(meta2);
+      meta3.textContent = "Mottatt: " + formatSignupReceivedAt(row);
       card.appendChild(meta3);
-
-      const actionMeta = getActionMeta(row);
-      const actionRow = document.createElement("div");
-      actionRow.style.marginTop = "10px";
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = actionMeta.disabled ? "btn-secondary" : "btn-primary";
-      btn.textContent = actionMeta.label;
-      btn.disabled = actionMeta.disabled;
-      btn.addEventListener("click", async function () { await moveSignupToParticipant(row.id); });
-      actionRow.appendChild(btn);
-      card.appendChild(actionRow);
 
       list.appendChild(card);
     });
+
     wrap.appendChild(list);
     return;
   }
 
+  // Desktopvisning
   const table = document.createElement("table");
-  table.innerHTML = "<thead><tr><th style='width:40px;'><input id='schoolSignupsSelectAllCheckbox' type='checkbox'/></th><th>Barn</th><th>Født</th><th>Kontakt</th><th>Skøyter</th><th>Parti</th><th>Status</th><th>Betaling</th><th>Medlem</th><th>Mottatt</th><th>Handling</th></tr></thead>";
+  table.innerHTML =
+    "<thead><tr>" +
+    "<th style='width:40px;'><input id='schoolSignupsSelectAllCheckbox' type='checkbox'/></th>" +
+    "<th>Barn</th>" +
+    "<th>Født</th>" +
+    "<th>Skøyter</th>" +
+    "<th>Påmeldingskode</th>" +
+    "<th>Mottatt</th>" +
+    "</tr></thead>";
+
   const tbody = document.createElement("tbody");
 
   rows.forEach((row) => {
     const tr = document.createElement("tr");
-    tr.innerHTML = "<td data-label='Velg'></td><td data-label='Barn'></td><td data-label='Født'></td><td data-label='Kontakt'></td><td data-label='Skøyter'></td><td data-label='Parti'></td><td data-label='Status'></td><td data-label='Betaling'></td><td data-label='Medlem'></td><td data-label='Mottatt'></td><td data-label='Handling'></td>";
+    tr.innerHTML =
+      "<td data-label='Velg'></td>" +
+      "<td data-label='Barn'></td>" +
+      "<td data-label='Født'></td>" +
+      "<td data-label='Skøyter'></td>" +
+      "<td data-label='Påmeldingskode'></td>" +
+      "<td data-label='Mottatt'></td>";
 
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.checked = selectedIds.has(String(row.id));
-    checkbox.addEventListener("change", function () { toggleSchoolSignupSelection(row.id, checkbox.checked); renderSchoolSignups(); });
-    tr.children[0].appendChild(checkbox);
+    checkbox.addEventListener("change", function () {
+      toggleSchoolSignupSelection(row.id, checkbox.checked);
+      renderSchoolSignups();
+    });
 
+    tr.children[0].appendChild(checkbox);
     tr.children[1].textContent = String(row.child_name || "-");
     tr.children[2].textContent = formatBirthDate(row.birth_date);
-    tr.children[3].textContent = [row.phone, row.email].filter(Boolean).join(" / ") || "-";
-    tr.children[4].textContent = formatSkateRequest(row);
-    tr.children[5].textContent = String(row.batch_name || "-");
-    tr.children[6].textContent = String(row.status || "Ny");
-    tr.children[7].textContent = formatPaymentStatus(row);
-    tr.children[8].textContent = findExistingMemberFromSignup(row) ? "Koblet til medlem" : "Ikke medlem ennå";
-    tr.children[9].textContent = formatDate(row.created_at);
-
-    const actionMeta = getActionMeta(row);
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = actionMeta.disabled ? "btn-secondary btn-small" : "btn-primary btn-small";
-    btn.textContent = actionMeta.label;
-    btn.disabled = actionMeta.disabled;
-    btn.addEventListener("click", async function () { await moveSignupToParticipant(row.id); });
-    tr.children[10].appendChild(btn);
+    tr.children[3].textContent = formatSkateRequest(row);
+    tr.children[4].textContent = formatSignupAccessCode(row);
+    tr.children[5].textContent = formatSignupReceivedAt(row);
 
     tbody.appendChild(tr);
   });
@@ -4390,11 +5108,21 @@ function renderSchoolSignups() {
   const selectAllBox = byId("schoolSignupsSelectAllCheckbox");
   if (selectAllBox) {
     const allVisibleIds = rows.map((row) => String(row.id));
-    const allSelected = allVisibleIds.length > 0 && allVisibleIds.every((id) => selectedIds.has(id));
-    selectAllBox.checked = allSelected;
+    selectAllBox.checked =
+      allVisibleIds.length > 0 &&
+      allVisibleIds.every((id) => selectedIds.has(id));
+
     selectAllBox.addEventListener("change", function () {
-      if (selectAllBox.checked) selectAllVisibleSchoolSignups();
-      else clearSchoolSignupSelection();
+      if (selectAllBox.checked) {
+        const ids = getSelectedSchoolSignupIds();
+        rows.forEach((row) => ids.add(String(row.id)));
+        setSelectedSchoolSignupIds(ids);
+      } else {
+        const ids = getSelectedSchoolSignupIds();
+        rows.forEach((row) => ids.delete(String(row.id)));
+        setSelectedSchoolSignupIds(ids);
+      }
+      renderSchoolSignups();
     });
   }
 }
@@ -4458,8 +5186,11 @@ function renderAll() {
           opt.textContent = d.name;
           reportDepartmentFilter.appendChild(opt);
         });
-        const stillExists = state.departments.some((d) => String(d.id) === String(currentValue || ""));
+        const stillExists = state.departments.some((d) =>
+          String(d.id) === String(currentValue || "")
+        );
         reportDepartmentFilter.value = stillExists ? currentValue : "";
+        updateReportSemesterFilter();
       }
 
       const returnDepartmentFilter = byId("returnDepartmentFilter");
@@ -4486,6 +5217,7 @@ function renderAll() {
       renderSchoolBatchOverview();
       renderSchoolParticipants();
       renderSchoolSignups();
+      renderSchoolBatchAdminList();
 
       renderDepartments();
       updateStats();
@@ -4559,21 +5291,12 @@ function renderAll() {
     async function returnLoan(loanId) {
       if (!supabaseClient) return;
       try {
-        const response = await fetch("/.netlify/functions/return-loan", {
-          method: "POST",
-          headers: await getFunctionAuthHeaders(),
-          body: JSON.stringify({
-            loan_id: loanId,
-            returned_at: new Date().toISOString()
-          })
-        });
-
-        const payload = await response.json().catch(() => ({}));
-
-        if (!response.ok || payload.error) {
-          throw new Error(payload.error || "Kunne ikke registrere innlevering.");
-        }
-
+        const result = await supabaseClient
+          .from("loans")
+          .update({ returned_at: new Date().toISOString() })
+          .eq("id", loanId)
+          .is("returned_at", null);
+        if (result.error) throw result.error;
         await loadAll();
       } catch (error) {
         console.error(error);
@@ -4809,7 +5532,7 @@ function parseBirthYearFromSpondValue(rawValue) {
         batchName: best.batch.name || "",
         groupId: best.group.id,
         groupName: best.group.name || "",
-        assignmentReason: "Videreført fra forrige parti (" + String(best.batch.name || "") + " - " + String(best.group.name || "") + ")"
+        assignmentReason: "Videreført fra forrige semester (" + String(best.batch.name || "") + " - " + String(best.group.name || "") + ")"
       };
     }
 
@@ -4933,122 +5656,551 @@ function parseBirthYearFromSpondValue(rawValue) {
       return { created: true, updated: false };
     }
 
-    async function importSpond() {
-      if (!supabaseClient) { alert("Lagre innstillinger først."); return; }
+
+    function normalizeSemesterName(value) {
+      return String(value || "")
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, " ")
+        .replace(/å/g, "a")
+        .replace(/ø/g, "o")
+        .replace(/æ/g, "ae");
+    }
+
+    function isApprovedSemesterName(value) {
+      return /^(September|Høst|Vinter|Vår)\s+\d{4}$/i.test(
+        String(value || "").trim()
+      );
+    }
+
+    function getSemesterYear(value) {
+      const match = String(value || "").trim().match(/(\d{4})$/);
+      return match ? Number(match[1]) : null;
+    }
+
+    function levenshteinDistance(a, b) {
+      const left = String(a || "");
+      const right = String(b || "");
+
+      const matrix = Array.from(
+        { length: left.length + 1 },
+        () => new Array(right.length + 1).fill(0)
+      );
+
+      for (let i = 0; i <= left.length; i += 1) matrix[i][0] = i;
+      for (let j = 0; j <= right.length; j += 1) matrix[0][j] = j;
+
+      for (let i = 1; i <= left.length; i += 1) {
+        for (let j = 1; j <= right.length; j += 1) {
+          const cost = left[i - 1] === right[j - 1] ? 0 : 1;
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j] + 1,
+            matrix[i][j - 1] + 1,
+            matrix[i - 1][j - 1] + cost
+          );
+        }
+      }
+
+      return matrix[left.length][right.length];
+    }
+
+    function findSimilarSemester(existingBatches, incomingName) {
+      const incomingNormalized = normalizeSemesterName(incomingName);
+      const incomingYear = getSemesterYear(incomingName);
+
+      let best = null;
+
+      for (const batch of existingBatches) {
+        const existingName = String(batch.name || "").trim();
+        const existingNormalized = normalizeSemesterName(existingName);
+
+        if (!existingNormalized || existingNormalized === incomingNormalized) {
+          continue;
+        }
+
+        const distance = levenshteinDistance(
+          incomingNormalized,
+          existingNormalized
+        );
+
+        const existingYear = getSemesterYear(existingName);
+
+        // To gyldige semester med forskjellige årstall skal ALDRI
+        // behandles som mulige duplikater.
+        if (
+          incomingYear &&
+          existingYear &&
+          incomingYear !== existingYear
+        ) {
+          continue;
+        }
+
+        const sameYear =
+          incomingYear &&
+          existingYear === incomingYear;
+
+        // "Veldig lik" brukes bare innen samme år, eller når ett av
+        // navnene mangler et gyldig årstall. Dette fanger skrivefeil
+        // uten å blande f.eks. Vår 2025 og Vår 2026.
+        const incomingTerm = incomingNormalized.replace(/\s+\d{4}$/, "");
+        const existingTerm = existingNormalized.replace(/\s+\d{4}$/, "");
+        const termDistance = levenshteinDistance(incomingTerm, existingTerm);
+
+        const isVerySimilar =
+          (sameYear && termDistance <= 2) ||
+          (!incomingYear || !existingYear) && distance <= 2;
+
+        if (!isVerySimilar) continue;
+
+        if (!best || distance < best.distance) {
+          best = {
+            batch,
+            distance
+          };
+        }
+      }
+
+      return best ? best.batch : null;
+    }
+
+    async function createSchoolSemesterFromImport(departmentId, semesterName) {
+      const result = await supabaseClient
+        .from("skating_school_batches")
+        .insert([{
+          department_id: departmentId,
+          name: semesterName,
+          status: "Planlagt",
+          start_date: null,
+          end_date: null
+        }])
+        .select()
+        .single();
+
+      if (result.error) throw result.error;
+
+      const batch = result.data;
+      state.schoolBatches.push(batch);
+
+      await ensureDefaultSchoolGroups(batch.id);
+
+      return batch;
+    }
+
+    async function resolveSchoolSemestersForImport(
+      departmentId,
+      semesterHeaders
+    ) {
+      const existing = (state.schoolBatches || []).filter((batch) =>
+        sameId(batch.department_id, departmentId)
+      );
+
+      const resolved = [];
+      const createdNames = [];
+      const mergedNames = [];
+
+      for (const header of semesterHeaders) {
+        const incomingName = String(header || "").trim();
+        const normalizedIncoming = normalizeSemesterName(incomingName);
+
+        let batch = existing.find((item) =>
+          normalizeSemesterName(item.name) === normalizedIncoming
+        );
+
+        if (batch) {
+          resolved.push({ header, batch });
+          continue;
+        }
+
+        const similar = findSimilarSemester(existing, incomingName);
+
+        if (similar) {
+          const shouldMerge = confirm(
+            'Semesteret "' +
+            incomingName +
+            '" i Spond-filen er veldig likt eksisterende semester "' +
+            String(similar.name || "") +
+            '".\n\n' +
+            "Vil du slå dem sammen?\n\n" +
+            "OK = bruk eksisterende semester.\n" +
+            "Avbryt = stopp hele importen."
+          );
+
+          if (!shouldMerge) {
+            throw new Error(
+              'Importen ble stoppet fordi semesteret "' +
+              incomingName +
+              '" ikke ble slått sammen med "' +
+              String(similar.name || "") +
+              '".'
+            );
+          }
+
+          batch = similar;
+          mergedNames.push(
+            incomingName + " → " + String(similar.name || "")
+          );
+          resolved.push({ header, batch });
+          continue;
+        }
+
+        batch = await createSchoolSemesterFromImport(
+          departmentId,
+          incomingName
+        );
+
+        existing.push(batch);
+        createdNames.push(incomingName);
+        resolved.push({ header, batch });
+      }
+
+      return {
+        resolved,
+        createdNames,
+        mergedNames
+      };
+    }
+
+
+async function importSpond() {
+      if (!supabaseClient) {
+        alert("Lagre innstillinger først.");
+        return;
+      }
+
       const departmentId = byId("spondDepartment").value;
       const file = byId("spondFile").files[0];
-      if (!departmentId) { alert("Velg avdeling for import først."); return; }
-      if (!file) { alert("Velg en Excel-fil først."); return; }
+
+      if (!departmentId) {
+        alert("Velg avdeling for import først.");
+        return;
+      }
+
+      if (!file) {
+        alert("Velg en Excel-fil først.");
+        return;
+      }
+
       setImportStatus("Import pågår ...", false);
       suppressAutoRefresh = true;
 
       try {
+        const isSchoolImport = isSchoolDepartment(departmentId);
+
         const buffer = await file.arrayBuffer();
         const workbook = XLSX.read(buffer, { type: "array" });
-        const sheetName = workbook.SheetNames.includes("For import") ? "For import" : workbook.SheetNames[0];
+
+        const sheetName = workbook.SheetNames.includes("For import")
+          ? "For import"
+          : workbook.SheetNames[0];
+
         const sheet = workbook.Sheets[sheetName];
         const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
-        if (!rows.length) throw new Error("Fant ingen rader i arket.");
+
+        if (!rows.length) {
+          throw new Error("Fant ingen rader i arket.");
+        }
 
         const headers = Object.keys(rows[0]);
-        const nameHeader = headers.includes("Barnets navn") ? "Barnets navn" : null;
-        if (!nameHeader) throw new Error("Fant ikke kolonnen 'Barnets navn'.");
-        const groupHeaders = headers.slice(0, headers.indexOf(nameHeader)).filter(Boolean);
+
+        const nameHeader = headers.includes("Barnets navn")
+          ? "Barnets navn"
+          : null;
+
+        if (!nameHeader) {
+          throw new Error("Fant ikke kolonnen 'Barnets navn'.");
+        }
+
+        const groupHeaders = headers
+          .slice(0, headers.indexOf(nameHeader))
+          .filter(Boolean);
+
         const birthDateHeader = getBirthDateHeader(headers);
+
+        let schoolSemesterMappings = [];
+        let createdSemesterNames = [];
+        let mergedSemesterNames = [];
+
+        if (isSchoolImport) {
+          const approvedSemesterHeaders = groupHeaders.filter(
+            isApprovedSemesterName
+          );
+
+          if (!approvedSemesterHeaders.length) {
+            throw new Error(
+              "Fant ingen godkjente semesterkolonner i Spond-filen. " +
+              "Godkjente navn er: September <Årstall>, Høst <Årstall>, " +
+              "Vinter <Årstall> og Vår <Årstall>."
+            );
+          }
+
+          // Dersom en kolonne ser ut som semester, men ikke følger
+          // navnestandarden, stopp før noe importeres.
+          const possibleInvalidSemesterHeaders = groupHeaders.filter((header) => {
+            const value = String(header || "").trim();
+            if (!value) return false;
+            if (isApprovedSemesterName(value)) return false;
+
+            return /september|høst|host|vinter|vår|var/i.test(value) &&
+              /\d{2,4}/.test(value);
+          });
+
+          if (possibleInvalidSemesterHeaders.length) {
+            throw new Error(
+              "Fant semesterkolonner med ugyldig navn: " +
+              possibleInvalidSemesterHeaders.join(", ") +
+              ". Godkjente navn er: September <Årstall>, Høst <Årstall>, " +
+              "Vinter <Årstall> og Vår <Årstall>."
+            );
+          }
+
+          const semesterResolution =
+            await resolveSchoolSemestersForImport(
+              departmentId,
+              approvedSemesterHeaders
+            );
+
+          schoolSemesterMappings =
+            semesterResolution.resolved;
+
+          createdSemesterNames =
+            semesterResolution.createdNames;
+
+          mergedSemesterNames =
+            semesterResolution.mergedNames;
+        }
 
         let imported = 0;
         let schoolEnrollmentCount = 0;
-        let schoolBatchCount = 0;
-        const schoolBatchNames = new Set();
+        let skippedWithoutSemester = 0;
+
         const missingContact = [];
         const missingBirthDate = [];
         const similarNameWarnings = [];
 
+        // Cache grupper for hvert semester slik at de ikke hentes på nytt
+        // for hver deltaker.
+        const groupsByBatchId = new Map();
+
+        if (isSchoolImport) {
+          for (const mapping of schoolSemesterMappings) {
+            const batchId = String(mapping.batch.id);
+
+            if (!groupsByBatchId.has(batchId)) {
+              groupsByBatchId.set(
+                batchId,
+                await ensureDefaultSchoolGroups(mapping.batch.id)
+              );
+            }
+          }
+        }
+
         for (const row of rows) {
           const name = getCellValue(row, "Barnets navn");
-          const childEmail = getCellValue(row, "Barnets e-post");
-          const childPhone = getCellValue(row, "Barnets mobil");
-          const guardianEmail = getCellValue(row, "Foresatt 1's e-post");
-          const guardianPhone = getCellValue(row, "Foresatt 1's mobilnummer");
-          const email = childEmail || guardianEmail || null;
-          const phone = childPhone || guardianPhone || null;
-          const rawBirthDate = birthDateHeader ? row[birthDateHeader] : "";
-          const birthYear = parseBirthYearFromSpondValue(rawBirthDate);
 
           if (!name) continue;
-          if (!email && !phone) missingContact.push(name);
-          if (!birthYear) missingBirthDate.push(name);
 
-          const memberLookup = await findMemberByImportedName(name);
-          let member = memberLookup.member;
+          let selectedSchoolSemesters = [];
 
-          if (memberLookup.ambiguous && memberLookup.ambiguous.length) {
+          if (isSchoolImport) {
+            selectedSchoolSemesters = schoolSemesterMappings.filter(
+              (mapping) => isX(row[mapping.header])
+            );
+
+            // Ikke importer barn som ikke har X i noen godkjent semesterkolonne.
+            if (!selectedSchoolSemesters.length) {
+              skippedWithoutSemester += 1;
+              continue;
+            }
+          }
+
+          const childEmail =
+            getCellValue(row, "Barnets e-post");
+
+          const childPhone =
+            getCellValue(row, "Barnets mobil");
+
+          const guardianEmail =
+            getCellValue(row, "Foresatt 1's e-post");
+
+          const guardianPhone =
+            getCellValue(row, "Foresatt 1's mobilnummer");
+
+          const email =
+            childEmail ||
+            guardianEmail ||
+            null;
+
+          const phone =
+            childPhone ||
+            guardianPhone ||
+            null;
+
+          const rawBirthDate =
+            birthDateHeader
+              ? row[birthDateHeader]
+              : "";
+
+          const birthYear =
+            parseBirthYearFromSpondValue(
+              rawBirthDate
+            );
+
+          if (!email && !phone) {
+            missingContact.push(name);
+          }
+
+          if (!birthYear) {
+            missingBirthDate.push(name);
+          }
+
+          const memberLookup =
+            await findMemberByImportedName(
+              name
+            );
+
+          let member =
+            memberLookup.member;
+
+          if (
+            memberLookup.ambiguous &&
+            memberLookup.ambiguous.length
+          ) {
             similarNameWarnings.push({
               importedName: name,
-              matches: memberLookup.ambiguous.slice(0, 5)
+              matches:
+                memberLookup.ambiguous.slice(0, 5)
             });
           }
 
           if (member) {
-            const upd = await supabaseClient
-              .from("members")
-              .update({ name: name, email: email, phone: phone })
-              .eq("id", member.id)
-              .select()
-              .single();
-            if (upd.error) throw upd.error;
+            const updatePayload = {
+              name,
+              email,
+              phone
+            };
+
+            if (isSchoolImport) {
+              updatePayload.role =
+                "Skøyteskole";
+            }
+
+            const upd =
+              await supabaseClient
+                .from("members")
+                .update(updatePayload)
+                .eq("id", member.id)
+                .select()
+                .single();
+
+            if (upd.error) {
+              throw upd.error;
+            }
+
             member = upd.data;
-            state.members = state.members.map((item) => String(item.id) === String(member.id) ? member : item);
+
+            state.members =
+              state.members.map((item) =>
+                String(item.id) ===
+                String(member.id)
+                  ? member
+                  : item
+              );
           } else {
-            const ins = await supabaseClient
-              .from("members")
-              .insert([{ name: name, email: email, phone: phone }])
-              .select()
-              .single();
-            if (ins.error) throw ins.error;
+            const insertPayload = {
+              name,
+              email,
+              phone
+            };
+
+            if (isSchoolImport) {
+              insertPayload.role =
+                "Skøyteskole";
+            }
+
+            const ins =
+              await supabaseClient
+                .from("members")
+                .insert([insertPayload])
+                .select()
+                .single();
+
+            if (ins.error) {
+              throw ins.error;
+            }
+
             member = ins.data;
             state.members.push(member);
           }
 
-          const activeGroups = groupHeaders.filter((h) => isX(row[h]));
-          await setMemberGroups(member.id, activeGroups, departmentId);
+          if (isSchoolImport) {
+            // Ett barn kan ha X i flere semesterkolonner.
+            for (const mapping of selectedSchoolSemesters) {
+              const semesterGroups =
+                groupsByBatchId.get(
+                  String(mapping.batch.id)
+                ) || [];
 
-          for (const batchName of activeGroups) {
-            const batchResult = await ensureSchoolBatchForImport(batchName, departmentId);
-            const batch = batchResult.batch;
-            if (!batch) continue;
+              let resolvedGroupName = null;
+              let assignmentReason = null;
 
-            if (batchResult.created) schoolBatchCount += 1;
-            schoolBatchNames.add(String(batch.id));
+              if (birthYear) {
+                resolvedGroupName =
+                  getSchoolGroupNameByBirthYear(
+                    birthYear
+                  );
 
-            const schoolGroups = await ensureDefaultSchoolGroups(batch.id);
-            const previousAssignment = getPreviousSchoolGroupAssignment(member.id, batch.id, departmentId);
+                assignmentReason =
+                  resolvedGroupName
+                    ? "Automatisk basert på fødselsår (" +
+                      birthYear +
+                      ")"
+                    : "Mangler regel for fødselsår (" +
+                      birthYear +
+                      ")";
+              } else {
+                assignmentReason =
+                  "Mangler fødselsdato fra Spond";
+              }
 
-            let resolvedGroupName = null;
-            let assignmentReason = "";
+              const resolvedGroup =
+                semesterGroups.find((group) =>
+                  String(group.name || "")
+                    .trim()
+                    .toLowerCase() ===
+                  String(resolvedGroupName || "")
+                    .trim()
+                    .toLowerCase()
+                );
 
-            if (previousAssignment && previousAssignment.groupName) {
-              resolvedGroupName = previousAssignment.groupName;
-              assignmentReason = previousAssignment.assignmentReason;
-            } else {
-              resolvedGroupName = getSchoolGroupNameByBirthYear(birthYear);
-              assignmentReason = birthYear
-                ? (resolvedGroupName ? "Automatisk basert på fødselsår (" + birthYear + ")" : "Mangler regel for fødselsår (" + birthYear + ")")
-                : "Mangler fødselsdato fra Spond";
+              const enrollmentResult =
+                await upsertSchoolEnrollmentFromImport(
+                  mapping.batch.id,
+                  member.id,
+                  birthYear,
+                  resolvedGroup
+                    ? resolvedGroup.id
+                    : null,
+                  assignmentReason
+                );
+
+              if (
+                enrollmentResult.created ||
+                enrollmentResult.updated
+              ) {
+                schoolEnrollmentCount += 1;
+              }
             }
+          } else {
+            const activeGroups =
+              groupHeaders.filter((header) =>
+                isX(row[header])
+              );
 
-            const resolvedGroup = schoolGroups.find((group) =>
-              String(group.name || "").trim().toLowerCase() === String(resolvedGroupName || "").trim().toLowerCase()
-            );
-
-            const enrollmentResult = await upsertSchoolEnrollmentFromImport(
-              batch.id,
+            await setMemberGroups(
               member.id,
-              birthYear,
-              resolvedGroup ? resolvedGroup.id : null,
-              assignmentReason
+              activeGroups,
+              departmentId
             );
-            if (enrollmentResult.created || enrollmentResult.updated) schoolEnrollmentCount += 1;
           }
 
           imported += 1;
@@ -5056,43 +6208,107 @@ function parseBirthYearFromSpondValue(rawValue) {
 
         await loadAll();
 
-        let message = "Import ferdig. Importert " + imported + " medlemmer.";
-        message += "<br>Skøyteskole: oppdatert/opprettet " + schoolEnrollmentCount + " partideltakelser i " + schoolBatchNames.size + " partier.";
-        if (schoolBatchCount > 0) {
-          message += "<br>Nye partier opprettet automatisk ved behov: " + schoolBatchCount + ".";
-        }
-        if (missingBirthDate.length > 0) {
-          message += "<br><br>Mangler fødselsdato (" + missingBirthDate.length + "):<br>";
-          message += missingBirthDate.map((name) => escapeHtml(name)).join("<br>");
-        }
-        if (similarNameWarnings.length > 0) {
-          message += "<br><br>Mulige nesten-like navn som bør sjekkes manuelt (" + similarNameWarnings.length + "):<br>";
-          message += similarNameWarnings
-            .map((item) => escapeHtml(item.importedName) + " → " + item.matches.map((name) => escapeHtml(name)).join(", "))
-            .join("<br>");
-        }
-        if (missingContact.length > 0) {
-          message += "<br><br>Mangler kontaktinfo (" + missingContact.length + "):<br>";
-          message += missingContact.map((name) =>
-            '<span class="linklike missing-contact-name" data-name="' + escapeHtml(name) + '">' + escapeHtml(name) + "</span>"
-          ).join("<br>");
-          message += "<br><br>Klikk på et navn for å fylle inn medlemsskjemaet.";
-        }
-        setImportStatusHtml(message, false);
+        let message =
+          "Import ferdig. Importert " +
+          imported +
+          " medlemmer.";
 
-        document.querySelectorAll(".missing-contact-name").forEach((el) => {
-          el.addEventListener("click", function () { fillMemberFormFromName(this.dataset.name || ""); });
-        });
+        if (isSchoolImport) {
+          message +=
+            "<br>Oppdatert/opprettet " +
+            schoolEnrollmentCount +
+            " semesterdeltakelser.";
+
+          if (createdSemesterNames.length) {
+            message +=
+              "<br>Nye semester opprettet: <strong>" +
+              createdSemesterNames
+                .map(escapeHtml)
+                .join(", ") +
+              "</strong>.";
+          }
+
+          if (mergedSemesterNames.length) {
+            message +=
+              "<br>Semester slått sammen etter godkjenning: <strong>" +
+              mergedSemesterNames
+                .map(escapeHtml)
+                .join(", ") +
+              "</strong>.";
+          }
+
+          if (skippedWithoutSemester > 0) {
+            message +=
+              "<br>Hoppet over " +
+              skippedWithoutSemester +
+              " personer uten X i noen godkjent semesterkolonne.";
+          }
+        }
+
+        if (missingBirthDate.length > 0) {
+          message +=
+            "<br><br>Mangler fødselsdato (" +
+            missingBirthDate.length +
+            "): " +
+            missingBirthDate
+              .slice(0, 20)
+              .map(escapeHtml)
+              .join(", ");
+
+          if (missingBirthDate.length > 20) {
+            message += " ...";
+          }
+        }
+
+        if (missingContact.length > 0) {
+          message +=
+            "<br><br>Mangler kontaktinfo (" +
+            missingContact.length +
+            "): " +
+            missingContact
+              .slice(0, 20)
+              .map(escapeHtml)
+              .join(", ");
+
+          if (missingContact.length > 20) {
+            message += " ...";
+          }
+        }
+
+        if (similarNameWarnings.length > 0) {
+          message +=
+            "<br><br><strong>Mulige navneduplikater:</strong>";
+
+          similarNameWarnings
+            .slice(0, 20)
+            .forEach((warning) => {
+              message +=
+                "<br>" +
+                escapeHtml(warning.importedName) +
+                " → " +
+                warning.matches
+                  .map(escapeHtml)
+                  .join(", ");
+            });
+        }
+
+        setImportStatus(message, false);
+
       } catch (error) {
         console.error(error);
-        setImportStatus("Import feilet: " + error.message, true);
+
+        setImportStatus(
+          "Import feilet: " +
+          (error.message || error),
+          true
+        );
       } finally {
         suppressAutoRefresh = false;
       }
     }
 
 
-    async function importSkates() {
+async function importSkates() {
       if (!supabaseClient) { alert("Lagre innstillinger først."); return; }
       const file = byId("skateFile").files[0];
       if (!file) { alert("Velg en Excel-fil først."); return; }
@@ -5310,8 +6526,7 @@ function parseBirthYearFromSpondValue(rawValue) {
           .map((group) => String(group.department_id || ""))
           .filter(Boolean)
       ));
-      const savedDepartmentId = member.department_id || (memberDepartmentIds.length === 1 ? memberDepartmentIds[0] : "");
-      if (byId("memberDepartment")) byId("memberDepartment").value = savedDepartmentId;
+      if (byId("memberDepartment")) byId("memberDepartment").value = memberDepartmentIds.length === 1 ? memberDepartmentIds[0] : "";
       if (byId("memberRole")) byId("memberRole").value = member.role || "Aktiv";
       byId("memberPhone").value = member.phone || "";
       byId("memberEmail").value = member.email || "";
@@ -5458,6 +6673,7 @@ function populateMemberEditList() {
     function getFilteredMembersRows() {
       const search = byId("searchMembers") ? byId("searchMembers").value.trim().toLowerCase() : "";
       const departmentFilter = byId("filterMemberDepartment") ? byId("filterMemberDepartment").value : "";
+      const semesterFilter = byId("filterMemberSemester") ? byId("filterMemberSemester").value : "";
       const selectedGroupId = byId("filterMemberGroup") ? String(byId("filterMemberGroup").value || "") : "";
       const roleFilter = byId("filterMemberRole") ? byId("filterMemberRole").value : "";
       let rows = state.members.slice();
@@ -5469,6 +6685,15 @@ function populateMemberEditList() {
             String(group.department_id) === String(departmentFilter) && memberGroupIds.includes(group.id)
           );
         });
+      }
+
+      if (semesterFilter) {
+        const semesterMemberIds = new Set(
+          (state.schoolEnrollments || [])
+            .filter((enrollment) => sameId(enrollment.batch_id, semesterFilter))
+            .map((enrollment) => String(enrollment.member_id))
+        );
+        rows = rows.filter((member) => semesterMemberIds.has(String(member.id)));
       }
 
       if (selectedGroupId) {
@@ -5803,7 +7028,7 @@ async function loadAll() {
 
         const schoolEnrollmentsRes = await supabaseClient
           .from("skating_school_enrollments")
-          .select("id, batch_id, member_id, school_group_id, birth_year, assignment_reason, manual_override, notes, members(name, role)")
+          .select("id, batch_id, member_id, school_group_id, birth_year, advisor_name, assignment_reason, manual_override, notes, members(name, role, phone, email)")
           .order("created_at", { ascending: true });
         if (schoolEnrollmentsRes.error) throw schoolEnrollmentsRes.error;
 
@@ -5812,7 +7037,7 @@ async function loadAll() {
         try {
           const schoolSignupsRes = await supabaseClient
             .from("skating_school_signups")
-            .select("id, created_at, batch_id, department_id, batch_name, child_name, phone, email, birth_date, requested_skate_size, has_own_skates, existing_member_id, status, payment_status, payment_exempt, amount_nok, stripe_checkout_session_id, stripe_payment_intent_id, paid_at, source, notes")
+            .select("id, created_at, batch_id, department_id, batch_name, child_name, phone, email, birth_date, requested_skate_size, has_own_skates, existing_member_id, advisor_name, status, payment_status, payment_exempt, amount_nok, stripe_checkout_session_id, stripe_payment_intent_id, paid_at, source, notes, access_code_id, access_code")
             .order("created_at", { ascending: false });
           if (schoolSignupsRes.error) throw schoolSignupsRes.error;
           schoolSignupsData = schoolSignupsRes.data || [];
@@ -5834,10 +7059,6 @@ async function loadAll() {
         state.schoolSignupsLoadError = schoolSignupsLoadError;
 
         renderAll();
-        if (currentRole === "admin") {
-          try { await loadAccessRoles(); } catch (accessError) { console.error(accessError); }
-        }
-        applyAccessControl();
       } catch (error) {
         console.error(error);
         alert("Kunne ikke laste data.\n\n" + error.message);
@@ -6289,126 +7510,6 @@ async function loadAll() {
       setTimeout(function () { window.print(); setTimeout(function () { document.body.classList.remove("printing-member-qr"); }, 300); }, 50);
     }
 
-    if (byId("authSupabaseUrl")) byId("authSupabaseUrl").value = (loadConfig().url || "");
-    if (byId("authSupabaseAnonKey")) byId("authSupabaseAnonKey").value = (loadConfig().anonKey || "");
-
-    if (byId("btnSaveAuthConfig")) byId("btnSaveAuthConfig").addEventListener("click", function () {
-      const ok = initFromSavedConfig();
-      setLoginMessage(ok ? "Supabase-oppsett er klart. Du kan logge inn." : "Supabase kunne ikke startes.", !ok);
-    });
-
-    if (byId("loginForm")) byId("loginForm").addEventListener("submit", async function (e) {
-      e.preventDefault();
-      try {
-        if (!supabaseClient) {
-          const ok = initFromSavedConfig();
-          if (!ok) throw new Error("Supabase kunne ikke startes. Sjekk at siden er deployet riktig.");
-        }
-        const email = byId("loginEmail").value.trim();
-        const password = byId("loginPassword").value;
-        const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        setLoginMessage("Logget inn. Laster tilgang...", false);
-        await completeLoginFlow();
-      } catch (error) {
-        console.error(error);
-        setLoginMessage(error.message || "Innlogging feilet.", true);
-      }
-    });
-
-    if (byId("btnShowForgotPassword")) byId("btnShowForgotPassword").addEventListener("click", function () {
-      showForgotPasswordForm(true);
-    });
-
-    if (byId("btnCancelForgotPassword")) byId("btnCancelForgotPassword").addEventListener("click", function () {
-      showForgotPasswordForm(false);
-    });
-
-    if (byId("forgotPasswordForm")) byId("forgotPasswordForm").addEventListener("submit", async function (e) {
-      e.preventDefault();
-      try {
-        if (!supabaseClient) {
-          const ok = initFromSavedConfig();
-          if (!ok) throw new Error("Supabase kunne ikke startes. Sjekk at siden er deployet riktig.");
-        }
-        const email = normalizeEmail(byId("forgotPasswordEmail").value);
-        if (!email) throw new Error("Skriv inn e-postadressen din.");
-        const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
-          redirectTo: getAuthRedirectUrl()
-        });
-        if (error) throw error;
-        setForgotPasswordMessage("Hvis e-postadressen finnes som bruker, er passordlenke sendt. Sjekk innboksen din.", false);
-      } catch (error) {
-        console.error(error);
-        setForgotPasswordMessage(error.message || "Kunne ikke sende passordlenke.", true);
-      }
-    });
-
-    if (byId("btnChangePassword")) byId("btnChangePassword").addEventListener("click", function () {
-      showPasswordModal("Endre passord", "Velg et nytt passord på minst 8 tegn.");
-    });
-
-    if (byId("btnClosePasswordModal")) byId("btnClosePasswordModal").addEventListener("click", hidePasswordModal);
-
-    if (byId("changePasswordForm")) byId("changePasswordForm").addEventListener("submit", async function (e) {
-      e.preventDefault();
-      try {
-        if (!supabaseClient || !supabaseClient.auth) throw new Error("Supabase er ikke klart.");
-        const password = byId("newPassword").value || "";
-        const confirm = byId("newPasswordConfirm").value || "";
-        if (password.length < 8) throw new Error("Passordet må være minst 8 tegn.");
-        if (password !== confirm) throw new Error("Passordene er ikke like.");
-        const { error } = await supabaseClient.auth.updateUser({ password });
-        if (error) throw error;
-        setPasswordMessage("Passordet er endret. Du kan nå logge inn med det nye passordet.", false);
-        if (isPasswordRecoveryMode) {
-          isPasswordRecoveryMode = false;
-          await supabaseClient.auth.signOut();
-          window.history.replaceState({}, document.title, window.location.pathname);
-          setTimeout(function () {
-            hidePasswordModal();
-            if (byId("authGate")) byId("authGate").classList.remove("hidden");
-            if (byId("appShell")) byId("appShell").classList.add("hidden");
-            showForgotPasswordForm(false);
-            setLoginMessage("Passordet er endret. Logg inn med nytt passord.", false);
-          }, 900);
-        } else {
-          setTimeout(hidePasswordModal, 700);
-        }
-      } catch (error) {
-        console.error(error);
-        setPasswordMessage(error.message || "Kunne ikke endre passord.", true);
-      }
-    });
-
-    if (byId("btnLogout")) byId("btnLogout").addEventListener("click", handleLogout);
-
-    if (byId("accessRoleForm")) byId("accessRoleForm").addEventListener("submit", async function (e) {
-      e.preventDefault();
-      if (currentRole !== "admin") return;
-      const email = byId("accessEmail").value.trim();
-      const role = byId("accessRole").value;
-      const password = byId("accessPassword") ? byId("accessPassword").value : "";
-      if (!email || !role || !password) {
-        setAccessRoleMessage("Fyll inn e-post, midlertidig passord og rolle.", true);
-        return;
-      }
-      if (password.length < 8) {
-        setAccessRoleMessage("Midlertidig passord må være minst 8 tegn.", true);
-        return;
-      }
-      try {
-        await createAppUser(email, role, password);
-        byId("accessRoleForm").reset();
-        byId("accessRole").value = "utlan";
-        setAccessRoleMessage("Bruker opprettet. Send e-post og midlertidig passord til brukeren manuelt.", false);
-        await loadAccessRoles();
-      } catch (error) {
-        console.error(error);
-        setAccessRoleMessage("Kunne ikke opprette bruker.\n\n" + error.message, true);
-      }
-    });
-
     byId("departmentForm").addEventListener("submit", async function (e) {
       e.preventDefault();
       if (!supabaseClient) { alert("Lagre innstillinger først."); return; }
@@ -6441,14 +7542,16 @@ async function loadAll() {
 
     byId("configForm").addEventListener("submit", async function (e) {
       e.preventDefault();
-      const config = loadConfig();
+      const url = byId("supabaseUrl").value.trim();
+      const anonKey = byId("supabaseAnonKey").value.trim();
+
+      if (!url || !anonKey) {
+        setConfigMessage("Du må fylle inn både URL og anon key.", true);
+        return;
+      }
 
       try {
-        saveConfig(config);
-        if (byId("supabaseUrl")) byId("supabaseUrl").value = config.url;
-        if (byId("supabaseAnonKey")) byId("supabaseAnonKey").value = config.anonKey;
-        if (byId("authSupabaseUrl")) byId("authSupabaseUrl").value = config.url;
-        if (byId("authSupabaseAnonKey")) byId("authSupabaseAnonKey").value = config.anonKey;
+        saveConfig({ url: url, anonKey: anonKey });
       } catch (error) {
         console.error(error);
         setConfigMessage("Kunne ikke lagre innstillinger i nettleseren.", true);
@@ -6517,54 +7620,24 @@ async function loadAll() {
 
       try {
         let memberId;
-        const memberPayload = {
-          name,
-          phone,
-          email,
-          role,
-          department_id: selectedDepartmentId || null,
-        };
-
         if (editingMemberId) {
-          const upd = await supabaseClient
-            .from("members")
-            .update(memberPayload)
-            .eq("id", editingMemberId)
-            .select()
-            .single();
+          const upd = await supabaseClient.from("members").update({ name, phone, email, role }).eq("id", editingMemberId).select().single();
           if (upd.error) throw upd.error;
           memberId = editingMemberId;
         } else {
-          const ins = await supabaseClient
-            .from("members")
-            .insert([memberPayload])
-            .select()
-            .single();
+          const ins = await supabaseClient.from("members").insert([{ name, phone, email, role }]).select().single();
           if (ins.error) throw ins.error;
           memberId = ins.data.id;
         }
 
-        let groupNames = groupsText ? groupsText.split(",").map((x) => x.trim()).filter(Boolean) : [];
-
-        // Hvis en avdeling er valgt, men ingen gruppe er skrevet inn,
-        // kobles medlemmet automatisk til en standardgruppe i avdelingen.
-        // Dette gjør at medlemmet faktisk dukker opp under valgt avdeling.
-        if (selectedDepartmentId && groupNames.length === 0) {
-          groupNames = ["Alle medlemmer"];
-        }
-
+        const groupNames = groupsText ? groupsText.split(",").map((x) => x.trim()).filter(Boolean) : [];
         await setMemberGroups(memberId, groupNames, selectedDepartmentId);
 
         resetMemberForm();
         await loadAll();
       } catch (error) {
         console.error(error);
-        const message = String(error && error.message || "");
-        if (message.includes("department_id")) {
-          alert("Kunne ikke lagre avdeling på medlem. Kjør SQL-filen member-department.sql i Supabase først.\n\n" + message);
-        } else {
-          alert("Kunne ikke lagre medlem.\n\n" + message);
-        }
+        alert("Kunne ikke lagre medlem.\n\n" + error.message);
       }
     });
 
@@ -6591,23 +7664,26 @@ async function loadAll() {
       }
 
       try {
-        const response = await fetch("/.netlify/functions/create-loan", {
-          method: "POST",
-          headers: await getFunctionAuthHeaders(),
-          body: JSON.stringify({ department_id, member_id, skate_id, loaned_at })
-        });
+        const check = await supabaseClient
+          .from("loans")
+          .select("id")
+          .eq("skate_id", skate_id)
+          .is("returned_at", null)
+          .limit(1);
 
-        const result = await response.json().catch(() => ({}));
+        if (check.error) throw check.error;
 
-        if (!response.ok || !result.success) {
-          if (response.status === 409) {
-            await loadAll();
-            alert((result && result.error) || "Denne skøyten ble nettopp utlånt av en annen bruker. Listen er oppdatert.");
-            return;
-          }
-
-          throw new Error((result && result.error) || "Kunne ikke registrere utlån.");
+        if ((check.data || []).length > 0) {
+          await loadAll();
+          alert("Denne skøyten ble nettopp utlånt av en annen bruker. Listen er oppdatert.");
+          return;
         }
+
+        const result = await supabaseClient
+          .from("loans")
+          .insert([{ department_id, member_id, skate_id, loaned_at }]);
+
+        if (result.error) throw result.error;
 
         await loadAll();
 
@@ -6646,7 +7722,7 @@ async function loadAll() {
       const end_date = byId("schoolBatchEndDate").value || null;
 
       if (!department_id || !name) {
-        setSchoolMessage("schoolBatchMessage", "Velg avdeling og skriv inn partinavn.", true);
+        setSchoolMessage("schoolBatchMessage", "Velg avdeling og skriv inn semesternavn.", true);
         return;
       }
 
@@ -6667,14 +7743,14 @@ async function loadAll() {
         if (groupIns.error) throw groupIns.error;
 
         byId("schoolBatchForm").reset();
-        setSchoolMessage("schoolBatchMessage", "Parti opprettet med Blå, Gul og Rød.", false);
+        setSchoolMessage("schoolBatchMessage", "Semester opprettet med Blå, Gul og Rød.", false);
         await loadAll();
         if (byId("schoolBatchPicker")) byId("schoolBatchPicker").value = String(batchId);
         renderSchoolBatchOverview();
         renderSchoolParticipants();
       } catch (error) {
         console.error(error);
-        setSchoolMessage("schoolBatchMessage", "Kunne ikke opprette parti. " + error.message, true);
+        setSchoolMessage("schoolBatchMessage", "Kunne ikke opprette semester. " + error.message, true);
       }
     });
 
@@ -6692,19 +7768,16 @@ async function loadAll() {
       renderSchoolParticipants();
     });
 
-    if (byId("schoolParticipantSearch")) byId("schoolParticipantSearch").addEventListener("input", updateSchoolParticipantMemberPicker);
+    if (byId("schoolParticipantSearch")) byId("schoolParticipantSearch").addEventListener("input", () => { updateSchoolParticipantMemberPicker(); renderSchoolParticipants(); });
     if (byId("schoolSignupSearch")) byId("schoolSignupSearch").addEventListener("input", renderSchoolSignups);
-    if (byId("schoolSignupStatusFilter")) byId("schoolSignupStatusFilter").addEventListener("change", renderSchoolSignups);
-    if (byId("btnSelectAllSchoolSignups")) byId("btnSelectAllSchoolSignups").addEventListener("click", selectAllVisibleSchoolSignups);
-    if (byId("btnClearSchoolSignupsSelection")) byId("btnClearSchoolSignupsSelection").addEventListener("click", clearSchoolSignupSelection);
-    if (byId("btnMoveSelectedSchoolSignups")) byId("btnMoveSelectedSchoolSignups").addEventListener("click", moveSelectedSchoolSignupsToParticipants);
+if (byId("btnMoveSelectedSchoolSignups")) byId("btnMoveSelectedSchoolSignups").addEventListener("click", moveSelectedSchoolSignupsToParticipants);
 
     if (byId("btnAddSchoolParticipant")) byId("btnAddSchoolParticipant").addEventListener("click", async function () {
       if (!supabaseClient) return;
       const batch_id = byId("schoolBatchPicker") ? byId("schoolBatchPicker").value : "";
       const member_id = byId("schoolParticipantMember") ? byId("schoolParticipantMember").value : "";
       if (!batch_id || !member_id) {
-        setSchoolMessage("schoolParticipantMessage", "Velg parti og medlem først.", true);
+        setSchoolMessage("schoolParticipantMessage", "Velg semester og medlem først.", true);
         return;
       }
       try {
@@ -6712,7 +7785,7 @@ async function loadAll() {
           .from("skating_school_enrollments")
           .insert([{ batch_id, member_id, assignment_reason: "Manuelt lagt til" }]);
         if (ins.error) throw ins.error;
-        setSchoolMessage("schoolParticipantMessage", "Deltaker lagt til i partiet.", false);
+        setSchoolMessage("schoolParticipantMessage", "Deltaker lagt til i semesteret.", false);
         await loadAll();
       } catch (error) {
         console.error(error);
@@ -6753,9 +7826,14 @@ attachSortHandlers();
     byId("filterMemberDepartment").addEventListener("change", function () {
       const groupEl = byId("filterMemberGroup");
       if (groupEl) groupEl.value = "";
+      const semesterEl = byId("filterMemberSemester");
+      if (semesterEl) semesterEl.value = "";
       updateMemberFilters();
       renderMembers();
     });
+    if (byId("filterMemberSemester")) {
+      byId("filterMemberSemester").addEventListener("change", renderMembers);
+    }
     byId("filterMemberGroup").addEventListener("change", renderMembers);
     if (byId("filterMemberRole")) byId("filterMemberRole").addEventListener("change", renderMembers);
     byId("btnLoadMemberForEdit").addEventListener("click", function () {
@@ -6808,7 +7886,17 @@ attachSortHandlers();
       setUiPref("returnGroupFilter", this.value || "");
       renderActiveLoans();
     });
-    byId("reportDepartmentFilter").addEventListener("change", renderReportLoansByGroup);
+    byId("reportDepartmentFilter").addEventListener("change", function () {
+      updateReportSemesterFilter();
+      renderReportLoansByGroup();
+    });
+
+    if (byId("reportSemesterFilter")) {
+      byId("reportSemesterFilter").addEventListener(
+        "change",
+        renderReportLoansByGroup
+      );
+    }
     if (byId("btnExportSkatesReport")) byId("btnExportSkatesReport").addEventListener("click", exportSkatesReportCsv);
     if (byId("btnExportArchivedSkatesReport")) byId("btnExportArchivedSkatesReport").addEventListener("click", exportArchivedSkatesReportCsv);
     if (byId("btnExportMembersReport")) byId("btnExportMembersReport").addEventListener("click", exportMembersReportCsv);
@@ -6835,55 +7923,520 @@ attachSortHandlers();
     byId("loanDate").value = nowLocalInputValue();
     if (byId("existingLoansDate")) byId("existingLoansDate").value = "2025-01-01";
     const started = initFromSavedConfig();
-    applyAccessControl();
-    if (started && supabaseClient && supabaseClient.auth) {
-      const recoveryUrlDetected = looksLikePasswordRecoveryUrl();
-
-      supabaseClient.auth.onAuthStateChange(async function (event, session) {
-        if (event === "PASSWORD_RECOVERY") {
-          enterPasswordRecoveryMode(session);
-          return;
-        }
-      });
-
-      supabaseClient.auth.getSession().then(async function (sessionResult) {
-        let session = sessionResult && sessionResult.data ? sessionResult.data.session : null;
-
-        if (recoveryUrlDetected) {
-          const search = new URLSearchParams(window.location.search || "");
-          const code = search.get("code");
-
-          if (code && !session && supabaseClient.auth.exchangeCodeForSession) {
-            try {
-              const exchanged = await supabaseClient.auth.exchangeCodeForSession(code);
-              session = exchanged && exchanged.data ? exchanged.data.session : session;
-            } catch (error) {
-              console.error("Password recovery code exchange failed", error);
-              setLoginMessage(error.message || "Passordlenken kunne ikke åpnes. Prøv å sende ny lenke.", true);
-            }
-          }
-
-          enterPasswordRecoveryMode(session);
-          try {
-            window.history.replaceState({}, document.title, "/index.html?reset=1");
-          } catch (e) {}
-          return;
-        }
-
-        if (session) {
-          try {
-            await completeLoginFlow();
-          } catch (error) {
-            console.error(error);
-            setLoginMessage(error.message || "Kunne ikke hente tilgang.", true);
-            applyAccessControl();
-          }
-        }
-      });
+    if (started) {
+      loadAll();
+      startAutoRefresh();
     }
   
+
+    
+
+    function getDepartmentNameById(departmentId) {
+      const department = (state.departments || []).find((item) => sameId(item.id, departmentId));
+      return department ? (department.name || "—") : "—";
+    }
+
+    function formatSchoolBatchDate(value) {
+      if (!value) return "—";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return String(value);
+      return date.toLocaleDateString("no-NO");
+    }
+
+    function setSchoolBatchListMessage(message, isError) {
+      const el = byId("schoolBatchListMessage");
+      if (!el) return;
+      el.textContent = message || "";
+      el.className = isError ? "help msg-error" : "help msg-ok";
+    }
+
+    let editingSchoolBatchId = null;
+
+    function renderSchoolBatchAdminList() {
+      const wrap = byId("schoolBatchAdminListWrap");
+      if (!wrap) return;
+
+      // Auto-refresh kjører jevnlig i appen. Mens et semester redigeres
+      // skal listen ikke bygges på nytt, ellers forsvinner redigeringsfeltet
+      // og ulagrede endringer.
+      if (
+        editingSchoolBatchId &&
+        wrap.querySelector(".school-batch-edit-panel:not(.hidden)")
+      ) {
+        return;
+      }
+
+      const rows = (state.schoolBatches || []).slice().sort((a, b) => {
+        const aDate = new Date(a.start_date || a.created_at || 0).getTime();
+        const bDate = new Date(b.start_date || b.created_at || 0).getTime();
+        return bDate - aDate;
+      });
+
+      if (!rows.length) {
+        wrap.innerHTML = '<div class="empty">Ingen semester registrert ennå.</div>';
+        return;
+      }
+
+      const list = document.createElement("div");
+      list.className = "school-batch-admin-list";
+
+      rows.forEach((batch) => {
+        const row = document.createElement("div");
+        row.className = "school-batch-admin-row";
+
+        const name = document.createElement("div");
+        name.innerHTML =
+          '<div class="school-batch-admin-name"></div>' +
+          '<div class="school-batch-admin-meta"></div>';
+        name.querySelector(".school-batch-admin-name").textContent =
+          batch.name || "Uten navn";
+        name.querySelector(".school-batch-admin-meta").textContent =
+          getDepartmentNameById(batch.department_id);
+
+        const start = document.createElement("div");
+        start.innerHTML =
+          '<div class="school-batch-admin-meta">Start</div>' +
+          '<div></div>';
+        start.lastElementChild.textContent =
+          formatSchoolBatchDate(batch.start_date);
+
+        const endDate = document.createElement("div");
+        endDate.innerHTML =
+          '<div class="school-batch-admin-meta">Slutt</div>' +
+          '<div></div>';
+        endDate.lastElementChild.textContent =
+          formatSchoolBatchDate(batch.end_date);
+
+        const currentStatus = document.createElement("div");
+        currentStatus.innerHTML =
+          '<div class="school-batch-admin-meta">Status</div>' +
+          '<div></div>';
+        currentStatus.lastElementChild.textContent =
+          batch.status || "—";
+
+        const select = document.createElement("select");
+        select.className = "school-batch-status-select";
+
+        ["Planlagt", "Aktiv", "Avsluttet"].forEach((status) => {
+          const option = document.createElement("option");
+          option.value = status;
+          option.textContent = status;
+          select.appendChild(option);
+        });
+
+        select.value = batch.status || "Planlagt";
+
+        select.addEventListener("change", async function () {
+          const previousStatus = batch.status || "Planlagt";
+          const nextStatus = select.value;
+
+          if (nextStatus === previousStatus) return;
+
+          select.disabled = true;
+          setSchoolBatchListMessage("Oppdaterer status ...", false);
+
+          try {
+            if (!supabaseClient) {
+              throw new Error("Supabase-oppsett mangler.");
+            }
+
+            const result = await supabaseClient
+              .from("skating_school_batches")
+              .update({ status: nextStatus })
+              .eq("id", batch.id)
+              .select("id, name, department_id, status, start_date, end_date")
+              .maybeSingle();
+
+            if (result.error) throw result.error;
+
+            batch.status = nextStatus;
+            currentStatus.lastElementChild.textContent = nextStatus;
+
+            const stateBatch = (state.schoolBatches || []).find((item) =>
+              sameId(item.id, batch.id)
+            );
+
+            if (stateBatch) stateBatch.status = nextStatus;
+
+            setSchoolBatchListMessage(
+              'Status for "' +
+              (batch.name || "semester") +
+              '" er endret til ' +
+              nextStatus +
+              ".",
+              false
+            );
+
+            try {
+              if (typeof refreshSchoolBatchPicker === "function") {
+                refreshSchoolBatchPicker();
+              }
+            } catch (_) {}
+
+            try {
+              if (typeof renderSchoolBatchOverview === "function") {
+                renderSchoolBatchOverview();
+              }
+            } catch (_) {}
+          } catch (error) {
+            console.error(error);
+            select.value = previousStatus;
+
+            setSchoolBatchListMessage(
+              "Kunne ikke oppdatere status.\n\n" +
+              (error.message || error),
+              true
+            );
+          } finally {
+            select.disabled = false;
+          }
+        });
+
+        const actions = document.createElement("div");
+        actions.style.display = "flex";
+        actions.style.gap = "8px";
+        actions.style.alignItems = "center";
+        actions.style.flexWrap = "wrap";
+
+        const editBtn = document.createElement("button");
+        editBtn.type = "button";
+        editBtn.className = "btn-secondary btn-small";
+        editBtn.textContent = "Rediger";
+
+        actions.appendChild(select);
+        actions.appendChild(editBtn);
+
+        row.appendChild(name);
+        row.appendChild(start);
+        row.appendChild(endDate);
+        row.appendChild(currentStatus);
+        row.appendChild(actions);
+
+        const editPanel = document.createElement("div");
+        editPanel.className = "school-batch-edit-panel hidden";
+        editPanel.style.gridColumn = "1 / -1";
+        editPanel.style.marginTop = "12px";
+        editPanel.style.paddingTop = "14px";
+        editPanel.style.borderTop = "1px solid #dbe3ee";
+
+        editPanel.innerHTML =
+          '<div class="form-grid">' +
+            '<div class="col-4">' +
+              '<label>Semesternavn</label>' +
+              '<input class="school-batch-edit-name" type="text">' +
+            '</div>' +
+            '<div class="col-3">' +
+              '<label>Startdato</label>' +
+              '<input class="school-batch-edit-start" type="date">' +
+            '</div>' +
+            '<div class="col-3">' +
+              '<label>Sluttdato</label>' +
+              '<input class="school-batch-edit-end" type="date">' +
+            '</div>' +
+            '<div class="col-2">' +
+              '<label>&nbsp;</label>' +
+              '<div style="display:flex; gap:8px; flex-wrap:wrap;">' +
+                '<button type="button" class="btn-primary btn-small school-batch-save-edit">Lagre</button>' +
+                '<button type="button" class="btn-secondary btn-small school-batch-cancel-edit">Avbryt</button>' +
+              '</div>' +
+            '</div>' +
+          '</div>';
+
+        const nameInput = editPanel.querySelector(".school-batch-edit-name");
+        const startInput = editPanel.querySelector(".school-batch-edit-start");
+        const endInput = editPanel.querySelector(".school-batch-edit-end");
+        const saveBtn = editPanel.querySelector(".school-batch-save-edit");
+        const cancelBtn = editPanel.querySelector(".school-batch-cancel-edit");
+
+        function resetEditFields() {
+          nameInput.value = batch.name || "";
+          startInput.value = batch.start_date || "";
+          endInput.value = batch.end_date || "";
+        }
+
+        resetEditFields();
+
+        editBtn.addEventListener("click", function () {
+          const willOpen = editPanel.classList.contains("hidden");
+
+          if (willOpen) {
+            // Lukk eventuell annen semesterredigering først.
+            const openPanel = wrap.querySelector(
+              ".school-batch-edit-panel:not(.hidden)"
+            );
+            if (openPanel && openPanel !== editPanel) {
+              openPanel.classList.add("hidden");
+            }
+
+            resetEditFields();
+            editPanel.classList.remove("hidden");
+            editingSchoolBatchId = batch.id;
+            nameInput.focus();
+          } else {
+            editPanel.classList.add("hidden");
+            editingSchoolBatchId = null;
+          }
+        });
+
+        cancelBtn.addEventListener("click", function () {
+          resetEditFields();
+          editPanel.classList.add("hidden");
+          editingSchoolBatchId = null;
+        });
+
+        saveBtn.addEventListener("click", async function () {
+          const nextName = String(nameInput.value || "").trim();
+          const nextStart = startInput.value || null;
+          const nextEnd = endInput.value || null;
+
+          if (!nextName) {
+            setSchoolBatchListMessage("Semesternavn kan ikke være tomt.", true);
+            nameInput.focus();
+            return;
+          }
+
+          if (nextStart && nextEnd && nextEnd < nextStart) {
+            setSchoolBatchListMessage(
+              "Sluttdato kan ikke være før startdato.",
+              true
+            );
+            return;
+          }
+
+          saveBtn.disabled = true;
+          cancelBtn.disabled = true;
+          editBtn.disabled = true;
+          setSchoolBatchListMessage("Lagrer semester ...", false);
+
+          try {
+            if (!supabaseClient) {
+              throw new Error("Supabase-oppsett mangler.");
+            }
+
+            const result = await supabaseClient
+              .from("skating_school_batches")
+              .update({
+                name: nextName,
+                start_date: nextStart,
+                end_date: nextEnd
+              })
+              .eq("id", batch.id)
+              .select("id, name, department_id, status, start_date, end_date, created_at")
+              .maybeSingle();
+
+            if (result.error) throw result.error;
+            if (!result.data) throw new Error("Fant ikke semesteret som skulle oppdateres.");
+
+            Object.assign(batch, result.data);
+
+            const stateBatch = (state.schoolBatches || []).find((item) =>
+              sameId(item.id, batch.id)
+            );
+
+            if (stateBatch) {
+              Object.assign(stateBatch, result.data);
+            }
+
+            name.querySelector(".school-batch-admin-name").textContent =
+              batch.name || "Uten navn";
+
+            start.lastElementChild.textContent =
+              formatSchoolBatchDate(batch.start_date);
+
+            endDate.lastElementChild.textContent =
+              formatSchoolBatchDate(batch.end_date);
+
+            editPanel.classList.add("hidden");
+            editingSchoolBatchId = null;
+
+            setSchoolBatchListMessage(
+              'Semesteret "' + batch.name + '" er oppdatert.',
+              false
+            );
+
+            try {
+              if (typeof updateSchoolBatchPicker === "function") {
+                updateSchoolBatchPicker();
+              }
+            } catch (_) {}
+
+            try {
+              if (typeof renderSchoolBatchOverview === "function") {
+                renderSchoolBatchOverview();
+              }
+            } catch (_) {}
+
+            try {
+              if (typeof renderSchoolParticipants === "function") {
+                renderSchoolParticipants();
+              }
+            } catch (_) {}
+          } catch (error) {
+            console.error(error);
+
+            setSchoolBatchListMessage(
+              "Kunne ikke oppdatere semester.\n\n" +
+              (error.message || error),
+              true
+            );
+          } finally {
+            saveBtn.disabled = false;
+            cancelBtn.disabled = false;
+            editBtn.disabled = false;
+          }
+        });
+
+        row.appendChild(editPanel);
+        list.appendChild(row);
+      });
+
+      wrap.innerHTML = "";
+      wrap.appendChild(list);
+    }
+    async function refreshSchoolBatchAdminList() {
+      if (!supabaseClient) {
+        setSchoolBatchListMessage("Supabase-oppsett mangler.", true);
+        return;
+      }
+
+      try {
+        setSchoolBatchListMessage("Henter semester ...", false);
+
+        const result = await supabaseClient
+          .from("skating_school_batches")
+          .select("id, name, department_id, status, start_date, end_date, created_at")
+          .order("created_at", { ascending: false });
+
+        if (result.error) throw result.error;
+
+        state.schoolBatches = result.data || [];
+        renderSchoolBatchAdminList();
+        setSchoolBatchListMessage("", false);
+      } catch (error) {
+        console.error(error);
+        setSchoolBatchListMessage(
+          "Kunne ikke hente semester.\n\n" + (error.message || error),
+          true
+        );
+      }
+    }
+
+    function setupSchoolTabs() {
+      const tabs = Array.from(document.querySelectorAll("#skatingSchoolTab .school-tab"));
+      const schoolSection = byId("schoolMainSection");
+
+      if (!tabs.length || !schoolSection) return;
+
+      function activateSchoolTab(tabName) {
+        tabs.forEach((tab) => {
+          tab.classList.toggle("active", tab.dataset.schoolTab === tabName);
+        });
+
+        if (tabName === "school") {
+          schoolSection.classList.remove("school-section-hidden");
+
+          const activeBatch = (state.schoolBatches || []).find(
+            (batch) => String(batch.status || "").trim().toLowerCase() === "aktiv"
+          );
+
+          const picker = byId("schoolBatchPicker");
+
+          if (picker && activeBatch) {
+            picker.value = String(activeBatch.id);
+            setUiPref("schoolBatchPicker", String(activeBatch.id));
+          }
+
+          updateSchoolParticipantMemberPicker();
+          renderSchoolBatchOverview();
+          renderSchoolParticipants();
+
+          if (supabaseClient) {
+            loadAll().then(() => {
+              const refreshedActiveBatch = (state.schoolBatches || []).find(
+                (batch) => String(batch.status || "").trim().toLowerCase() === "aktiv"
+              );
+
+              const refreshedPicker = byId("schoolBatchPicker");
+              if (refreshedPicker && refreshedActiveBatch) {
+                refreshedPicker.value = String(refreshedActiveBatch.id);
+                setUiPref("schoolBatchPicker", String(refreshedActiveBatch.id));
+              }
+
+              updateSchoolParticipantMemberPicker();
+              renderSchoolBatchOverview();
+              renderSchoolParticipants();
+            }).catch((error) => {
+              console.error("Kunne ikke oppdatere deltakere:", error);
+            });
+          }
+        }
+      }
+
+      tabs.forEach((tab) => {
+        if (!tab.dataset.schoolTab) return;
+
+        tab.addEventListener("click", () => {
+          if (tab.dataset.schoolTab === "signupForms") {
+            const signupPanel = byId("schoolSignupFormsPanel");
+            if (signupPanel) {
+              signupPanel.classList.remove("hidden");
+              schoolSection.classList.add("school-section-hidden");
+            }
+            tabs.forEach((item) => {
+              item.classList.toggle("active", item === tab);
+            });
+            return;
+          }
+
+          const signupPanel = byId("schoolSignupFormsPanel");
+          if (signupPanel) signupPanel.classList.add("hidden");
+
+          activateSchoolTab(tab.dataset.schoolTab || "school");
+        });
+      });
+
+      const signupCodesLink = byId("schoolSignupCodesLink");
+      if (signupCodesLink) {
+        signupCodesLink.addEventListener("click", () => {
+          window.location.href = "admin-koder-bulk.html";
+        });
+      }
+
+      activateSchoolTab("school");
+
+      // Bakoverkompatibilitet for lenker fra Påmeldingskoder.
+      // "Admin" går nå til Admin -> Avdelinger.
+      const navParams = new URLSearchParams(window.location.search);
+      const requestedSection = navParams.get("section");
+      const requestedSchoolTab = navParams.get("tab");
+
+      if (requestedSection === "skating-school") {
+        if (requestedSchoolTab === "admin") {
+          showSection("adminTab").then(() => {
+            showAdminSubtab("departments");
+            renderSchoolBatchAdminList();
+          });
+        } else {
+          showSection("skatingSchoolTab").then(() => {
+            if (requestedSchoolTab === "signupForms") {
+              const signupFormsButton = document.querySelector(
+                '#skatingSchoolTab [data-school-tab="signupForms"]'
+              );
+              if (signupFormsButton) signupFormsButton.click();
+            } else {
+              activateSchoolTab("school");
+            }
+          });
+        }
+      }
+    }
+    setupSchoolTabs();
+
+    const refreshSchoolBatchesBtn = byId("btnRefreshSchoolBatches");
+    if (refreshSchoolBatchesBtn) {
+      refreshSchoolBatchesBtn.addEventListener("click", refreshSchoolBatchAdminList);
+    }
     setupAdminTabs();
-    applyAccessControl();
 </script>
 
 <div class="school-mobile-modal hidden" id="schoolMobileModal">
@@ -6899,6 +8452,414 @@ attachSortHandlers();
     </div>
   </div>
 </div>
+
+
+<script>
+(function () {
+  const AUTH_CONFIG_KEY = "skoyteutleie_supabase_config_v7";
+
+  // Miljøspesifikk frontend-konfigurasjon genereres av Netlify.
+  const AUTH_FALLBACK_CONFIG = {
+    url: (window.TKK_ENV && window.TKK_ENV.SUPABASE_URL) || "",
+    anonKey: (window.TKK_ENV && window.TKK_ENV.SUPABASE_PUBLISHABLE_KEY) || ""
+  };
+
+  function readAuthConfig() {
+    if (AUTH_FALLBACK_CONFIG.url && AUTH_FALLBACK_CONFIG.anonKey) {
+      return AUTH_FALLBACK_CONFIG;
+    }
+
+    try {
+      const raw = localStorage.getItem(AUTH_CONFIG_KEY);
+      const cfg = raw ? JSON.parse(raw) : {};
+      return {
+        url: cfg.url || "",
+        anonKey: cfg.anonKey || ""
+      };
+    } catch (_) {
+      return AUTH_FALLBACK_CONFIG;
+    }
+  }
+
+  function getAuthGuardClient() {
+    try {
+      if (window.supabase && window.supabase.createClient) {
+        const cfg = readAuthConfig();
+        if (cfg.url && cfg.anonKey) {
+          return window.supabase.createClient(cfg.url, cfg.anonKey);
+        }
+      }
+    } catch (error) {
+      console.error("Kunne ikke opprette auth-klient:", error);
+    }
+    return null;
+  }
+
+  function clearSupabaseAuthStorage() {
+    function clean(storage) {
+      try {
+        const keys = [];
+        for (let i = 0; i < storage.length; i += 1) {
+          const key = storage.key(i);
+          if (!key || key === AUTH_CONFIG_KEY) continue;
+          const lower = key.toLowerCase();
+
+          if (
+            lower.startsWith("sb-") ||
+            lower.includes("supabase.auth") ||
+            lower.includes("auth-token") ||
+            lower.includes("auth.session") ||
+            key === "skoyteutleie_current_user"
+          ) {
+            keys.push(key);
+          }
+        }
+        keys.forEach((key) => storage.removeItem(key));
+      } catch (_) {}
+    }
+
+    clean(window.localStorage);
+    clean(window.sessionStorage);
+  }
+
+  function setMainAppVisible(visible) {
+    const app = document.querySelector("body > .container");
+    if (app) app.style.display = visible ? "" : "none";
+  }
+
+  function removeAuthLoginView() {
+    const old = document.getElementById("authLoginView");
+    if (old) old.remove();
+  }
+
+  function showAuthLoginView(message) {
+    removeAuthLoginView();
+    setMainAppVisible(false);
+
+    const view = document.createElement("div");
+    view.id = "authLoginView";
+    view.innerHTML = `
+      <div class="auth-login-card">
+        <div class="auth-login-brand">
+          <img src="logo.png" alt="Trondheim Kortbaneklubb">
+          <strong>TKK Skøyteutleie</strong>
+        </div>
+
+        <h1>Logg inn</h1>
+        <p class="auth-login-help">Logg inn med e-post og passord for å bruke appen.</p>
+
+        <form id="authLoginForm">
+          <label for="authLoginEmail">E-post</label>
+          <input id="authLoginEmail" type="email" autocomplete="email" required>
+
+          <label for="authLoginPassword">Passord</label>
+          <input id="authLoginPassword" type="password" autocomplete="current-password" required>
+
+          <div class="auth-login-actions">
+            <button type="submit">Logg inn</button>
+            <button type="button" class="auth-login-secondary" id="authForgotPasswordBtn">
+              Glemt passord
+            </button>
+          </div>
+
+          <div id="authLoginMessage" class="auth-login-message">${message || ""}</div>
+        </form>
+
+        <form id="authForgotPasswordForm" class="auth-forgot-form hidden">
+          <p class="auth-login-help">Skriv inn e-postadressen din, så sender vi en lenke for å velge nytt passord.</p>
+
+          <label for="authForgotEmail">E-post</label>
+          <input id="authForgotEmail" type="email" autocomplete="email" required>
+
+          <div class="auth-login-actions">
+            <button type="submit">Send passordlenke</button>
+            <button type="button" class="auth-login-secondary" id="authForgotBackBtn">Tilbake</button>
+          </div>
+
+          <div id="authForgotMessage" class="auth-login-message"></div>
+        </form>
+      </div>
+    `;
+
+    document.body.appendChild(view);
+
+    const form = document.getElementById("authLoginForm");
+    const messageBox = document.getElementById("authLoginMessage");
+    const forgotButton = document.getElementById("authForgotPasswordBtn");
+    const forgotForm = document.getElementById("authForgotPasswordForm");
+    const forgotBack = document.getElementById("authForgotBackBtn");
+    const forgotMessage = document.getElementById("authForgotMessage");
+
+    forgotButton.addEventListener("click", function () {
+      forgotForm.classList.remove("hidden");
+      const loginEmail = document.getElementById("authLoginEmail");
+      const forgotEmail = document.getElementById("authForgotEmail");
+      if (loginEmail.value) forgotEmail.value = loginEmail.value;
+      forgotEmail.focus();
+    });
+
+    forgotBack.addEventListener("click", function () {
+      forgotForm.classList.add("hidden");
+      forgotMessage.textContent = "";
+      forgotMessage.classList.remove("ok");
+    });
+
+    forgotForm.addEventListener("submit", async function (event) {
+      event.preventDefault();
+      const client = getAuthGuardClient();
+      const email = document.getElementById("authForgotEmail").value.trim();
+
+      if (!client || !client.auth) {
+        forgotMessage.textContent = "Supabase Auth er ikke tilgjengelig.";
+        return;
+      }
+
+      forgotMessage.textContent = "Sender passordlenke ...";
+      forgotMessage.classList.remove("ok");
+
+      try {
+        const redirectTo =
+          window.location.origin + window.location.pathname + "?reset=1";
+
+        const result = await client.auth.resetPasswordForEmail(email, {
+          redirectTo
+        });
+
+        if (result.error) throw result.error;
+
+        forgotMessage.textContent =
+          "Passordlenke er sendt hvis e-postadressen finnes som bruker.";
+        forgotMessage.classList.add("ok");
+      } catch (error) {
+        forgotMessage.textContent =
+          "Kunne ikke sende passordlenke.\n\n" + (error.message || error);
+      }
+    });
+
+    form.addEventListener("submit", async function (event) {
+      event.preventDefault();
+
+      const client = getAuthGuardClient();
+      if (!client || !client.auth) {
+        messageBox.textContent = "Supabase Auth er ikke tilgjengelig.";
+        return;
+      }
+
+      const email = document.getElementById("authLoginEmail").value.trim();
+      const password = document.getElementById("authLoginPassword").value;
+
+      messageBox.textContent = "Logger inn ...";
+
+      try {
+        const result = await client.auth.signInWithPassword({
+          email,
+          password
+        });
+
+        if (result.error) throw result.error;
+
+        removeAuthLoginView();
+        setMainAppVisible(true);
+
+        if (window.history && window.history.replaceState) {
+          window.history.replaceState(
+            {},
+            document.title,
+            window.location.origin + window.location.pathname
+          );
+        }
+
+        // Oppdater brukernavnet i toppmenyen uten å være avhengig av hovedscriptet.
+        const label = document.getElementById("appUserLabel");
+        if (label && result.data && result.data.user) {
+          label.textContent = result.data.user.email || "Konto";
+        }
+
+        // Last inn data når hovedappens funksjoner finnes.
+        try {
+          if (typeof loadAll === "function") await loadAll();
+          if (typeof startAutoRefresh === "function") startAutoRefresh();
+        } catch (error) {
+          console.warn("Kunne ikke laste appdata etter innlogging:", error);
+        }
+      } catch (error) {
+        messageBox.textContent =
+          "Kunne ikke logge inn.\n\n" + (error.message || error);
+      }
+    });
+  }
+
+  async function handleLogoutOrMissingSession() {
+    const params = new URLSearchParams(window.location.search);
+    const loggedOut = params.get("logged_out") === "1";
+    const client = getAuthGuardClient();
+
+    if (loggedOut) {
+      try {
+        if (client && client.auth) {
+          await client.auth.signOut({ scope: "local" });
+        }
+      } catch (_) {}
+
+      clearSupabaseAuthStorage();
+
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState(
+          {},
+          document.title,
+          window.location.origin + window.location.pathname
+        );
+      }
+
+      showAuthLoginView("Du er logget ut.");
+      return;
+    }
+
+    try {
+      if (!client || !client.auth) {
+        showAuthLoginView("Kunne ikke starte innlogging.");
+        return;
+      }
+
+      const result = await client.auth.getSession();
+      const session = result && result.data ? result.data.session : null;
+
+      if (!session) {
+        showAuthLoginView("");
+      } else {
+        setMainAppVisible(true);
+        const label = document.getElementById("appUserLabel");
+        if (label && session.user) {
+          label.textContent = session.user.email || "Konto";
+        }
+      }
+    } catch (error) {
+      console.error("Session-kontroll feilet:", error);
+      showAuthLoginView("Kunne ikke kontrollere innlogging.");
+    }
+  }
+
+  async function handlePasswordReset() {
+    const params = new URLSearchParams(window.location.search);
+    const reset =
+      params.get("reset") === "1" ||
+      params.get("type") === "recovery";
+
+    if (!reset) return false;
+
+    const client = getAuthGuardClient();
+
+    if (!client || !client.auth) {
+      showAuthLoginView("Supabase Auth er ikke tilgjengelig.");
+      return true;
+    }
+
+    const password = window.prompt("Skriv nytt passord (minst 8 tegn):");
+
+    if (!password) {
+      showAuthLoginView("Passordet ble ikke endret.");
+      return true;
+    }
+
+    if (password.length < 8) {
+      showAuthLoginView("Passordet må være minst 8 tegn.");
+      return true;
+    }
+
+    try {
+      const result = await client.auth.updateUser({ password });
+      if (result.error) throw result.error;
+
+      try {
+        await client.auth.signOut({ scope: "local" });
+      } catch (_) {}
+
+      clearSupabaseAuthStorage();
+
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState(
+          {},
+          document.title,
+          window.location.origin + window.location.pathname
+        );
+      }
+
+      showAuthLoginView("Passordet er endret. Logg inn med det nye passordet.");
+      return true;
+    } catch (error) {
+      showAuthLoginView(
+        "Kunne ikke endre passord.\n\n" + (error.message || error)
+      );
+      return true;
+    }
+  }
+
+  async function startAuthGuard() {
+    const handledReset = await handlePasswordReset();
+    if (!handledReset) {
+      await handleLogoutOrMissingSession();
+    }
+  }
+
+  // Kjør etter at dokumentet er tilgjengelig.
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", startAuthGuard);
+  } else {
+    startAuthGuard();
+  }
+})();
+
+
+    function initSchoolSubmenu() {
+      const tabRoot = byId("skatingSchoolTab");
+      if (!tabRoot) return;
+
+      const buttons = Array.from(tabRoot.querySelectorAll("[data-school-tab]"));
+      const signupPanel = byId("schoolSignupFormsPanel");
+
+      buttons.forEach((button) => {
+        if (button.dataset.schoolSignupBound === "1") return;
+        button.dataset.schoolSignupBound = "1";
+
+        button.addEventListener("click", function () {
+          const targetName = String(button.dataset.schoolTab || "");
+
+          if (signupPanel) {
+            signupPanel.classList.toggle("hidden", targetName !== "signupForms");
+          }
+
+          // Når Påmeldingsskjema velges skjules de vanlige skøyteskolepanelene.
+          if (targetName === "signupForms") {
+            Array.from(tabRoot.children).forEach((child) => {
+              if (
+                child === signupPanel ||
+                child.classList.contains("school-tabs-card") ||
+                child.classList.contains("school-tabs")
+              ) {
+                return;
+              }
+
+              // Ikke skjul selve menyområdet.
+              if (child.querySelector && child.querySelector("[data-school-tab]")) {
+                return;
+              }
+
+              if (child.classList.contains("section-card")) {
+                child.classList.add("hidden");
+              }
+            });
+
+            if (signupPanel) signupPanel.classList.remove("hidden");
+          } else {
+            if (signupPanel) signupPanel.classList.add("hidden");
+          }
+        });
+      });
+    }
+
+
+    document.addEventListener("DOMContentLoaded", initSchoolSubmenu);
+</script>
 
 </body>
 </html>

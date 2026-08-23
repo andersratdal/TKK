@@ -161,7 +161,13 @@ exports.handler = async (event) => {
 
     const insertResult = await supabase
       .from("loans")
-      .insert([{ department_id, member_id, skate_id, loaned_at }])
+     .insert([{
+  department_id,
+  member_id,
+  skate_id,
+  loaned_at,
+  created_by_user_id: auth.user.id
+}])
       .select("*")
       .single();
 
@@ -171,9 +177,28 @@ exports.handler = async (event) => {
     }
 
     try {
-      await sendLoanEmail({ member, skate });
+  const emailResult = await sendLoanEmail({ member, skate });
+  console.log("EMAIL RESULT:", JSON.stringify(emailResult, null, 2));
+
+  if (emailResult && emailResult.error) {
+    throw new Error(
+      "Resend returnerte feil: " +
+      (emailResult.error.message || JSON.stringify(emailResult.error))
+    );
+  }
+
+  if (!emailResult || !emailResult.data || !emailResult.data.id) {
+    throw new Error(
+      "Resend returnerte ikke gyldig meldings-ID: " +
+      JSON.stringify(emailResult)
+    );
+  }
     } catch (emailError) {
-      console.error("Loan email error:", emailError);
+      console.error(
+  "Loan email error:",
+  emailError,
+  JSON.stringify(emailError, null, 2)
+);
       return json(500, {
         error: "Utlånet ble registrert, men e-posten kunne ikke sendes. Sjekk Resend/EMAIL_FROM i Netlify.",
         loan: insertResult.data,
