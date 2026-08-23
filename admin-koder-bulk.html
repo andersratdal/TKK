@@ -374,7 +374,7 @@ function excelEscape(value){
     .replace(/"/g,"&quot;");
 }
 
-function exportCodesToExcel(){
+async function exportCodesToExcel(){
   const rows=applyFilters(allCodes);
 
   if(!rows.length){
@@ -382,165 +382,245 @@ function exportCodesToExcel(){
     return;
   }
 
-  const signupUrl = window.location.origin + "/pamelding-kode.html";
+  exportExcelBtn.disabled=true;
+  const oldText=exportExcelBtn.textContent;
+  exportExcelBtn.textContent="Lager Excel …";
 
-  const bodyRows = rows.map(code=>{
-    const expires = code.expires_at ? formatDate(code.expires_at) : "";
-    return `
-      <tr>
-        <td>${excelEscape(code.description || "")}</td>
-        <td class="code">${excelEscape(code.code || "")}</td>
-        <td>${excelEscape(expires)}</td>
-        <td></td>
-        <td></td>
-        <td></td>
-      </tr>
-    `;
-  }).join("");
+  try{
+    const signupUrl = new URL("pamelding-kode.html", window.location.href).href;
+    const logoDataUrl = await getLogoDataUrl();
 
-  const excelHtml = `
-  <!DOCTYPE html>
-  <html xmlns:o="urn:schemas-microsoft-com:office:office"
-        xmlns:x="urn:schemas-microsoft-com:office:excel"
-        xmlns="http://www.w3.org/TR/REC-html40">
-  <head>
-    <meta charset="UTF-8">
-    <!--[if gte mso 9]>
-    <xml>
-      <x:ExcelWorkbook>
-        <x:ExcelWorksheets>
-          <x:ExcelWorksheet>
-            <x:Name>Påmeldingskoder</x:Name>
-            <x:WorksheetOptions>
-              <x:DisplayGridlines/>
-              <x:FreezePanes/>
-              <x:FrozenNoSplit/>
-              <x:SplitHorizontal>5</x:SplitHorizontal>
-              <x:TopRowBottomPane>5</x:TopRowBottomPane>
-              <x:ActivePane>2</x:ActivePane>
-              <x:ProtectContents>False</x:ProtectContents>
-              <x:ProtectObjects>False</x:ProtectObjects>
-              <x:ProtectScenarios>False</x:ProtectScenarios>
-            </x:WorksheetOptions>
-          </x:ExcelWorksheet>
-        </x:ExcelWorksheets>
-      </x:ExcelWorkbook>
-    </xml>
-    <![endif]-->
-    <style>
-      body{
-        font-family:Arial,Helvetica,sans-serif;
-        color:#1f2937;
-      }
-      table{
-        border-collapse:collapse;
-        width:100%;
-      }
-      td,th{
-        border:1px solid #d1d5db;
-        padding:8px 10px;
-        vertical-align:top;
-      }
-      .title{
-        font-size:20pt;
-        font-weight:700;
-        color:#003a8f;
-        border:none;
-        padding-bottom:2px;
-      }
-      .subtitle{
-        font-size:12pt;
-        font-weight:700;
-        color:#334155;
-        border:none;
-      }
-      .link-label{
-        font-weight:700;
-        border:none;
-      }
-      .link{
-        color:#0563c1;
-        text-decoration:underline;
-        border:none;
-      }
-      .spacer{
-        border:none;
-        height:10px;
-      }
-      th{
-        background:#003a8f;
-        color:#ffffff;
-        font-weight:700;
-        text-align:left;
-      }
-      .code{
-        mso-number-format:"\@";
-        font-family:Consolas,monospace;
-      }
-      .w-description{width:260px;}
-      .w-code{width:145px;}
-      .w-date{width:120px;}
-      .w-guide{width:170px;}
-      .w-family{width:190px;}
-      .w-comment{width:300px;}
-    </style>
-  </head>
-  <body>
-    <table>
-      <tr>
-        <td class="title" colspan="6">Trondheim Kortbaneklubb</td>
-      </tr>
-      <tr>
-        <td class="subtitle" colspan="6">Påmeldingskoder – skøyteskole</td>
-      </tr>
-      <tr>
-        <td class="link-label">Påmeldingsside:</td>
-        <td class="link" colspan="5">
-          <a href="${excelEscape(signupUrl)}">${excelEscape(signupUrl)}</a>
-        </td>
-      </tr>
-      <tr><td class="spacer" colspan="6"></td></tr>
-      <tr>
-        <th class="w-description">Beskrivelse</th>
-        <th class="w-code">Kode</th>
-        <th class="w-date">Utløpsdato</th>
-        <th class="w-guide">Aktivitetsguide</th>
-        <th class="w-family">Familie</th>
-        <th class="w-comment">Kommentar</th>
-      </tr>
-      ${bodyRows}
-    </table>
-  </body>
-  </html>`;
+    const bodyRows = rows.map((code,index)=>{
+      const expires = code.expires_at ? formatDate(code.expires_at) : "";
+      const stripeClass = index % 2 === 1 ? " alt" : "";
 
-  const blob = new Blob(
-    ["\ufeff", excelHtml],
-    {type:"application/vnd.ms-excel;charset=utf-8;"}
-  );
+      return `
+        <tr class="data-row${stripeClass}">
+          <td class="description">${excelEscape(code.description || "")}</td>
+          <td class="code">${excelEscape(code.code || "")}</td>
+          <td class="date">${excelEscape(expires)}</td>
+          <td></td>
+          <td></td>
+          <td></td>
+        </tr>
+      `;
+    }).join("");
 
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
+    const logoHtml = logoDataUrl
+      ? `<img src="${logoDataUrl}" width="115" height="70" alt="TKK">`
+      : "";
 
-  const now=new Date();
-  const dateStamp=
-    now.getFullYear()+"-"+
-    String(now.getMonth()+1).padStart(2,"0")+"-"+
-    String(now.getDate()).padStart(2,"0");
+    const excelHtml = `
+    <!DOCTYPE html>
+    <html xmlns:o="urn:schemas-microsoft-com:office:office"
+          xmlns:x="urn:schemas-microsoft-com:office:excel"
+          xmlns="http://www.w3.org/TR/REC-html40">
+    <head>
+      <meta charset="UTF-8">
+      <!--[if gte mso 9]>
+      <xml>
+        <x:ExcelWorkbook>
+          <x:ExcelWorksheets>
+            <x:ExcelWorksheet>
+              <x:Name>Påmeldingskoder</x:Name>
+              <x:WorksheetOptions>
+                <x:DoNotDisplayGridlines/>
+                <x:FreezePanes/>
+                <x:FrozenNoSplit/>
+                <x:SplitHorizontal>7</x:SplitHorizontal>
+                <x:TopRowBottomPane>7</x:TopRowBottomPane>
+                <x:ActivePane>2</x:ActivePane>
+                <x:ProtectContents>False</x:ProtectContents>
+                <x:ProtectObjects>False</x:ProtectObjects>
+                <x:ProtectScenarios>False</x:ProtectScenarios>
+              </x:WorksheetOptions>
+            </x:ExcelWorksheet>
+          </x:ExcelWorksheets>
+        </x:ExcelWorkbook>
+      </xml>
+      <![endif]-->
+      <style>
+        body{
+          font-family:Aptos,Calibri,Arial,sans-serif;
+          color:#1f2937;
+          background:#ffffff;
+        }
+        table{
+          border-collapse:collapse;
+          width:100%;
+        }
+        td,th{
+          vertical-align:middle;
+        }
+        .logo-cell{
+          width:120px;
+          height:72px;
+          border:none;
+          padding:4px 10px 4px 4px;
+        }
+        .title{
+          font-size:18pt;
+          font-weight:700;
+          color:#003a8f;
+          border:none;
+          padding:4px 8px 0 8px;
+        }
+        .subtitle{
+          font-size:13pt;
+          font-weight:700;
+          color:#1f2937;
+          border:none;
+          padding:0 8px 2px 8px;
+        }
+        .meta{
+          font-size:9.5pt;
+          color:#64748b;
+          border:none;
+          padding:0 8px 5px 8px;
+        }
+        .link-label{
+          font-weight:700;
+          color:#334155;
+          border:none;
+          padding:8px 8px 8px 4px;
+        }
+        .link{
+          color:#0563c1;
+          text-decoration:underline;
+          border:none;
+          padding:8px;
+        }
+        .notice{
+          background:#f1f5f9;
+          color:#475569;
+          font-style:italic;
+          font-size:9.5pt;
+          border:none;
+          padding:7px 9px;
+        }
+        .spacer{
+          height:7px;
+          border:none;
+        }
+        th{
+          background:#003a8f;
+          color:#ffffff;
+          font-weight:700;
+          text-align:left;
+          padding:8px 10px;
+          border-bottom:1px solid #002c6d;
+        }
+        .data-row td{
+          padding:7px 10px;
+          border-bottom:1px solid #e2e8f0;
+          background:#ffffff;
+        }
+        .data-row.alt td{
+          background:#f8fafc;
+        }
+        .description{
+          color:#1f2937;
+          width:250px;
+        }
+        .code{
+          color:#003a8f;
+          font-weight:700;
+          font-family:Consolas,monospace;
+          mso-number-format:"\@";
+          width:145px;
+        }
+        .date{
+          color:#1f2937;
+          width:120px;
+        }
+        .w-guide{width:170px;}
+        .w-family{width:190px;}
+        .w-comment{width:300px;}
+      </style>
+    </head>
+    <body>
+      <table>
+        <tr>
+          <td class="logo-cell" rowspan="3">${logoHtml}</td>
+          <td class="title" colspan="5">Trondheim Kortbaneklubb</td>
+        </tr>
+        <tr>
+          <td class="subtitle" colspan="5">Påmeldingskoder – TKKs skøyteskole</td>
+        </tr>
+        <tr>
+          <td class="meta" colspan="5">
+            Eksportert ${excelEscape(new Date().toLocaleDateString("no-NO"))} • ${rows.length} kode${rows.length===1?"":"r"}
+          </td>
+        </tr>
 
-  link.href=url;
-  link.download="pameldingskoder-"+dateStamp+".xls";
+        <tr>
+          <td class="link-label">Påmeldingsside:</td>
+          <td class="link" colspan="5">
+            <a href="${excelEscape(signupUrl)}">${excelEscape(signupUrl)}</a>
+          </td>
+        </tr>
 
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
+        <tr>
+          <td class="notice" colspan="6">
+            Del kun denne filen med personer som skal distribuere påmeldingskoder.
+          </td>
+        </tr>
 
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
+        <tr><td class="spacer" colspan="6"></td></tr>
 
-  showMessage(
-    listMessage,
-    "Eksporterte "+rows.length+" filtrerte koder til Excel.",
-    "success"
-  );
+        <tr>
+          <th>Beskrivelse</th>
+          <th>Kode</th>
+          <th>Utløpsdato</th>
+          <th class="w-guide">Aktivitetsguide</th>
+          <th class="w-family">Familie</th>
+          <th class="w-comment">Kommentar</th>
+        </tr>
+
+        ${bodyRows}
+      </table>
+    </body>
+    </html>`;
+
+    const blob = new Blob(
+      ["\ufeff", excelHtml],
+      {type:"application/vnd.ms-excel;charset=utf-8;"}
+    );
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    const now=new Date();
+    const dateStamp=
+      now.getFullYear()+"-"+
+      String(now.getMonth()+1).padStart(2,"0")+"-"+
+      String(now.getDate()).padStart(2,"0");
+
+    link.href=url;
+    link.download="TKK-pameldingskoder-"+dateStamp+".xls";
+
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+
+    showMessage(
+      listMessage,
+      "Eksporterte "+rows.length+" filtrerte koder til Excel.",
+      "success"
+    );
+  }catch(error){
+    console.error(error);
+    showMessage(
+      listMessage,
+      "Kunne ikke lage Excel-fil: "+(error.message||error),
+      "error"
+    );
+  }finally{
+    exportExcelBtn.disabled=false;
+    exportExcelBtn.textContent=oldText;
+  }
 }
 
 async function loadLookups(){try{const response=await fetch("/.netlify/functions/list-school-code-lookups");const data=await response.json();if(!response.ok)throw new Error(data.error||"Kunne ikke hente oppslagsdata.");
