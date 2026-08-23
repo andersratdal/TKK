@@ -366,7 +366,7 @@ async function getLogoDataUrl(){
   }
 }
 
-async function excelEscape(value){
+function excelEscape(value){
   return String(value == null ? "" : value)
     .replace(/&/g,"&amp;")
     .replace(/</g,"&lt;")
