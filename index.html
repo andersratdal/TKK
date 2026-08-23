@@ -1237,6 +1237,7 @@
 }
 </style>
 
+<script src="env-config.js"></script>
 </head>
 <body>
 <div class="container">
@@ -1261,6 +1262,15 @@
   const CONFIG_KEY = "skoyteutleie_supabase_config_v7";
 
   function getStoredConfig() {
+    const env = window.TKK_ENV || {};
+
+    if (env.SUPABASE_URL && env.SUPABASE_PUBLISHABLE_KEY) {
+      return {
+        url: env.SUPABASE_URL,
+        anonKey: env.SUPABASE_PUBLISHABLE_KEY
+      };
+    }
+
     try {
       const raw = localStorage.getItem(CONFIG_KEY);
       return raw ? JSON.parse(raw) : {};
@@ -2191,6 +2201,15 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
     }
 
     function loadConfig() {
+      const env = window.TKK_ENV || {};
+
+      if (env.SUPABASE_URL && env.SUPABASE_PUBLISHABLE_KEY) {
+        return {
+          url: env.SUPABASE_URL,
+          anonKey: env.SUPABASE_PUBLISHABLE_KEY
+        };
+      }
+
       try {
         const raw = localStorage.getItem(CONFIG_KEY);
         return raw ? JSON.parse(raw) : {};
@@ -8439,20 +8458,23 @@ attachSortHandlers();
 (function () {
   const AUTH_CONFIG_KEY = "skoyteutleie_supabase_config_v7";
 
-  // Samme Supabase-prosjekt som den fungerende tilgangsstyringen brukte.
-  // Lagret config i Admin overstyrer disse verdiene.
+  // Miljøspesifikk frontend-konfigurasjon genereres av Netlify.
   const AUTH_FALLBACK_CONFIG = {
-    url: "https://dcfhisxyiuatftzjtuwz.supabase.co",
-    anonKey: "sb_publishable_W_3O4m4r0aZ3ukSOJVTcHw_Gy6W6uj9"
+    url: (window.TKK_ENV && window.TKK_ENV.SUPABASE_URL) || "",
+    anonKey: (window.TKK_ENV && window.TKK_ENV.SUPABASE_PUBLISHABLE_KEY) || ""
   };
 
   function readAuthConfig() {
+    if (AUTH_FALLBACK_CONFIG.url && AUTH_FALLBACK_CONFIG.anonKey) {
+      return AUTH_FALLBACK_CONFIG;
+    }
+
     try {
       const raw = localStorage.getItem(AUTH_CONFIG_KEY);
       const cfg = raw ? JSON.parse(raw) : {};
       return {
-        url: cfg.url || AUTH_FALLBACK_CONFIG.url,
-        anonKey: cfg.anonKey || AUTH_FALLBACK_CONFIG.anonKey
+        url: cfg.url || "",
+        anonKey: cfg.anonKey || ""
       };
     } catch (_) {
       return AUTH_FALLBACK_CONFIG;
