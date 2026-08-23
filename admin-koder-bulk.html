@@ -65,6 +65,8 @@
     }
 
   </style>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -140,7 +142,10 @@
       <div><label for="filterText">Søk</label><input id="filterText" type="text" placeholder="Kode eller beskrivelse"></div>
       <div><label for="filterStatus">Status</label><select id="filterStatus"><option value="all">Alle</option><option value="active">Aktive</option><option value="inactive">Inaktive</option></select></div>
       <div><label for="filterUsage">Bruk</label><select id="filterUsage"><option value="all">Alle</option><option value="unused">Ubrukte</option><option value="used">Brukt minst én gang</option></select></div>
-      <div style="flex:0 0 auto"><button class="secondary" id="reloadBtn" type="button">Oppdater</button></div>
+      <div style="flex:0 0 auto;display:flex;gap:8px;align-items:end">
+        <button class="secondary" id="reloadBtn" type="button">Oppdater</button>
+        <button class="secondary" id="exportExcelBtn" type="button">Eksporter Excel</button>
+      </div>
     </div>
     <div id="listMessage" class="msg"></div>
     <div class="table-wrap">
@@ -158,6 +163,7 @@ const createMessage=document.getElementById("createMessage");
 const listMessage=document.getElementById("listMessage");
 const codesTableBody=document.getElementById("codesTableBody");
 const reloadBtn=document.getElementById("reloadBtn");
+const exportExcelBtn=document.getElementById("exportExcelBtn");
 const filterText=document.getElementById("filterText");
 const filterStatus=document.getElementById("filterStatus");
 const filterUsage=document.getElementById("filterUsage");
@@ -184,6 +190,71 @@ codesTableBody.innerHTML=filtered.map(code=>{const used=Number(code.used_count||
 <button type="button" class="secondary" onclick="copyCode('${esc(code.code)}')">Kopier</button>
 <button type="button" class="${code.is_active?'danger':'primary'}" onclick="toggleCodeStatus('${code.id}', ${code.is_active?'false':'true'})">${code.is_active?'Deaktiver':'Aktiver'}</button>
 </div></td></tr>`;}).join("");}
+
+function formatExcelDate(v){
+  if(!v) return "";
+  const d=new Date(v);
+  if(Number.isNaN(d.getTime())) return "";
+  return d;
+}
+
+function exportCodesToExcel(){
+  if(typeof XLSX==="undefined"){
+    showMessage(listMessage,"Excel-biblioteket kunne ikke lastes.","error");
+    return;
+  }
+
+  const rows=applyFilters(allCodes);
+
+  if(!rows.length){
+    showMessage(listMessage,"Ingen koder å eksportere.","error");
+    return;
+  }
+
+  const data=rows.map(code=>({
+    "Beskrivelse": code.description || "",
+    "Kode": code.code || "",
+    "Utløpsdato": formatExcelDate(code.expires_at)
+  }));
+
+  const worksheet=XLSX.utils.json_to_sheet(data,{
+    header:["Beskrivelse","Kode","Utløpsdato"]
+  });
+
+  worksheet["!cols"]=[
+    {wch:36},
+    {wch:20},
+    {wch:20}
+  ];
+
+  for(let row=2;row<=data.length+1;row+=1){
+    const cell=worksheet["C"+row];
+    if(cell && cell.v instanceof Date){
+      cell.t="d";
+      cell.z="dd.mm.yyyy";
+    }
+  }
+
+  const workbook=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook,worksheet,"Påmeldingskoder");
+
+  const now=new Date();
+  const dateStamp=
+    now.getFullYear()+"-"+
+    String(now.getMonth()+1).padStart(2,"0")+"-"+
+    String(now.getDate()).padStart(2,"0");
+
+  XLSX.writeFile(workbook,"pameldingskoder-"+dateStamp+".xlsx",{
+    cellDates:true
+  });
+
+  showMessage(
+    listMessage,
+    "Eksporterte "+rows.length+" koder til Excel.",
+    "success"
+  );
+}
+
 async function loadLookups(){try{const response=await fetch("/.netlify/functions/list-school-code-lookups");const data=await response.json();if(!response.ok)throw new Error(data.error||"Kunne ikke hente oppslagsdata.");
 (data.departments||[]).forEach(item=>{const o=document.createElement("option");o.value=item.id;o.textContent=item.name;departmentSelect.appendChild(o);});
 (data.batches||[]).forEach(item=>{const o=document.createElement("option");o.value=item.id;o.textContent=item.name;batchSelect.appendChild(o);});
@@ -197,7 +268,7 @@ const quantity=Number(document.getElementById("quantity").value||0);
 if(!Number.isInteger(quantity)||quantity<1){showMessage(createMessage,"Antall koder må være minst 1.","error");return;}
 const payload={description:document.getElementById("description").value.trim()||null,quantity,department_id:departmentSelect.value||null,batch_id:batchSelect.value||null,expires_at:document.getElementById("expires_at").value?new Date(document.getElementById("expires_at").value).toISOString():null,is_active:document.getElementById("is_active").checked};
 try{const response=await fetch("/.netlify/functions/create-school-access-code",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});const data=await response.json();if(!response.ok)throw new Error(data.error||"Kunne ikke opprette koder.");createCodeForm.reset();document.getElementById("quantity").value="1";document.getElementById("is_active").checked=true;showMessage(createMessage,`${data.codes?.length||quantity} koder ble opprettet.`,"success");await loadCodes();}catch(error){showMessage(createMessage,error.message||"Kunne ikke opprette koder.","error");}});
-filterText.addEventListener("input",renderTable);filterStatus.addEventListener("change",renderTable);filterUsage.addEventListener("change",renderTable);reloadBtn.addEventListener("click",loadCodes);
+filterText.addEventListener("input",renderTable);filterStatus.addEventListener("change",renderTable);filterUsage.addEventListener("change",renderTable);reloadBtn.addEventListener("click",loadCodes);exportExcelBtn.addEventListener("click",exportCodesToExcel);
 loadLookups();loadCodes();
 </script>
 </body></html>
