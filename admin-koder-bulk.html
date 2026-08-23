@@ -18,9 +18,9 @@
     .msg{display:none;margin-top:16px;padding:12px 14px;border-radius:10px;font-weight:600}.show{display:block}
     .ok{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0}.err{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}
     .filters{display:flex;gap:12px;flex-wrap:wrap;align-items:end}.filters>div{min-width:180px;flex:1}
-    table{width:100%;border-collapse:collapse;min-width:900px} th,td{text-align:left;padding:12px 10px;border-bottom:1px solid #d1d5db;vertical-align:top} th{font-size:14px;color:#6b7280}
+    table{width:100%;border-collapse:collapse;min-width:860px} th,td{text-align:left;padding:12px 10px;border-bottom:1px solid #d1d5db;vertical-align:top} th{font-size:14px;color:#6b7280}
     .table-wrap{overflow-x:auto}.pill{display:inline-block;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700}.active{background:#f0fdf4;color:#166534}.inactive{background:#fef2f2;color:#b91c1c}
-    .inline{display:flex;gap:8px;flex-wrap:wrap}.small{font-size:13px}
+    .inline{display:flex;gap:5px;flex-wrap:nowrap;align-items:center}.inline button{padding:6px 9px;border-radius:8px;font-size:12px;white-space:nowrap}.small{font-size:13px}
     .summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px}.box{border:1px solid #d1d5db;border-radius:12px;padding:14px;background:#fcfcfd}.label{color:#6b7280;font-size:14px}.value{font-size:28px;font-weight:700}
     .school-shell{background:#fff;border-radius:24px;padding:22px;margin-bottom:22px;box-shadow:0 14px 38px rgba(31,41,55,.10)}
     .school-nav-wrap{background:#fff;border:1px solid #e5e7eb;border-radius:24px;padding:12px;margin-bottom:22px;box-shadow:0 12px 28px rgba(31,41,55,.10)}
@@ -186,7 +186,6 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   <div class="card">
     <h2>Eksisterende koder</h2>
     <div class="filters">
-      <div><label for="filterText">Søk</label><input id="filterText" type="text" placeholder="Kode eller beskrivelse"></div>
       <div><label for="filterStatus">Status</label><select id="filterStatus"><option value="all">Alle</option><option value="active">Aktive</option><option value="inactive">Inaktive</option></select></div>
       <div><label for="filterUsage">Bruk</label><select id="filterUsage"><option value="all">Alle</option><option value="unused">Ubrukte</option><option value="used">Brukt minst én gang</option></select></div>
       <div style="flex:0 0 auto;display:flex;gap:8px;align-items:end">
@@ -248,7 +247,6 @@ const listMessage=document.getElementById("listMessage");
 const codesTableBody=document.getElementById("codesTableBody");
 const reloadBtn=document.getElementById("reloadBtn");
 const exportExcelBtn=document.getElementById("exportExcelBtn");
-const filterText=document.getElementById("filterText");
 const filterStatus=document.getElementById("filterStatus");
 const filterUsage=document.getElementById("filterUsage");
 const colFilterCode=document.getElementById("colFilterCode");
@@ -268,7 +266,6 @@ function formatDate(v){if(!v)return "—";const d=new Date(v);return Number.isNa
 function esc(v){return String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#39;");}
 function updateSummary(codes){document.getElementById("statTotal").textContent=codes.length;document.getElementById("statActive").textContent=codes.filter(c=>c.is_active).length;document.getElementById("statInactive").textContent=codes.filter(c=>!c.is_active).length;document.getElementById("statUsed").textContent=codes.filter(c=>Number(c.used_count||0)>0).length;}
 function applyFilters(codes){
-  const text=filterText.value.trim().toLowerCase();
   const status=filterStatus.value;
   const usage=filterUsage.value;
 
@@ -281,10 +278,6 @@ function applyFilters(codes){
   const createdText=colFilterCreated.value.trim().toLowerCase();
 
   return codes.filter(code=>{
-    const hay=(code.code+" "+(code.description||"")).toLowerCase();
-
-    if(text&&!hay.includes(text))return false;
-
     if(status==="active"&&!code.is_active)return false;
     if(status==="inactive"&&code.is_active)return false;
 
@@ -631,7 +624,6 @@ const quantity=Number(document.getElementById("quantity").value||0);
 if(!Number.isInteger(quantity)||quantity<1){showMessage(createMessage,"Antall koder må være minst 1.","error");return;}
 const payload={description:document.getElementById("description").value.trim()||null,quantity,department_id:departmentSelect.value||null,batch_id:batchSelect.value||null,expires_at:document.getElementById("expires_at").value?new Date(document.getElementById("expires_at").value+"T23:59:59").toISOString():null,is_active:document.getElementById("is_active").checked};
 try{const response=await fetch("/.netlify/functions/create-school-access-code",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});const data=await response.json();if(!response.ok)throw new Error(data.error||"Kunne ikke opprette koder.");createCodeForm.reset();document.getElementById("quantity").value="1";document.getElementById("is_active").checked=true;showMessage(createMessage,`${data.codes?.length||quantity} koder ble opprettet.`,"success");await loadCodes();}catch(error){showMessage(createMessage,error.message||"Kunne ikke opprette koder.","error");}});
-filterText.addEventListener("input",renderTable);
 filterStatus.addEventListener("change",renderTable);
 filterUsage.addEventListener("change",renderTable);
 
