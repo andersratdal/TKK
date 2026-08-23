@@ -1,0 +1,10 @@
+# Genereres automatisk av Netlify-build
+env-config.js
+
+# Lokale miljøfiler
+.env
+.env.*
+!.env.example
+
+# Node
+node_modules/
