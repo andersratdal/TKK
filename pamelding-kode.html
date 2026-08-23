@@ -884,7 +884,7 @@
 
         showMessage("Påmeldingen ble registrert. Sender videre...", "success");
 
-        window.location.href = data.redirect_url || "/betaling-fullfort-tkk.html";
+        window.location.href = "/pamelding-bekreftet-tkk.html";
       } catch (error) {
         showMessage(error.message || "Noe gikk galt. Prøv igjen.");
       } finally {

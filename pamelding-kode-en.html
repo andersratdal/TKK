@@ -882,15 +882,15 @@
           throw new Error(data.error || "Could not submit the registration.");
         }
 
-        showMessage("Påmeldingen ble registrert. Sender videre...", "success");
+        showMessage("Registration received. Continuing...", "success");
 
-        window.location.href = data.redirect_url || "/betaling-fullfort-tkk.html";
+        window.location.href = "/pamelding-bekreftet-tkk-en.html";
       } catch (error) {
-        showMessage(error.message || "Noe gikk galt. Prøv igjen.");
+        showMessage(error.message || "Something went wrong. Please try again.");
       } finally {
         form.classList.remove("loading");
         submitBtn.disabled = false;
-        submitBtn.textContent = "Send påmelding";
+        submitBtn.textContent = "Submit registration";
       }
     });
 
