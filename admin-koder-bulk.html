@@ -342,36 +342,125 @@ codesTableBody.innerHTML=filtered.map(code=>{const used=Number(code.used_count||
 <button type="button" class="${code.is_active?'danger':'primary'}" onclick="toggleCodeStatus('${code.id}', ${code.is_active?'false':'true'})">${code.is_active?'Deaktiver':'Aktiver'}</button>
 </div></td></tr>`;}).join("");}
 
-function formatExcelDate(v){
-  if(!v) return null;
-  const d=new Date(v);
-  if(Number.isNaN(d.getTime())) return null;
-  return d;
-}
-
-async function getLogoDataUrl(){
-  try{
-    const response=await fetch("logo.png",{cache:"no-store"});
-    if(!response.ok) throw new Error("Logo kunne ikke lastes");
-    const blob=await response.blob();
-    return await new Promise((resolve,reject)=>{
-      const reader=new FileReader();
-      reader.onload=()=>resolve(reader.result);
-      reader.onerror=reject;
-      reader.readAsDataURL(blob);
-    });
-  }catch(error){
-    console.warn("Kunne ikke legge logo i Excel-filen:",error);
-    return null;
-  }
-}
-
-function excelEscape(value){
+function xmlEscape(value){
   return String(value == null ? "" : value)
     .replace(/&/g,"&amp;")
     .replace(/</g,"&lt;")
     .replace(/>/g,"&gt;")
-    .replace(/"/g,"&quot;");
+    .replace(/\"/g,"&quot;")
+    .replace(/'/g,"&apos;");
+}
+
+function xlsxColumnName(index){
+  let n=index+1;
+  let out="";
+  while(n>0){
+    const rem=(n-1)%26;
+    out=String.fromCharCode(65+rem)+out;
+    n=Math.floor((n-1)/26);
+  }
+  return out;
+}
+
+function xlsxInlineCell(ref,value,styleIndex){
+  return '<c r="'+ref+'" t="inlineStr" s="'+styleIndex+'"><is><t xml:space="preserve">'+xmlEscape(value)+'</t></is></c>';
+}
+
+function xlsxBlankCell(ref,styleIndex){
+  return '<c r="'+ref+'" s="'+styleIndex+'"/>';
+}
+
+function crc32(bytes){
+  if(!crc32.table){
+    const table=new Uint32Array(256);
+    for(let n=0;n<256;n+=1){
+      let c=n;
+      for(let k=0;k<8;k+=1){
+        c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);
+      }
+      table[n]=c>>>0;
+    }
+    crc32.table=table;
+  }
+  let crc=0xFFFFFFFF;
+  for(let i=0;i<bytes.length;i+=1){
+    crc=crc32.table[(crc^bytes[i])&0xFF]^(crc>>>8);
+  }
+  return (crc^0xFFFFFFFF)>>>0;
+}
+
+function le16(value){
+  return new Uint8Array([value&255,(value>>>8)&255]);
+}
+
+function le32(value){
+  return new Uint8Array([
+    value&255,
+    (value>>>8)&255,
+    (value>>>16)&255,
+    (value>>>24)&255
+  ]);
+}
+
+function concatBytes(parts){
+  const total=parts.reduce((sum,p)=>sum+p.length,0);
+  const out=new Uint8Array(total);
+  let offset=0;
+  parts.forEach(part=>{
+    out.set(part,offset);
+    offset+=part.length;
+  });
+  return out;
+}
+
+function dosDateTime(date){
+  const year=Math.max(1980,date.getFullYear());
+  const dosTime=(date.getHours()<<11)|(date.getMinutes()<<5)|Math.floor(date.getSeconds()/2);
+  const dosDate=((year-1980)<<9)|((date.getMonth()+1)<<5)|date.getDate();
+  return {dosTime,dosDate};
+}
+
+function makeZip(entries){
+  const encoder=new TextEncoder();
+  const now=dosDateTime(new Date());
+  const localParts=[];
+  const centralParts=[];
+  let offset=0;
+
+  entries.forEach(entry=>{
+    const nameBytes=encoder.encode(entry.name);
+    const data=entry.data instanceof Uint8Array ? entry.data : encoder.encode(entry.data);
+    const crc=crc32(data);
+    const flags=0x0800;
+
+    const localHeader=concatBytes([
+      le32(0x04034b50),le16(20),le16(flags),le16(0),
+      le16(now.dosTime),le16(now.dosDate),le32(crc),
+      le32(data.length),le32(data.length),le16(nameBytes.length),le16(0),
+      nameBytes
+    ]);
+
+    localParts.push(localHeader,data);
+
+    const centralHeader=concatBytes([
+      le32(0x02014b50),le16(20),le16(20),le16(flags),le16(0),
+      le16(now.dosTime),le16(now.dosDate),le32(crc),
+      le32(data.length),le32(data.length),le16(nameBytes.length),
+      le16(0),le16(0),le16(0),le16(0),le32(0),le32(offset),nameBytes
+    ]);
+
+    centralParts.push(centralHeader);
+    offset+=localHeader.length+data.length;
+  });
+
+  const central=concatBytes(centralParts);
+  const local=concatBytes(localParts);
+  const eocd=concatBytes([
+    le32(0x06054b50),le16(0),le16(0),le16(entries.length),le16(entries.length),
+    le32(central.length),le32(local.length),le16(0)
+  ]);
+
+  return concatBytes([local,central,eocd]);
 }
 
 async function exportCodesToExcel(){
@@ -387,236 +476,148 @@ async function exportCodesToExcel(){
   exportExcelBtn.textContent="Lager Excel …";
 
   try{
-    const signupUrl = new URL("pamelding-kode.html", window.location.href).href;
-    const logoDataUrl = await getLogoDataUrl();
+    const signupUrl=new URL("pamelding-kode.html",window.location.href).href;
 
-    const bodyRows = rows.map((code,index)=>{
-      const expires = code.expires_at ? formatDate(code.expires_at) : "";
-      const stripeClass = index % 2 === 1 ? " alt" : "";
+    const logoResponse=await fetch("logo.png",{cache:"no-store"});
+    if(!logoResponse.ok){
+      throw new Error("Kunne ikke hente TKK-logoen (logo.png).");
+    }
+    const logoBytes=new Uint8Array(await logoResponse.arrayBuffer());
 
-      return `
-        <tr class="data-row${stripeClass}">
-          <td class="description">${excelEscape(code.description || "")}</td>
-          <td class="code">${excelEscape(code.code || "")}</td>
-          <td class="date">${excelEscape(expires)}</td>
-          <td></td>
-          <td></td>
-          <td></td>
-        </tr>
-      `;
-    }).join("");
+    const lastRow=7+rows.length;
+    const sheetRows=[];
 
-    const logoHtml = logoDataUrl
-      ? `<img src="${logoDataUrl}" width="115" height="70" alt="TKK">`
-      : "";
+    sheetRows.push('<row r="1" ht="28" customHeight="1">'+xlsxBlankCell('A1',0)+xlsxInlineCell('B1','Trondheim Kortbaneklubb',1)+'</row>');
+    sheetRows.push('<row r="2" ht="22" customHeight="1">'+xlsxInlineCell('B2','Påmeldingskoder – TKKs skøyteskole',2)+'</row>');
+    sheetRows.push('<row r="3" ht="18" customHeight="1">'+xlsxInlineCell('B3','Eksportert '+new Date().toLocaleDateString('no-NO')+' • '+rows.length+' kode'+(rows.length===1?'':'r'),3)+'</row>');
+    sheetRows.push('<row r="4" ht="22" customHeight="1">'+xlsxInlineCell('A4','Påmeldingsside:',4)+xlsxInlineCell('B4',signupUrl,5)+'</row>');
+    sheetRows.push('<row r="5" ht="24" customHeight="1">'+xlsxInlineCell('A5','Del kun denne filen med personer som skal distribuere påmeldingskoder.',6)+'</row>');
+    sheetRows.push('<row r="6" ht="8" customHeight="1"></row>');
 
-    const excelHtml = `
-    <!DOCTYPE html>
-    <html xmlns:o="urn:schemas-microsoft-com:office:office"
-          xmlns:x="urn:schemas-microsoft-com:office:excel"
-          xmlns="http://www.w3.org/TR/REC-html40">
-    <head>
-      <meta charset="UTF-8">
-      <!--[if gte mso 9]>
-      <xml>
-        <x:ExcelWorkbook>
-          <x:ExcelWorksheets>
-            <x:ExcelWorksheet>
-              <x:Name>Påmeldingskoder</x:Name>
-              <x:WorksheetOptions>
-                <x:DoNotDisplayGridlines/>
-                <x:FreezePanes/>
-                <x:FrozenNoSplit/>
-                <x:SplitHorizontal>7</x:SplitHorizontal>
-                <x:TopRowBottomPane>7</x:TopRowBottomPane>
-                <x:ActivePane>2</x:ActivePane>
-                <x:ProtectContents>False</x:ProtectContents>
-                <x:ProtectObjects>False</x:ProtectObjects>
-                <x:ProtectScenarios>False</x:ProtectScenarios>
-              </x:WorksheetOptions>
-            </x:ExcelWorksheet>
-          </x:ExcelWorksheets>
-        </x:ExcelWorkbook>
-      </xml>
-      <![endif]-->
-      <style>
-        body{
-          font-family:Aptos,Calibri,Arial,sans-serif;
-          color:#1f2937;
-          background:#ffffff;
-        }
-        table{
-          border-collapse:collapse;
-          width:100%;
-        }
-        td,th{
-          vertical-align:middle;
-        }
-        .logo-cell{
-          width:120px;
-          height:72px;
-          border:none;
-          padding:4px 10px 4px 4px;
-        }
-        .title{
-          font-size:18pt;
-          font-weight:700;
-          color:#003a8f;
-          border:none;
-          padding:4px 8px 0 8px;
-        }
-        .subtitle{
-          font-size:13pt;
-          font-weight:700;
-          color:#1f2937;
-          border:none;
-          padding:0 8px 2px 8px;
-        }
-        .meta{
-          font-size:9.5pt;
-          color:#64748b;
-          border:none;
-          padding:0 8px 5px 8px;
-        }
-        .link-label{
-          font-weight:700;
-          color:#334155;
-          border:none;
-          padding:8px 8px 8px 4px;
-        }
-        .link{
-          color:#0563c1;
-          text-decoration:underline;
-          border:none;
-          padding:8px;
-        }
-        .notice{
-          background:#f1f5f9;
-          color:#475569;
-          font-style:italic;
-          font-size:9.5pt;
-          border:none;
-          padding:7px 9px;
-        }
-        .spacer{
-          height:7px;
-          border:none;
-        }
-        th{
-          background:#003a8f;
-          color:#ffffff;
-          font-weight:700;
-          text-align:left;
-          padding:8px 10px;
-          border-bottom:1px solid #002c6d;
-        }
-        .data-row td{
-          padding:7px 10px;
-          border-bottom:1px solid #e2e8f0;
-          background:#ffffff;
-        }
-        .data-row.alt td{
-          background:#f8fafc;
-        }
-        .description{
-          color:#1f2937;
-          width:250px;
-        }
-        .code{
-          color:#003a8f;
-          font-weight:700;
-          font-family:Consolas,monospace;
-          mso-number-format:"\@";
-          width:145px;
-        }
-        .date{
-          color:#1f2937;
-          width:120px;
-        }
-        .w-guide{width:170px;}
-        .w-family{width:190px;}
-        .w-comment{width:300px;}
-      </style>
-    </head>
-    <body>
-      <table>
-        <tr>
-          <td class="logo-cell" rowspan="3">${logoHtml}</td>
-          <td class="title" colspan="5">Trondheim Kortbaneklubb</td>
-        </tr>
-        <tr>
-          <td class="subtitle" colspan="5">Påmeldingskoder – TKKs skøyteskole</td>
-        </tr>
-        <tr>
-          <td class="meta" colspan="5">
-            Eksportert ${excelEscape(new Date().toLocaleDateString("no-NO"))} • ${rows.length} kode${rows.length===1?"":"r"}
-          </td>
-        </tr>
+    const headers=['Beskrivelse','Kode','Utløpsdato','Aktivitetsguide','Familie','Kommentar'];
+    sheetRows.push('<row r="7" ht="26" customHeight="1">'+headers.map((h,i)=>xlsxInlineCell(xlsxColumnName(i)+'7',h,7)).join('')+'</row>');
 
-        <tr>
-          <td class="link-label">Påmeldingsside:</td>
-          <td class="link" colspan="5">
-            <a href="${excelEscape(signupUrl)}">${excelEscape(signupUrl)}</a>
-          </td>
-        </tr>
+    rows.forEach((code,index)=>{
+      const r=8+index;
+      const alt=index%2===1;
+      const normalStyle=alt?9:8;
+      const codeStyle=alt?11:10;
+      const inputStyle=alt?13:12;
+      const expires=code.expires_at?formatDate(code.expires_at):'';
+      const cells=[
+        xlsxInlineCell('A'+r,code.description||'',normalStyle),
+        xlsxInlineCell('B'+r,code.code||'',codeStyle),
+        xlsxInlineCell('C'+r,expires,normalStyle),
+        xlsxBlankCell('D'+r,inputStyle),
+        xlsxBlankCell('E'+r,inputStyle),
+        xlsxBlankCell('F'+r,inputStyle)
+      ];
+      sheetRows.push('<row r="'+r+'" ht="23" customHeight="1">'+cells.join('')+'</row>');
+    });
 
-        <tr>
-          <td class="notice" colspan="6">
-            Del kun denne filen med personer som skal distribuere påmeldingskoder.
-          </td>
-        </tr>
+    const sheetXml='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+      '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'+
+      '<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>'+ 
+      '<dimension ref="A1:F'+lastRow+'"/>'+ 
+      '<sheetViews><sheetView showGridLines="0" workbookViewId="0"><pane ySplit="7" topLeftCell="A8" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft" activeCell="A8" sqref="A8"/></sheetView></sheetViews>'+ 
+      '<sheetFormatPr defaultRowHeight="15"/>'+ 
+      '<cols>'+ 
+        '<col min="1" max="1" width="34" customWidth="1"/>'+ 
+        '<col min="2" max="2" width="20" customWidth="1"/>'+ 
+        '<col min="3" max="3" width="17" customWidth="1"/>'+ 
+        '<col min="4" max="4" width="23" customWidth="1"/>'+ 
+        '<col min="5" max="5" width="25" customWidth="1"/>'+ 
+        '<col min="6" max="6" width="42" customWidth="1"/>'+ 
+      '</cols>'+ 
+      '<sheetData>'+sheetRows.join('')+'</sheetData>'+ 
+      '<mergeCells count="5"><mergeCell ref="B1:F1"/><mergeCell ref="B2:F2"/><mergeCell ref="B3:F3"/><mergeCell ref="B4:F4"/><mergeCell ref="A5:F5"/></mergeCells>'+ 
+      '<autoFilter ref="A7:F'+lastRow+'"/>'+ 
+      '<hyperlinks><hyperlink ref="B4" r:id="rId2" display="'+xmlEscape(signupUrl)+'"/></hyperlinks>'+ 
+      '<pageMargins left="0.3" right="0.3" top="0.5" bottom="0.5" header="0.2" footer="0.2"/>'+ 
+      '<pageSetup orientation="landscape" fitToWidth="1" fitToHeight="0" paperSize="9"/>'+ 
+      '<drawing r:id="rId1"/>'+ 
+      '</worksheet>';
 
-        <tr><td class="spacer" colspan="6"></td></tr>
+    const stylesXml='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+      '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'+
+      '<fonts count="10">'+
+        '<font><sz val="11"/><name val="Aptos"/><family val="2"/></font>'+ 
+        '<font><b/><color rgb="FF003A8F"/><sz val="18"/><name val="Aptos Display"/></font>'+ 
+        '<font><b/><color rgb="FF1F2937"/><sz val="13"/><name val="Aptos"/></font>'+ 
+        '<font><color rgb="FF64748B"/><sz val="10"/><name val="Aptos"/></font>'+ 
+        '<font><b/><color rgb="FF334155"/><sz val="10"/><name val="Aptos"/></font>'+ 
+        '<font><u/><color rgb="FF0563C1"/><sz val="10"/><name val="Aptos"/></font>'+ 
+        '<font><i/><color rgb="FF475569"/><sz val="10"/><name val="Aptos"/></font>'+ 
+        '<font><b/><color rgb="FFFFFFFF"/><sz val="11"/><name val="Aptos"/></font>'+ 
+        '<font><b/><color rgb="FF003A8F"/><sz val="11"/><name val="Consolas"/></font>'+ 
+        '<font><color rgb="FF0000FF"/><sz val="10"/><name val="Aptos"/></font>'+ 
+      '</fonts>'+ 
+      '<fills count="4"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF1F5F9"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FF003A8F"/><bgColor indexed="64"/></patternFill></fill></fills>'+ 
+      '<borders count="3"><border><left/><right/><top/><bottom/><diagonal/></border><border><left/><right/><top/><bottom style="hair"><color rgb="FFE2E8F0"/></bottom><diagonal/></border><border><left/><right/><top/><bottom style="thin"><color rgb="FF002C6D"/></bottom><diagonal/></border></borders>'+ 
+      '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'+ 
+      '<cellXfs count="14">'+
+        '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'+ 
+        '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"><alignment vertical="center"/></xf>'+ 
+        '<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/>'+ 
+        '<xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1"/>'+ 
+        '<xf numFmtId="0" fontId="4" fillId="0" borderId="0" xfId="0" applyFont="1"/>'+ 
+        '<xf numFmtId="0" fontId="5" fillId="0" borderId="0" xfId="0" applyFont="1"/>'+ 
+        '<xf numFmtId="0" fontId="6" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"><alignment vertical="center"/></xf>'+ 
+        '<xf numFmtId="0" fontId="7" fillId="3" borderId="2" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment vertical="center"/></xf>'+ 
+        '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1"><alignment vertical="center" wrapText="1"/></xf>'+ 
+        '<xf numFmtId="0" fontId="0" fillId="2" borderId="1" xfId="0" applyFill="1" applyBorder="1"><alignment vertical="center" wrapText="1"/></xf>'+ 
+        '<xf numFmtId="49" fontId="8" fillId="0" borderId="1" xfId="0" applyFont="1" applyNumberFormat="1" applyBorder="1"><alignment vertical="center"/></xf>'+ 
+        '<xf numFmtId="49" fontId="8" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyNumberFormat="1" applyBorder="1"><alignment vertical="center"/></xf>'+ 
+        '<xf numFmtId="0" fontId="9" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1"><alignment vertical="center" wrapText="1"/></xf>'+ 
+        '<xf numFmtId="0" fontId="9" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment vertical="center" wrapText="1"/></xf>'+ 
+      '</cellXfs>'+ 
+      '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>'+ 
+      '</styleSheet>';
 
-        <tr>
-          <th>Beskrivelse</th>
-          <th>Kode</th>
-          <th>Utløpsdato</th>
-          <th class="w-guide">Aktivitetsguide</th>
-          <th class="w-family">Familie</th>
-          <th class="w-comment">Kommentar</th>
-        </tr>
+    const workbookXml='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+      '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'+
+      '<bookViews><workbookView xWindow="0" yWindow="0" windowWidth="24000" windowHeight="14000"/></bookViews>'+ 
+      '<sheets><sheet name="Påmeldingskoder" sheetId="1" r:id="rId1"/></sheets>'+ 
+      '<calcPr calcId="191029" fullCalcOnLoad="1"/></workbook>';
 
-        ${bodyRows}
-      </table>
-    </body>
-    </html>`;
+    const drawingXml='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+      '<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'+
+      '<xdr:oneCellAnchor><xdr:from><xdr:col>0</xdr:col><xdr:colOff>90000</xdr:colOff><xdr:row>0</xdr:row><xdr:rowOff>45000</xdr:rowOff></xdr:from><xdr:ext cx="1095375" cy="666750"/>'+ 
+      '<xdr:pic><xdr:nvPicPr><xdr:cNvPr id="2" name="TKK logo"/><xdr:cNvPicPr/></xdr:nvPicPr><xdr:blipFill><a:blip r:embed="rId1"/><a:stretch><a:fillRect/></a:stretch></xdr:blipFill><xdr:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="1095375" cy="666750"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr></xdr:pic><xdr:clientData/></xdr:oneCellAnchor>'+ 
+      '</xdr:wsDr>';
 
-    const blob = new Blob(
-      ["\ufeff", excelHtml],
-      {type:"application/vnd.ms-excel;charset=utf-8;"}
-    );
+    const entries=[
+      {name:'[Content_Types].xml',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/></Types>'},
+      {name:'_rels/.rels',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/></Relationships>'},
+      {name:'docProps/core.xml',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:dcmitype="http://purl.org/dc/dcmitype/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:creator>Trondheim Kortbaneklubb</dc:creator><dc:title>Påmeldingskoder</dc:title><dc:subject>Påmeldingskoder til TKKs skøyteskole</dc:subject><dcterms:created xsi:type="dcterms:W3CDTF">'+new Date().toISOString()+'</dcterms:created></cp:coreProperties>'},
+      {name:'docProps/app.xml',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"><Application>TKK webapp</Application><Company>Trondheim Kortbaneklubb</Company></Properties>'},
+      {name:'xl/workbook.xml',data:workbookXml},
+      {name:'xl/_rels/workbook.xml.rels',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>'},
+      {name:'xl/styles.xml',data:stylesXml},
+      {name:'xl/worksheets/sheet1.xml',data:sheetXml},
+      {name:'xl/worksheets/_rels/sheet1.xml.rels',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="'+xmlEscape(signupUrl)+'" TargetMode="External"/></Relationships>'},
+      {name:'xl/drawings/drawing1.xml',data:drawingXml},
+      {name:'xl/drawings/_rels/drawing1.xml.rels',data:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/image1.png"/></Relationships>'},
+      {name:'xl/media/image1.png',data:logoBytes}
+    ];
 
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-
+    const zipBytes=makeZip(entries);
+    const blob=new Blob([zipBytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const url=URL.createObjectURL(blob);
+    const link=document.createElement('a');
     const now=new Date();
-    const dateStamp=
-      now.getFullYear()+"-"+
-      String(now.getMonth()+1).padStart(2,"0")+"-"+
-      String(now.getDate()).padStart(2,"0");
-
+    const dateStamp=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
     link.href=url;
-    link.download="TKK-pameldingskoder-"+dateStamp+".xls";
-
+    link.download='TKK-pameldingskoder-'+dateStamp+'.xlsx';
     document.body.appendChild(link);
     link.click();
     link.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1500);
 
-    setTimeout(()=>URL.revokeObjectURL(url),1000);
-
-    showMessage(
-      listMessage,
-      "Eksporterte "+rows.length+" filtrerte koder til Excel.",
-      "success"
-    );
+    showMessage(listMessage,'Eksporterte '+rows.length+' filtrerte koder til Excel.', 'success');
   }catch(error){
     console.error(error);
-    showMessage(
-      listMessage,
-      "Kunne ikke lage Excel-fil: "+(error.message||error),
-      "error"
-    );
+    showMessage(listMessage,'Kunne ikke lage Excel-fil: '+(error.message||error),'error');
   }finally{
     exportExcelBtn.disabled=false;
     exportExcelBtn.textContent=oldText;
