@@ -96,6 +96,8 @@
       }
     }
 
+
+    .description-cell{font-size:13px;font-weight:400;line-height:1.35}
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
@@ -185,13 +187,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
   <div class="card">
     <h2>Eksisterende koder</h2>
-    <div class="filters">
-      <div><label for="filterStatus">Status</label><select id="filterStatus"><option value="all">Alle</option><option value="active">Aktive</option><option value="inactive">Inaktive</option></select></div>
-      <div><label for="filterUsage">Bruk</label><select id="filterUsage"><option value="all">Alle</option><option value="unused">Ubrukte</option><option value="used">Brukt minst én gang</option></select></div>
-      <div style="flex:0 0 auto;display:flex;gap:8px;align-items:end">
-        <button class="secondary" id="reloadBtn" type="button">Oppdater</button>
-        <button class="secondary" id="exportExcelBtn" type="button">Eksporter Excel</button>
-      </div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+      <button class="secondary" id="exportExcelBtn" type="button">Eksporter Excel</button>
     </div>
     <div id="listMessage" class="msg"></div>
     <div class="table-wrap">
@@ -245,10 +242,10 @@ const createCodeForm=document.getElementById("createCodeForm");
 const createMessage=document.getElementById("createMessage");
 const listMessage=document.getElementById("listMessage");
 const codesTableBody=document.getElementById("codesTableBody");
-const reloadBtn=document.getElementById("reloadBtn");
+const reloadBtn=null;
 const exportExcelBtn=document.getElementById("exportExcelBtn");
-const filterStatus=document.getElementById("filterStatus");
-const filterUsage=document.getElementById("filterUsage");
+const filterStatus={value:"all",addEventListener:()=>{}};
+const filterUsage={value:"all",addEventListener:()=>{}};
 const colFilterCode=document.getElementById("colFilterCode");
 const colFilterDescription=document.getElementById("colFilterDescription");
 const colFilterSemester=document.getElementById("colFilterSemester");
@@ -339,7 +336,7 @@ function populateSemesterFilter(){
 function renderTable(){const filtered=applyFilters(allCodes);updateSummary(allCodes);if(!filtered.length){codesTableBody.innerHTML='<tr><td colspan="8" class="muted">Ingen koder funnet.</td></tr>';return;}
 codesTableBody.innerHTML=filtered.map(code=>{const used=Number(code.used_count||0);return `<tr>
 <td><strong>${esc(code.code)}</strong></td>
-<td>${esc(code.description||"—")}</td>
+<td class="description-cell">${esc(code.description||"—")}</td>
 <td class="small">${esc(code.batch_name||"—")}</td>
 <td>${code.is_active?'<span class="pill active">Aktiv</span>':'<span class="pill inactive">Inaktiv</span>'}</td>
 <td>${used}</td>
@@ -640,7 +637,7 @@ filterUsage.addEventListener("change",renderTable);
   colFilterUsage
 ].forEach(el=>el.addEventListener("change",renderTable));
 
-reloadBtn.addEventListener("click",loadCodes);
+
 exportExcelBtn.addEventListener("click",exportCodesToExcel);
 loadLookups();loadCodes();
 </script>
