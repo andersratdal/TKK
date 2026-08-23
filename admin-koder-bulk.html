@@ -64,7 +64,23 @@
       color:#fff;
     }
 
-  </style>
+  
+    .column-filter-row th{
+      padding-top:6px;
+      padding-bottom:8px;
+      background:#f8fafc;
+    }
+    .column-filter{
+      width:100%;
+      min-width:90px;
+      padding:7px 8px;
+      font-size:12px;
+      border:1px solid #cbd5e1;
+      border-radius:8px;
+      background:#fff;
+    }
+
+</style>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
@@ -150,7 +166,40 @@
     <div id="listMessage" class="msg"></div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Kode</th><th>Beskrivelse</th><th>Avdeling / parti</th><th>Status</th><th>Bruk</th><th>Utløper</th><th>Opprettet</th><th>Handlinger</th></tr></thead>
+        <thead>
+          <tr>
+            <th>Kode</th>
+            <th>Beskrivelse</th>
+            <th>Avdeling / parti</th>
+            <th>Status</th>
+            <th>Bruk</th>
+            <th>Utløper</th>
+            <th>Opprettet</th>
+            <th>Handlinger</th>
+          </tr>
+          <tr class="column-filter-row">
+            <th><input id="colFilterCode" class="column-filter" type="text" placeholder="Filtrer kode"></th>
+            <th><input id="colFilterDescription" class="column-filter" type="text" placeholder="Filtrer beskrivelse"></th>
+            <th><input id="colFilterDepartmentBatch" class="column-filter" type="text" placeholder="Avdeling / parti"></th>
+            <th>
+              <select id="colFilterStatus" class="column-filter">
+                <option value="">Alle</option>
+                <option value="active">Aktiv</option>
+                <option value="inactive">Inaktiv</option>
+              </select>
+            </th>
+            <th>
+              <select id="colFilterUsage" class="column-filter">
+                <option value="">Alle</option>
+                <option value="unused">Ubrukt</option>
+                <option value="used">Brukt</option>
+              </select>
+            </th>
+            <th><input id="colFilterExpires" class="column-filter" type="text" placeholder="dd.mm.åååå"></th>
+            <th><input id="colFilterCreated" class="column-filter" type="text" placeholder="dd.mm.åååå"></th>
+            <th></th>
+          </tr>
+        </thead>
         <tbody id="codesTableBody"><tr><td colspan="8" class="muted">Laster koder…</td></tr></tbody>
       </table>
     </div>
@@ -167,6 +216,13 @@ const exportExcelBtn=document.getElementById("exportExcelBtn");
 const filterText=document.getElementById("filterText");
 const filterStatus=document.getElementById("filterStatus");
 const filterUsage=document.getElementById("filterUsage");
+const colFilterCode=document.getElementById("colFilterCode");
+const colFilterDescription=document.getElementById("colFilterDescription");
+const colFilterDepartmentBatch=document.getElementById("colFilterDepartmentBatch");
+const colFilterStatus=document.getElementById("colFilterStatus");
+const colFilterUsage=document.getElementById("colFilterUsage");
+const colFilterExpires=document.getElementById("colFilterExpires");
+const colFilterCreated=document.getElementById("colFilterCreated");
 const departmentSelect=document.getElementById("department_id");
 const batchSelect=document.getElementById("batch_id");
 let allCodes=[];
@@ -176,7 +232,65 @@ function clearMessage(el){el.textContent="";el.className="msg";}
 function formatDate(v){if(!v)return "—";const d=new Date(v);return Number.isNaN(d.getTime())?"—":d.toLocaleString("no-NO");}
 function esc(v){return String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#39;");}
 function updateSummary(codes){document.getElementById("statTotal").textContent=codes.length;document.getElementById("statActive").textContent=codes.filter(c=>c.is_active).length;document.getElementById("statInactive").textContent=codes.filter(c=>!c.is_active).length;document.getElementById("statUsed").textContent=codes.filter(c=>Number(c.used_count||0)>0).length;}
-function applyFilters(codes){const text=filterText.value.trim().toLowerCase();const status=filterStatus.value;const usage=filterUsage.value;return codes.filter(code=>{const hay=(code.code+" "+(code.description||"")).toLowerCase();if(text&&!hay.includes(text))return false;if(status==="active"&&!code.is_active)return false;if(status==="inactive"&&code.is_active)return false;const used=Number(code.used_count||0);if(usage==="used"&&used<1)return false;if(usage==="unused"&&used>0)return false;return true;});}
+function applyFilters(codes){
+  const text=filterText.value.trim().toLowerCase();
+  const status=filterStatus.value;
+  const usage=filterUsage.value;
+
+  const codeText=colFilterCode.value.trim().toLowerCase();
+  const descriptionText=colFilterDescription.value.trim().toLowerCase();
+  const departmentBatchText=colFilterDepartmentBatch.value.trim().toLowerCase();
+  const columnStatus=colFilterStatus.value;
+  const columnUsage=colFilterUsage.value;
+  const expiresText=colFilterExpires.value.trim().toLowerCase();
+  const createdText=colFilterCreated.value.trim().toLowerCase();
+
+  return codes.filter(code=>{
+    const hay=(code.code+" "+(code.description||"")).toLowerCase();
+
+    if(text&&!hay.includes(text))return false;
+
+    if(status==="active"&&!code.is_active)return false;
+    if(status==="inactive"&&code.is_active)return false;
+
+    const used=Number(code.used_count||0);
+
+    if(usage==="used"&&used<1)return false;
+    if(usage==="unused"&&used>0)return false;
+
+    if(codeText&&!String(code.code||"").toLowerCase().includes(codeText))return false;
+
+    if(
+      descriptionText &&
+      !String(code.description||"").toLowerCase().includes(descriptionText)
+    )return false;
+
+    const departmentBatch=[
+      code.department_name||"Alle avdelinger",
+      code.batch_name||"Alle partier"
+    ].join(" ").toLowerCase();
+
+    if(
+      departmentBatchText &&
+      !departmentBatch.includes(departmentBatchText)
+    )return false;
+
+    if(columnStatus==="active"&&!code.is_active)return false;
+    if(columnStatus==="inactive"&&code.is_active)return false;
+
+    if(columnUsage==="used"&&used<1)return false;
+    if(columnUsage==="unused"&&used>0)return false;
+
+    const expires=formatDate(code.expires_at).toLowerCase();
+    const created=formatDate(code.created_at).toLowerCase();
+
+    if(expiresText&&!expires.includes(expiresText))return false;
+    if(createdText&&!created.includes(createdText))return false;
+
+    return true;
+  });
+}
+
 function renderTable(){const filtered=applyFilters(allCodes);updateSummary(allCodes);if(!filtered.length){codesTableBody.innerHTML='<tr><td colspan="8" class="muted">Ingen koder funnet.</td></tr>';return;}
 codesTableBody.innerHTML=filtered.map(code=>{const used=Number(code.used_count||0);return `<tr>
 <td><strong>${esc(code.code)}</strong></td>
@@ -268,7 +382,25 @@ const quantity=Number(document.getElementById("quantity").value||0);
 if(!Number.isInteger(quantity)||quantity<1){showMessage(createMessage,"Antall koder må være minst 1.","error");return;}
 const payload={description:document.getElementById("description").value.trim()||null,quantity,department_id:departmentSelect.value||null,batch_id:batchSelect.value||null,expires_at:document.getElementById("expires_at").value?new Date(document.getElementById("expires_at").value).toISOString():null,is_active:document.getElementById("is_active").checked};
 try{const response=await fetch("/.netlify/functions/create-school-access-code",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});const data=await response.json();if(!response.ok)throw new Error(data.error||"Kunne ikke opprette koder.");createCodeForm.reset();document.getElementById("quantity").value="1";document.getElementById("is_active").checked=true;showMessage(createMessage,`${data.codes?.length||quantity} koder ble opprettet.`,"success");await loadCodes();}catch(error){showMessage(createMessage,error.message||"Kunne ikke opprette koder.","error");}});
-filterText.addEventListener("input",renderTable);filterStatus.addEventListener("change",renderTable);filterUsage.addEventListener("change",renderTable);reloadBtn.addEventListener("click",loadCodes);exportExcelBtn.addEventListener("click",exportCodesToExcel);
+filterText.addEventListener("input",renderTable);
+filterStatus.addEventListener("change",renderTable);
+filterUsage.addEventListener("change",renderTable);
+
+[
+  colFilterCode,
+  colFilterDescription,
+  colFilterDepartmentBatch,
+  colFilterExpires,
+  colFilterCreated
+].forEach(el=>el.addEventListener("input",renderTable));
+
+[
+  colFilterStatus,
+  colFilterUsage
+].forEach(el=>el.addEventListener("change",renderTable));
+
+reloadBtn.addEventListener("click",loadCodes);
+exportExcelBtn.addEventListener("click",exportCodesToExcel);
 loadLookups();loadCodes();
 </script>
 </body></html>
