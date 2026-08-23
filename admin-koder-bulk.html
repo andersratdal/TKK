@@ -9,9 +9,9 @@
     .wrap{max-width:1200px;margin:0 auto;padding:24px 16px 48px}
     .card{background:#fff;border:1px solid #d1d5db;border-radius:16px;padding:20px;margin-bottom:20px;box-shadow:0 8px 24px rgba(0,0,0,.05)}
     h1,h2{margin-top:0} .muted{color:#6b7280}
-    .grid{display:grid;gap:16px}.g3{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+    .grid{display:grid;gap:14px}.g3{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
     label{display:block;font-weight:700;margin-bottom:6px}
-    input,select,button{font:inherit} input,select{width:100%;padding:12px;border:1px solid #d1d5db;border-radius:10px}
+    input,select,button{font:inherit} input,select{box-sizing:border-box;width:100%;padding:12px;border:1px solid #d1d5db;border-radius:10px}
     .actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:18px}
     button{border:none;border-radius:10px;padding:11px 16px;cursor:pointer;font-weight:700}
     .primary{background:#0f766e;color:#fff}.secondary{background:#e5e7eb;color:#111827}.danger{background:#fef2f2;color:#b91c1c}
@@ -80,6 +80,22 @@
       background:#fff;
     }
 
+
+    #createCodeForm .code-create-grid{
+      grid-template-columns:minmax(180px,1.35fr) minmax(100px,.55fr) minmax(150px,.9fr) minmax(160px,.95fr) minmax(145px,.8fr);
+      align-items:start;
+    }
+    @media(max-width:1050px){
+      #createCodeForm .code-create-grid{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+      }
+    }
+    @media(max-width:620px){
+      #createCodeForm .code-create-grid{
+        grid-template-columns:1fr;
+      }
+    }
+
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -101,7 +117,7 @@
   <div class="card">
     <h2>Generer nye koder</h2>
     <form id="createCodeForm">
-      <div class="grid g3">
+      <div class="grid g3 code-create-grid">
         <div>
           <label for="description">Beskrivelse</label>
           <input id="description" type="text" placeholder="Friplass høst 2026">
@@ -119,13 +135,13 @@
         </div>
 
         <div>
-          <label for="batch_id">Parti</label>
-          <select id="batch_id"><option value="">Alle partier</option></select>
+          <label for="batch_id">Semester</label>
+          <select id="batch_id"><option value="">Alle semester</option></select>
         </div>
 
         <div>
           <label for="expires_at">Utløpsdato</label>
-          <input id="expires_at" type="datetime-local">
+          <input id="expires_at" type="date">
           <div class="small muted">Tomt felt gir standard utløpsdato 3 år frem i tid.</div>
         </div>
       </div>
@@ -170,7 +186,7 @@
           <tr>
             <th>Kode</th>
             <th>Beskrivelse</th>
-            <th>Avdeling / parti</th>
+            <th>Semester</th>
             <th>Status</th>
             <th>Bruk</th>
             <th>Utløper</th>
@@ -180,7 +196,11 @@
           <tr class="column-filter-row">
             <th><input id="colFilterCode" class="column-filter" type="text" placeholder="Filtrer kode"></th>
             <th><input id="colFilterDescription" class="column-filter" type="text" placeholder="Filtrer beskrivelse"></th>
-            <th><input id="colFilterDepartmentBatch" class="column-filter" type="text" placeholder="Avdeling / parti"></th>
+            <th>
+              <select id="colFilterSemester" class="column-filter">
+                <option value="">Alle semester</option>
+              </select>
+            </th>
             <th>
               <select id="colFilterStatus" class="column-filter">
                 <option value="">Alle</option>
@@ -218,7 +238,7 @@ const filterStatus=document.getElementById("filterStatus");
 const filterUsage=document.getElementById("filterUsage");
 const colFilterCode=document.getElementById("colFilterCode");
 const colFilterDescription=document.getElementById("colFilterDescription");
-const colFilterDepartmentBatch=document.getElementById("colFilterDepartmentBatch");
+const colFilterSemester=document.getElementById("colFilterSemester");
 const colFilterStatus=document.getElementById("colFilterStatus");
 const colFilterUsage=document.getElementById("colFilterUsage");
 const colFilterExpires=document.getElementById("colFilterExpires");
@@ -229,7 +249,7 @@ let allCodes=[];
 
 function showMessage(el,text,type){el.textContent=text;el.className=`msg show ${type==="success"?"ok":"err"}`;}
 function clearMessage(el){el.textContent="";el.className="msg";}
-function formatDate(v){if(!v)return "—";const d=new Date(v);return Number.isNaN(d.getTime())?"—":d.toLocaleString("no-NO");}
+function formatDate(v){if(!v)return "—";const d=new Date(v);return Number.isNaN(d.getTime())?"—":d.toLocaleDateString("no-NO");}
 function esc(v){return String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#39;");}
 function updateSummary(codes){document.getElementById("statTotal").textContent=codes.length;document.getElementById("statActive").textContent=codes.filter(c=>c.is_active).length;document.getElementById("statInactive").textContent=codes.filter(c=>!c.is_active).length;document.getElementById("statUsed").textContent=codes.filter(c=>Number(c.used_count||0)>0).length;}
 function applyFilters(codes){
@@ -239,7 +259,7 @@ function applyFilters(codes){
 
   const codeText=colFilterCode.value.trim().toLowerCase();
   const descriptionText=colFilterDescription.value.trim().toLowerCase();
-  const departmentBatchText=colFilterDepartmentBatch.value.trim().toLowerCase();
+  const semesterValue=colFilterSemester.value;
   const columnStatus=colFilterStatus.value;
   const columnUsage=colFilterUsage.value;
   const expiresText=colFilterExpires.value.trim().toLowerCase();
@@ -265,14 +285,9 @@ function applyFilters(codes){
       !String(code.description||"").toLowerCase().includes(descriptionText)
     )return false;
 
-    const departmentBatch=[
-      code.department_name||"Alle avdelinger",
-      code.batch_name||"Alle partier"
-    ].join(" ").toLowerCase();
-
     if(
-      departmentBatchText &&
-      !departmentBatch.includes(departmentBatchText)
+      semesterValue &&
+      String(code.batch_name||"") !== semesterValue
     )return false;
 
     if(columnStatus==="active"&&!code.is_active)return false;
@@ -291,11 +306,33 @@ function applyFilters(codes){
   });
 }
 
+function populateSemesterFilter(){
+  const current=colFilterSemester.value;
+  const semesters=Array.from(new Set(
+    allCodes
+      .map(code=>String(code.batch_name||"").trim())
+      .filter(Boolean)
+  )).sort((a,b)=>b.localeCompare(a,"no"));
+
+  colFilterSemester.innerHTML='<option value="">Alle semester</option>';
+
+  semesters.forEach(name=>{
+    const option=document.createElement("option");
+    option.value=name;
+    option.textContent=name;
+    colFilterSemester.appendChild(option);
+  });
+
+  if(semesters.includes(current)){
+    colFilterSemester.value=current;
+  }
+}
+
 function renderTable(){const filtered=applyFilters(allCodes);updateSummary(allCodes);if(!filtered.length){codesTableBody.innerHTML='<tr><td colspan="8" class="muted">Ingen koder funnet.</td></tr>';return;}
 codesTableBody.innerHTML=filtered.map(code=>{const used=Number(code.used_count||0);return `<tr>
 <td><strong>${esc(code.code)}</strong></td>
 <td>${esc(code.description||"—")}</td>
-<td class="small">${esc(code.department_name||"Alle avdelinger")}<br>${esc(code.batch_name||"Alle partier")}</td>
+<td class="small">${esc(code.batch_name||"—")}</td>
 <td>${code.is_active?'<span class="pill active">Aktiv</span>':'<span class="pill inactive">Inaktiv</span>'}</td>
 <td>${used}</td>
 <td>${formatDate(code.expires_at)}</td>
@@ -373,14 +410,14 @@ async function loadLookups(){try{const response=await fetch("/.netlify/functions
 (data.departments||[]).forEach(item=>{const o=document.createElement("option");o.value=item.id;o.textContent=item.name;departmentSelect.appendChild(o);});
 (data.batches||[]).forEach(item=>{const o=document.createElement("option");o.value=item.id;o.textContent=item.name;batchSelect.appendChild(o);});
 }catch(error){showMessage(listMessage,error.message||"Kunne ikke hente oppslagsdata.","error");}}
-async function loadCodes(){clearMessage(listMessage);codesTableBody.innerHTML='<tr><td colspan="8" class="muted">Laster koder…</td></tr>';try{const response=await fetch("/.netlify/functions/list-school-access-codes");const data=await response.json();if(!response.ok)throw new Error(data.error||"Kunne ikke hente koder.");allCodes=Array.isArray(data.codes)?data.codes:[];renderTable();}catch(error){codesTableBody.innerHTML='<tr><td colspan="8" class="muted">Kunne ikke laste koder.</td></tr>';showMessage(listMessage,error.message||"Kunne ikke hente koder.","error");}}
+async function loadCodes(){clearMessage(listMessage);codesTableBody.innerHTML='<tr><td colspan="8" class="muted">Laster koder…</td></tr>';try{const response=await fetch("/.netlify/functions/list-school-access-codes");const data=await response.json();if(!response.ok)throw new Error(data.error||"Kunne ikke hente koder.");allCodes=Array.isArray(data.codes)?data.codes:[];populateSemesterFilter();renderTable();}catch(error){codesTableBody.innerHTML='<tr><td colspan="8" class="muted">Kunne ikke laste koder.</td></tr>';showMessage(listMessage,error.message||"Kunne ikke hente koder.","error");}}
 async function toggleCodeStatus(id,is_active){clearMessage(listMessage);try{const response=await fetch("/.netlify/functions/update-school-access-code",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id,is_active})});const data=await response.json();if(!response.ok)throw new Error(data.error||"Kunne ikke oppdatere koden.");showMessage(listMessage,is_active?"Koden ble aktivert.":"Koden ble deaktivert.","success");await loadCodes();}catch(error){showMessage(listMessage,error.message||"Kunne ikke oppdatere koden.","error");}}
 async function copyCode(code){try{await navigator.clipboard.writeText(code);showMessage(listMessage,`Kopierte kode: ${code}`,"success");}catch{showMessage(listMessage,"Kunne ikke kopiere koden automatisk.","error");}}
 window.toggleCodeStatus=toggleCodeStatus;window.copyCode=copyCode;
 createCodeForm.addEventListener("submit",async(event)=>{event.preventDefault();clearMessage(createMessage);
 const quantity=Number(document.getElementById("quantity").value||0);
 if(!Number.isInteger(quantity)||quantity<1){showMessage(createMessage,"Antall koder må være minst 1.","error");return;}
-const payload={description:document.getElementById("description").value.trim()||null,quantity,department_id:departmentSelect.value||null,batch_id:batchSelect.value||null,expires_at:document.getElementById("expires_at").value?new Date(document.getElementById("expires_at").value).toISOString():null,is_active:document.getElementById("is_active").checked};
+const payload={description:document.getElementById("description").value.trim()||null,quantity,department_id:departmentSelect.value||null,batch_id:batchSelect.value||null,expires_at:document.getElementById("expires_at").value?new Date(document.getElementById("expires_at").value+"T23:59:59").toISOString():null,is_active:document.getElementById("is_active").checked};
 try{const response=await fetch("/.netlify/functions/create-school-access-code",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});const data=await response.json();if(!response.ok)throw new Error(data.error||"Kunne ikke opprette koder.");createCodeForm.reset();document.getElementById("quantity").value="1";document.getElementById("is_active").checked=true;showMessage(createMessage,`${data.codes?.length||quantity} koder ble opprettet.`,"success");await loadCodes();}catch(error){showMessage(createMessage,error.message||"Kunne ikke opprette koder.","error");}});
 filterText.addEventListener("input",renderTable);
 filterStatus.addEventListener("change",renderTable);
@@ -389,12 +426,12 @@ filterUsage.addEventListener("change",renderTable);
 [
   colFilterCode,
   colFilterDescription,
-  colFilterDepartmentBatch,
   colFilterExpires,
   colFilterCreated
 ].forEach(el=>el.addEventListener("input",renderTable));
 
 [
+  colFilterSemester,
   colFilterStatus,
   colFilterUsage
 ].forEach(el=>el.addEventListener("change",renderTable));
