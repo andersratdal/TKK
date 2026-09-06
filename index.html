@@ -7445,37 +7445,74 @@ function populateMemberEditList() {
       return matches.length === 1 ? matches[0] : null;
     }
 
-    function exportCouncilReportXlsx() {
-      const rows = (state.schoolSignups || [])
-        .filter((signup) => isCodeSignup(signup))
-        .slice()
-        .sort((a, b) =>
-          String(a.child_name || "").localeCompare(String(b.child_name || ""), "no")
-        )
-        .map((signup) => {
-          const member = getMemberForSignupReport(signup);
+    async function exportCouncilReportXlsx() {
+      const button = byId("btnExportCouncilReport");
+      const oldText = button ? button.textContent : "";
 
-          return [
-            signup.child_name || "",
-            signup.access_code || (signup.access_code_id ? "Kodepåmelding" : ""),
-            member
-              ? (member.membership_fee_paid === true ? "Betalt" : "Ikke betalt")
-              : "Ikke koblet til medlem"
-          ];
+      try {
+        if (button) {
+          button.disabled = true;
+          button.textContent = "Henter data ...";
+        }
+
+        const response = await fetch("/.netlify/functions/report-idrettsrad", {
+          method: "GET",
+          headers: { "Accept": "application/json" }
         });
 
-      if (!rows.length) {
-        alert("Fant ingen skøyteskolepåmeldinger med kode.");
-        return;
-      }
+        let payload = null;
 
-      exportRowsToXlsx(
-        "Til-idrettsradet.xlsx",
-        "Til idrettsrådet",
-        ["Navn", "Kode", "Betalt medlemsavgift"],
-        rows,
-        [32, 22, 24]
-      );
+        try {
+          payload = await response.json();
+        } catch (_) {
+          payload = null;
+        }
+
+        if (!response.ok) {
+          throw new Error(
+            (payload && payload.error) ||
+            "Kunne ikke hente rapportdata."
+          );
+        }
+
+        const reportRows = Array.isArray(payload && payload.rows)
+          ? payload.rows
+          : [];
+
+        if (!reportRows.length) {
+          alert("Fant ingen skøyteskolepåmeldinger med kode.");
+          return;
+        }
+
+        const rows = reportRows.map((row) => [
+          row.name || "",
+          row.code || "",
+          row.membership_fee_paid === true
+            ? "Betalt"
+            : row.member_found === false
+              ? "Ikke koblet til medlem"
+              : "Ikke betalt"
+        ]);
+
+        exportRowsToXlsx(
+          "Til-idrettsradet.xlsx",
+          "Til idrettsrådet",
+          ["Navn", "Kode", "Betalt medlemsavgift"],
+          rows,
+          [32, 22, 24]
+        );
+      } catch (error) {
+        console.error(error);
+        alert(
+          "Kunne ikke lage rapporten Til idrettsrådet.\n\n" +
+          (error.message || error)
+        );
+      } finally {
+        if (button) {
+          button.disabled = false;
+          button.textContent = oldText || "Eksporter Excel";
+        }
+      }
     }
 
     function getSchoolGroupNameForEnrollment(enrollment) {
