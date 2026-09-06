@@ -5203,12 +5203,18 @@ function formatSkateRequest(signup) {
 }
 
 function isCodeSignup(signup) {
+  if (!signup) return false;
+
+  const source = String(signup.source || "")
+    .trim()
+    .toLowerCase();
+
   return !!(
-    signup &&
-    (
-      signup.access_code_id ||
-      String(signup.access_code || "").trim()
-    )
+    signup.access_code_id ||
+    String(signup.access_code || "").trim() ||
+    source === "signup_page_code" ||
+    source === "code" ||
+    source.includes("signup_code")
   );
 }
 
@@ -7451,7 +7457,7 @@ function populateMemberEditList() {
 
           return [
             signup.child_name || "",
-            signup.access_code || "",
+            signup.access_code || (signup.access_code_id ? "Kodepåmelding" : ""),
             member
               ? (member.membership_fee_paid === true ? "Betalt" : "Ikke betalt")
               : "Ikke koblet til medlem"
