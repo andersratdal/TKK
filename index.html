@@ -1616,7 +1616,7 @@
     <div class="section-header">
       <div>
         <h2>Deltakere i valgt semester</h2>
-        <div class="help" style="margin-top:8px;">Her vises deltakerne fordelt på gruppene. Du kan flytte deltakere mellom Blå, Gul og Rød, eller flytte dem videre til den permanente treningsgruppen Rekrutt 1.</div>
+        <div class="help" style="margin-top:8px;">Her vises deltakerne fordelt på gruppene. Du kan flytte deltakere mellom Blå, Gul og Rød.</div>
       </div>
       <div class="toolbar">
         <input id="schoolParticipantSearch" placeholder="Søk medlem..." />
@@ -2006,6 +2006,33 @@
 <div class="section-card" id="reportsIntro">
 <h2>Rapporter</h2>
 <div class="help" style="margin-top:8px;">Her finner du oversikter og eksport for skøyter, arkiverte skøyter og medlemmer.</div>
+</div>
+<div class="section-card">
+  <div class="section-header">
+    <div>
+      <h2>Til idrettsrådet</h2>
+      <div class="help" style="margin-top:8px;">
+        Eksporterer kun skøyteskolepåmeldinger med påmeldingskode. Inneholder navn, kode og status for betalt medlemsavgift.
+      </div>
+    </div>
+    <div class="toolbar">
+      <button class="btn-primary btn-small" id="btnExportCouncilReport" type="button">Eksporter Excel</button>
+    </div>
+  </div>
+</div>
+
+<div class="section-card">
+  <div class="section-header">
+    <div>
+      <h2>Grupper</h2>
+      <div class="help" style="margin-top:8px;">
+        Eksporterer alle registrerte skøyteskoledeltakere med navn, gruppe, fødselsår, semester og e-postadresse.
+      </div>
+    </div>
+    <div class="toolbar">
+      <button class="btn-primary btn-small" id="btnExportGroupsReport" type="button">Eksporter Excel</button>
+    </div>
+  </div>
 </div>
 <div class="section-card">
 <div class="section-header">
@@ -4895,81 +4922,6 @@ function renderSchoolBatchOverview() {
       if (modal) modal.classList.add("hidden");
     }
 
-
-const SCHOOL_TO_RECRUIT_VALUE = "__training_rekrutt_1__";
-
-function findRecruit1TrainingGroup() {
-  const targetDepartment = (state.departments || []).find((department) => {
-    const name = String(department.name || "").trim().toLowerCase();
-    return name === "trondheim kortbaneklubb";
-  });
-
-  if (!targetDepartment) {
-    return { department: null, group: null };
-  }
-
-  const group = (state.groups || []).find((item) =>
-    sameId(item.department_id, targetDepartment.id) &&
-    String(item.name || "").trim().toLowerCase() === "rekrutt 1" &&
-    item.is_active !== false
-  );
-
-  return {
-    department: targetDepartment,
-    group: group || null
-  };
-}
-
-async function moveSchoolParticipantToRecruit1(enrollment) {
-  if (!supabaseClient || !enrollment || !enrollment.member_id) {
-    throw new Error("Mangler medlem eller databaseforbindelse.");
-  }
-
-  const target = findRecruit1TrainingGroup();
-
-  if (!target.department) {
-    throw new Error(
-      'Fant ikke avdelingen "Trondheim kortbaneklubb".'
-    );
-  }
-
-  if (!target.group) {
-    throw new Error(
-      'Fant ikke en aktiv treningsgruppe som heter "Rekrutt 1" under Trondheim kortbaneklubb.'
-    );
-  }
-
-  const memberId = enrollment.member_id;
-
-  // Unngå duplikat dersom medlemmet allerede ligger i Rekrutt 1.
-  const existingMembership = (state.memberGroups || []).find((membership) =>
-    sameId(membership.member_id, memberId) &&
-    sameId(membership.group_id, target.group.id)
-  );
-
-  if (!existingMembership) {
-    const insertResult = await supabaseClient
-      .from("member_groups")
-      .insert([{
-        member_id: memberId,
-        group_id: target.group.id
-      }]);
-
-    if (insertResult.error) throw insertResult.error;
-  }
-
-  // Når deltakeren flyttes til permanent treningsgruppe skal vedkommende
-  // ikke lenger være registrert som aktiv deltaker i skøyteskolen.
-  const deleteResult = await supabaseClient
-    .from("skating_school_enrollments")
-    .delete()
-    .eq("member_id", memberId);
-
-  if (deleteResult.error) throw deleteResult.error;
-
-  return target;
-}
-
 function renderSchoolParticipants() {
   const wrap = byId("schoolParticipantsWrap");
   if (!wrap) return;
@@ -5024,12 +4976,6 @@ function renderSchoolParticipants() {
       opt.textContent = col.title;
       select.appendChild(opt);
     });
-
-    const recruitOpt = document.createElement("option");
-    recruitOpt.value = SCHOOL_TO_RECRUIT_VALUE;
-    recruitOpt.textContent = "Rekrutt 1";
-    select.appendChild(recruitOpt);
-
     select.value = enrollment.school_group_id ? String(enrollment.school_group_id) : "";
     return select;
   }
@@ -5037,42 +4983,14 @@ function renderSchoolParticipants() {
   async function saveMove(enrollment, newGroupId, controls) {
     try {
       controls.forEach((el) => { if (el) el.disabled = true; });
-
-      if (newGroupId === SCHOOL_TO_RECRUIT_VALUE) {
-        const target = await moveSchoolParticipantToRecruit1(enrollment);
-
-        setSchoolMessage(
-          "schoolParticipantMessage",
-          safeText(enrollment.members && enrollment.members.name) +
-            " er flyttet ut av skøyteskolen og inn i " +
-            target.group.name +
-            ".",
-          false
-        );
-      } else {
-        const res = await updateSchoolEnrollmentGroup(
-          enrollment.id,
-          newGroupId || null
-        );
-
-        if (res && res.error) throw res.error;
-
-        setSchoolMessage(
-          "schoolParticipantMessage",
-          newGroupId ? "Deltaker flyttet." : "Gruppe nullstilt.",
-          false
-        );
-      }
-
+      const res = await updateSchoolEnrollmentGroup(enrollment.id, newGroupId || null);
+      if (res && res.error) throw res.error;
+      setSchoolMessage("schoolParticipantMessage", newGroupId ? "Deltaker flyttet." : "Gruppe nullstilt.", false);
       closeMobileSchoolModal();
       await loadAll();
     } catch (error) {
       console.error(error);
-      setSchoolMessage(
-        "schoolParticipantMessage",
-        "Kunne ikke flytte deltakeren. " + (error.message || error),
-        true
-      );
+      setSchoolMessage("schoolParticipantMessage", "Kunne ikke oppdatere gruppe. " + error.message, true);
       controls.forEach((el) => { if (el) el.disabled = false; });
     }
   }
@@ -5096,17 +5014,11 @@ function renderSchoolParticipants() {
       opt.textContent = col.title;
       select.appendChild(opt);
     });
-
-    const recruitOpt = document.createElement("option");
-    recruitOpt.value = SCHOOL_TO_RECRUIT_VALUE;
-    recruitOpt.textContent = "Rekrutt 1";
-    select.appendChild(recruitOpt);
-
     select.value = enrollment.school_group_id ? String(enrollment.school_group_id) : "";
 
     saveBtn.onclick = function () {
       if (!select.value) {
-        setSchoolMessage("schoolParticipantMessage", "Velg Blå, Gul, Rød eller Rekrutt 1 før du lagrer.", true);
+        setSchoolMessage("schoolParticipantMessage", "Velg en gruppe før du lagrer.", true);
         return;
       }
       saveMove(enrollment, select.value, [select, saveBtn, closeBtn]);
@@ -5148,7 +5060,7 @@ function renderSchoolParticipants() {
     moveBtn.textContent = "Flytt";
     moveBtn.addEventListener("click", function () {
       if (!select.value) {
-        setSchoolMessage("schoolParticipantMessage", "Velg Blå, Gul, Rød eller Rekrutt 1 før du flytter deltakeren.", true);
+        setSchoolMessage("schoolParticipantMessage", "Velg en gruppe før du flytter deltakeren.", true);
         return;
       }
       saveMove(enrollment, select.value, [select, moveBtn]);
@@ -5291,12 +5203,18 @@ function formatSkateRequest(signup) {
 }
 
 function isCodeSignup(signup) {
+  if (!signup) return false;
+
+  const source = String(signup.source || "")
+    .trim()
+    .toLowerCase();
+
   return !!(
-    signup &&
-    (
-      signup.access_code_id ||
-      String(signup.access_code || "").trim()
-    )
+    signup.access_code_id ||
+    String(signup.access_code || "").trim() ||
+    source === "signup_page_code" ||
+    source === "code" ||
+    source.includes("signup_code")
   );
 }
 
@@ -7475,6 +7393,186 @@ function populateMemberEditList() {
       return rows;
     }
 
+
+    function exportRowsToXlsx(filename, sheetName, headers, rows, widths) {
+      if (!window.XLSX) {
+        alert("Excel-biblioteket ble ikke lastet. Sjekk internettforbindelsen og prøv igjen.");
+        return;
+      }
+
+      const data = [headers].concat(rows);
+      const worksheet = XLSX.utils.aoa_to_sheet(data);
+
+      worksheet["!cols"] = (widths || headers.map(() => 20)).map((wch) => ({ wch }));
+
+      worksheet["!autofilter"] = {
+        ref: "A1:" + xlsxColumnNameForReport(headers.length - 1) + Math.max(1, data.length)
+      };
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+      XLSX.writeFile(workbook, filename);
+    }
+
+    function xlsxColumnNameForReport(index) {
+      let n = index + 1;
+      let out = "";
+      while (n > 0) {
+        const rem = (n - 1) % 26;
+        out = String.fromCharCode(65 + rem) + out;
+        n = Math.floor((n - 1) / 26);
+      }
+      return out;
+    }
+
+    function getMemberForSignupReport(signup) {
+      if (!signup) return null;
+
+      if (signup.existing_member_id) {
+        const linked = (state.members || []).find((member) =>
+          sameId(member.id, signup.existing_member_id)
+        );
+        if (linked) return linked;
+      }
+
+      const name = String(signup.child_name || "").trim().toLowerCase();
+      if (!name) return null;
+
+      const matches = (state.members || []).filter((member) =>
+        String(member.name || "").trim().toLowerCase() === name
+      );
+
+      return matches.length === 1 ? matches[0] : null;
+    }
+
+    async function exportCouncilReportXlsx() {
+      const button = byId("btnExportCouncilReport");
+      const oldText = button ? button.textContent : "";
+
+      try {
+        if (button) {
+          button.disabled = true;
+          button.textContent = "Henter data ...";
+        }
+
+        const response = await fetch("/.netlify/functions/report-idrettsrad", {
+          method: "GET",
+          headers: { "Accept": "application/json" }
+        });
+
+        let payload = null;
+
+        try {
+          payload = await response.json();
+        } catch (_) {
+          payload = null;
+        }
+
+        if (!response.ok) {
+          throw new Error(
+            (payload && payload.error) ||
+            "Kunne ikke hente rapportdata."
+          );
+        }
+
+        const reportRows = Array.isArray(payload && payload.rows)
+          ? payload.rows
+          : [];
+
+        if (!reportRows.length) {
+          alert("Fant ingen skøyteskolepåmeldinger med kode.");
+          return;
+        }
+
+        const rows = reportRows.map((row) => [
+          row.name || "",
+          row.code || "",
+          row.membership_fee_paid === true
+            ? "Betalt"
+            : row.member_found === false
+              ? "Ikke koblet til medlem"
+              : "Ikke betalt"
+        ]);
+
+        exportRowsToXlsx(
+          "Til-idrettsradet.xlsx",
+          "Til idrettsrådet",
+          ["Navn", "Kode", "Betalt medlemsavgift"],
+          rows,
+          [32, 22, 24]
+        );
+      } catch (error) {
+        console.error(error);
+        alert(
+          "Kunne ikke lage rapporten Til idrettsrådet.\n\n" +
+          (error.message || error)
+        );
+      } finally {
+        if (button) {
+          button.disabled = false;
+          button.textContent = oldText || "Eksporter Excel";
+        }
+      }
+    }
+
+    function getSchoolGroupNameForEnrollment(enrollment) {
+      const group = (state.schoolGroups || []).find((item) =>
+        sameId(item.id, enrollment.school_group_id)
+      );
+      return group ? String(group.name || "") : "";
+    }
+
+    function exportGroupsReportXlsx() {
+      const rows = (state.schoolEnrollments || [])
+        .slice()
+        .sort((a, b) =>
+          String((a.members && a.members.name) || "").localeCompare(
+            String((b.members && b.members.name) || ""),
+            "no"
+          )
+        )
+        .map((enrollment) => {
+          const member = (state.members || []).find((item) =>
+            sameId(item.id, enrollment.member_id)
+          );
+
+          const name =
+            (enrollment.members && enrollment.members.name) ||
+            (member && member.name) ||
+            "";
+
+          const batch = (state.schoolBatches || []).find((item) =>
+            sameId(item.id, enrollment.batch_id)
+          );
+
+          const email =
+            (enrollment.members && enrollment.members.email) ||
+            (member && member.email) ||
+            "";
+
+          return [
+            name,
+            getSchoolGroupNameForEnrollment(enrollment) || "Ikke fordelt",
+            enrollment.birth_year || "",
+            batch ? (batch.name || "") : "",
+            email
+          ];
+        });
+
+      if (!rows.length) {
+        alert("Fant ingen registrerte skøyteskoledeltakere.");
+        return;
+      }
+
+      exportRowsToXlsx(
+        "Grupper.xlsx",
+        "Grupper",
+        ["Navn", "Gruppe", "Fødselsår", "Semester", "E-post"],
+        rows,
+        [32, 20, 14, 22, 34]
+      );
+    }
+
     function exportSkatesReportCsv() {
       const rows = getFilteredSkatesRows(false).map((skate) => [
         skate.skate_code || "",
@@ -8682,6 +8780,8 @@ attachSortHandlers();
         renderReportLoansByGroup
       );
     }
+    if (byId("btnExportCouncilReport")) byId("btnExportCouncilReport").addEventListener("click", exportCouncilReportXlsx);
+    if (byId("btnExportGroupsReport")) byId("btnExportGroupsReport").addEventListener("click", exportGroupsReportXlsx);
     if (byId("btnExportSkatesReport")) byId("btnExportSkatesReport").addEventListener("click", exportSkatesReportCsv);
     if (byId("btnExportArchivedSkatesReport")) byId("btnExportArchivedSkatesReport").addEventListener("click", exportArchivedSkatesReportCsv);
     if (byId("btnExportMembersReport")) byId("btnExportMembersReport").addEventListener("click", exportMembersReportCsv);
