@@ -2419,11 +2419,63 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
       });
     }
 
+    function getLoanSchoolBatchesForDepartment(departmentId) {
+      if (!departmentId) return [];
+
+      const rows = (state.schoolBatches || []).filter((batch) =>
+        sameId(batch.department_id, departmentId) &&
+        String(batch.status || "").trim().toLowerCase() !== "avsluttet"
+      );
+
+      // Dersom alle semester er avsluttet, behold muligheten til å finne
+      // deltakere i historiske semester i stedet for å vise en tom liste.
+      if (rows.length) return rows;
+
+      return (state.schoolBatches || []).filter((batch) =>
+        sameId(batch.department_id, departmentId)
+      );
+    }
+
     function getRelevantGroupsForDepartment(departmentId) {
       if (!departmentId) return [];
-      return uniqueGroupsByName(
-        state.groups.filter((group) => sameId(group.department_id, departmentId))
-      ).sort(compareSchoolBatchOrder);
+
+      const regularGroups = (state.groups || [])
+        .filter((group) => sameId(group.department_id, departmentId))
+        .map((group) => ({
+          ...group,
+          _loanSource: "regular",
+          _loanLabel: String(group.name || "")
+        }));
+
+      const schoolBatches = getLoanSchoolBatchesForDepartment(departmentId);
+      const batchById = new Map(
+        schoolBatches.map((batch) => [String(batch.id), batch])
+      );
+
+      const schoolGroups = (state.schoolGroups || [])
+        .filter((group) => batchById.has(String(group.batch_id)))
+        .map((group) => {
+          const batch = batchById.get(String(group.batch_id));
+          const batchName = String((batch && batch.name) || "").trim();
+          const groupName = String(group.name || "").trim();
+
+          return {
+            ...group,
+            _loanSource: "school",
+            _loanLabel: batchName
+              ? batchName + " – " + groupName
+              : groupName
+          };
+        });
+
+      return regularGroups
+        .concat(schoolGroups)
+        .sort((a, b) =>
+          String(a._loanLabel || a.name || "").localeCompare(
+            String(b._loanLabel || b.name || ""),
+            "no"
+          )
+        );
     }
 
     function getAllUniqueGroups() {
@@ -2432,23 +2484,113 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
       );
     }
 
+    function getLoanMembersForFilters(departmentId, groupId) {
+      let allowedMemberIds = null;
+
+      if (departmentId) {
+        const ids = new Set();
+
+        // Ordinære avdelinger/grupper.
+        const regularGroupIds = new Set(
+          (state.groups || [])
+            .filter((group) => sameId(group.department_id, departmentId))
+            .map((group) => String(group.id))
+        );
+
+        (state.memberGroups || []).forEach((membership) => {
+          if (regularGroupIds.has(String(membership.group_id))) {
+            ids.add(String(membership.member_id));
+          }
+        });
+
+        // Skøyteskole: avdeling -> semester -> deltakere.
+        const schoolBatchIds = new Set(
+          getLoanSchoolBatchesForDepartment(departmentId)
+            .map((batch) => String(batch.id))
+        );
+
+        (state.schoolEnrollments || []).forEach((enrollment) => {
+          if (schoolBatchIds.has(String(enrollment.batch_id))) {
+            ids.add(String(enrollment.member_id));
+          }
+        });
+
+        allowedMemberIds = ids;
+      }
+
+      if (groupId) {
+        const selectedRegularGroup = (state.groups || []).find((group) =>
+          sameId(group.id, groupId)
+        );
+        const selectedSchoolGroup = (state.schoolGroups || []).find((group) =>
+          sameId(group.id, groupId)
+        );
+
+        const groupMemberIds = new Set();
+
+        if (selectedRegularGroup) {
+          (state.memberGroups || []).forEach((membership) => {
+            if (sameId(membership.group_id, selectedRegularGroup.id)) {
+              groupMemberIds.add(String(membership.member_id));
+            }
+          });
+        }
+
+        if (selectedSchoolGroup) {
+          (state.schoolEnrollments || []).forEach((enrollment) => {
+            if (sameId(enrollment.school_group_id, selectedSchoolGroup.id)) {
+              groupMemberIds.add(String(enrollment.member_id));
+            }
+          });
+        }
+
+        if (allowedMemberIds === null) {
+          allowedMemberIds = groupMemberIds;
+        } else {
+          allowedMemberIds = new Set(
+            Array.from(allowedMemberIds).filter((id) =>
+              groupMemberIds.has(id)
+            )
+          );
+        }
+      }
+
+      const rows = (state.members || []).filter((member) =>
+        allowedMemberIds === null || allowedMemberIds.has(String(member.id))
+      );
+
+      return rows.sort((a, b) =>
+        String(a.name || "").localeCompare(String(b.name || ""), "no")
+      );
+    }
+
     function refreshLoanGroupOptions() {
       const loanDepartment = byId("loanDepartment");
       const loanGroupFilter = byId("loanGroupFilter");
       if (!loanGroupFilter) return;
+
       const selectedDepartmentId = loanDepartment ? loanDepartment.value : "";
       const relevantGroups = getRelevantGroupsForDepartment(selectedDepartmentId);
+
       loanGroupFilter.innerHTML = selectedDepartmentId
         ? '<option value="">Alle grupper</option>'
         : '<option value="">Velg avdeling først</option>';
-      relevantGroups.forEach((g) => {
+
+      relevantGroups.forEach((group) => {
         const opt = document.createElement("option");
-        opt.value = g.id;
-        opt.textContent = g.name;
+        opt.value = group.id;
+        opt.textContent = group._loanLabel || group.name || "";
         loanGroupFilter.appendChild(opt);
       });
-      const preferredValue = getUiPref("loanGroupFilter", loanGroupFilter.value || "");
-      const stillExists = relevantGroups.some((g) => sameId(g.id, preferredValue));
+
+      const preferredValue = getUiPref(
+        "loanGroupFilter",
+        loanGroupFilter.value || ""
+      );
+      const stillExists = relevantGroups.some((group) =>
+        sameId(group.id, preferredValue)
+      );
+
       loanGroupFilter.value = stillExists ? preferredValue : "";
       loanGroupFilter.disabled = !selectedDepartmentId;
     }
@@ -2494,25 +2636,13 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
       const currentSkateSearch = loanSkateSearchEl.value;
 
       const selectedGroupId = String(currentGroupFilter || "");
-      let members = state.members.slice();
 
-      if (currentDepartmentId) {
-        members = members.filter((m) => {
-          const memberGroupIds = state.memberGroups
-            .filter((mg) => sameId(mg.member_id, m.id))
-            .map((mg) => mg.group_id);
-          return state.groups.some((g) => sameId(g.department_id, currentDepartmentId) && memberGroupIds.includes(g.id));
-        });
-      }
-
-      if (selectedGroupId) {
-        members = members.filter((m) => {
-          const memberGroupIds = state.memberGroups
-            .filter((mg) => sameId(mg.member_id, m.id))
-            .map((mg) => mg.group_id);
-          return memberGroupIds.some((groupId) => sameId(groupId, selectedGroupId));
-        });
-      }
+      // Utlån støtter både ordinære medlemsgrupper og skøyteskolens
+      // semester-/deltakerstruktur.
+      let members = getLoanMembersForFilters(
+        currentDepartmentId,
+        selectedGroupId
+      );
 
       if (loanMemberListEl) {
         loanMemberListEl.innerHTML = "";
@@ -2631,7 +2761,14 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
         return;
       }
 
-      const members = state.members.slice().sort((a, b) => compareBatchNames(a.name, b.name));
+      const departmentId = byId("loanDepartment")
+        ? byId("loanDepartment").value
+        : "";
+      const groupId = byId("loanGroupFilter")
+        ? byId("loanGroupFilter").value
+        : "";
+
+      const members = getLoanMembersForFilters(departmentId, groupId);
       const found = members.find((member) => {
         let label = String(member.name || "");
         const details = [];
