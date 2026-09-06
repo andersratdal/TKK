@@ -1504,14 +1504,20 @@
 </div>
 </div>
 <div class="col-3">
-
+<label for="loanDepartment">Avdeling</label>
 <select id="loanDepartment" required="">
 <option value="">Velg avdeling</option>
 </select>
 </div>
 <div class="col-3">
+<label for="loanSemesterFilter">Filtrer på semester</label>
+<select id="loanSemesterFilter" disabled="">
+<option value="">Alle semester</option>
+</select>
+</div>
+<div class="col-3">
 <label for="loanGroupFilter">Filtrer på gruppe</label>
-<select id="loanGroupFilter">
+<select id="loanGroupFilter" disabled="">
 <option value="">Alle grupper</option>
 </select>
 <div class="help" id="loanGroupDebug" style="margin-top:6px;"></div>
@@ -2436,7 +2442,7 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
       );
     }
 
-    function getRelevantGroupsForDepartment(departmentId) {
+    function getRelevantGroupsForDepartment(departmentId, semesterId) {
       if (!departmentId) return [];
 
       const regularGroups = (state.groups || [])
@@ -2447,35 +2453,30 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
           _loanLabel: String(group.name || "")
         }));
 
-      const schoolBatches = getLoanSchoolBatchesForDepartment(departmentId);
+      const schoolBatches = getLoanSchoolBatchesForDepartment(departmentId)
+        .filter((batch) => !semesterId || sameId(batch.id, semesterId));
       const batchById = new Map(
         schoolBatches.map((batch) => [String(batch.id), batch])
       );
 
       const schoolGroups = (state.schoolGroups || [])
         .filter((group) => batchById.has(String(group.batch_id)))
-        .map((group) => {
-          const batch = batchById.get(String(group.batch_id));
-          const batchName = String((batch && batch.name) || "").trim();
-          const groupName = String(group.name || "").trim();
+        .map((group) => ({
+          ...group,
+          _loanSource: "school",
+          _loanLabel: String(group.name || "").trim()
+        }));
 
-          return {
-            ...group,
-            _loanSource: "school",
-            _loanLabel: batchName
-              ? batchName + " – " + groupName
-              : groupName
-          };
-        });
+      // Når et semester er valgt, skal bare skøyteskolegruppene i dette
+      // semesteret vises. Uten semester vises også ordinære grupper.
+      const rows = semesterId ? schoolGroups : regularGroups.concat(schoolGroups);
 
-      return regularGroups
-        .concat(schoolGroups)
-        .sort((a, b) =>
-          String(a._loanLabel || a.name || "").localeCompare(
-            String(b._loanLabel || b.name || ""),
-            "no"
-          )
-        );
+      return rows.sort((a, b) =>
+        String(a._loanLabel || a.name || "").localeCompare(
+          String(b._loanLabel || b.name || ""),
+          "no"
+        )
+      );
     }
 
     function getAllUniqueGroups() {
@@ -2484,28 +2485,31 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
       );
     }
 
-    function getLoanMembersForFilters(departmentId, groupId) {
+    function getLoanMembersForFilters(departmentId, semesterId, groupId) {
       let allowedMemberIds = null;
 
       if (departmentId) {
         const ids = new Set();
 
-        // Ordinære avdelinger/grupper.
-        const regularGroupIds = new Set(
-          (state.groups || [])
-            .filter((group) => sameId(group.department_id, departmentId))
-            .map((group) => String(group.id))
-        );
+        // Ordinære avdelinger/grupper tas med når semester ikke er valgt.
+        if (!semesterId) {
+          const regularGroupIds = new Set(
+            (state.groups || [])
+              .filter((group) => sameId(group.department_id, departmentId))
+              .map((group) => String(group.id))
+          );
 
-        (state.memberGroups || []).forEach((membership) => {
-          if (regularGroupIds.has(String(membership.group_id))) {
-            ids.add(String(membership.member_id));
-          }
-        });
+          (state.memberGroups || []).forEach((membership) => {
+            if (regularGroupIds.has(String(membership.group_id))) {
+              ids.add(String(membership.member_id));
+            }
+          });
+        }
 
         // Skøyteskole: avdeling -> semester -> deltakere.
         const schoolBatchIds = new Set(
           getLoanSchoolBatchesForDepartment(departmentId)
+            .filter((batch) => !semesterId || sameId(batch.id, semesterId))
             .map((batch) => String(batch.id))
         );
 
@@ -2528,7 +2532,7 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
 
         const groupMemberIds = new Set();
 
-        if (selectedRegularGroup) {
+        if (selectedRegularGroup && !semesterId) {
           (state.memberGroups || []).forEach((membership) => {
             if (sameId(membership.group_id, selectedRegularGroup.id)) {
               groupMemberIds.add(String(membership.member_id));
@@ -2538,30 +2542,55 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
 
         if (selectedSchoolGroup) {
           (state.schoolEnrollments || []).forEach((enrollment) => {
-            if (sameId(enrollment.school_group_id, selectedSchoolGroup.id)) {
+            if (
+              sameId(enrollment.school_group_id, selectedSchoolGroup.id) &&
+              (!semesterId || sameId(enrollment.batch_id, semesterId))
+            ) {
               groupMemberIds.add(String(enrollment.member_id));
             }
           });
         }
 
-        if (allowedMemberIds === null) {
-          allowedMemberIds = groupMemberIds;
-        } else {
-          allowedMemberIds = new Set(
-            Array.from(allowedMemberIds).filter((id) =>
-              groupMemberIds.has(id)
-            )
-          );
-        }
+        allowedMemberIds = allowedMemberIds === null
+          ? groupMemberIds
+          : new Set(Array.from(allowedMemberIds).filter((id) => groupMemberIds.has(id)));
       }
 
-      const rows = (state.members || []).filter((member) =>
-        allowedMemberIds === null || allowedMemberIds.has(String(member.id))
-      );
+      return (state.members || [])
+        .filter((member) =>
+          allowedMemberIds === null || allowedMemberIds.has(String(member.id))
+        )
+        .sort((a, b) =>
+          String(a.name || "").localeCompare(String(b.name || ""), "no")
+        );
+    }
 
-      return rows.sort((a, b) =>
-        String(a.name || "").localeCompare(String(b.name || ""), "no")
-      );
+    function refreshLoanSemesterOptions() {
+      const departmentEl = byId("loanDepartment");
+      const semesterEl = byId("loanSemesterFilter");
+      if (!semesterEl) return;
+
+      const departmentId = departmentEl ? departmentEl.value : "";
+      const batches = getLoanSchoolBatchesForDepartment(departmentId)
+        .slice()
+        .sort(compareSchoolBatchOrder);
+
+      semesterEl.innerHTML = departmentId
+        ? '<option value="">Alle semester</option>'
+        : '<option value="">Velg avdeling først</option>';
+
+      batches.forEach((batch) => {
+        const opt = document.createElement("option");
+        opt.value = batch.id;
+        opt.textContent = batch.name || "Semester";
+        semesterEl.appendChild(opt);
+      });
+
+      const preferred = getUiPref("loanSemesterFilter", "");
+      semesterEl.value = batches.some((batch) => sameId(batch.id, preferred))
+        ? preferred
+        : "";
+      semesterEl.disabled = !departmentId || batches.length === 0;
     }
 
     function refreshLoanGroupOptions() {
@@ -2569,8 +2598,13 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
       const loanGroupFilter = byId("loanGroupFilter");
       if (!loanGroupFilter) return;
 
+      const loanSemesterFilter = byId("loanSemesterFilter");
       const selectedDepartmentId = loanDepartment ? loanDepartment.value : "";
-      const relevantGroups = getRelevantGroupsForDepartment(selectedDepartmentId);
+      const selectedSemesterId = loanSemesterFilter ? loanSemesterFilter.value : "";
+      const relevantGroups = getRelevantGroupsForDepartment(
+        selectedDepartmentId,
+        selectedSemesterId
+      );
 
       loanGroupFilter.innerHTML = selectedDepartmentId
         ? '<option value="">Alle grupper</option>'
@@ -2615,6 +2649,7 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
 
     function updateLoanSelectors() {
       const loanDepartmentEl = byId("loanDepartment");
+      const loanSemesterFilterEl = byId("loanSemesterFilter");
       const loanGroupFilterEl = byId("loanGroupFilter");
       const loanMemberEl = byId("loanMember");
       const loanMemberSearchEl = byId("loanMemberSearch");
@@ -2629,6 +2664,9 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
         if (exists) loanDepartmentEl.value = currentDepartmentId;
       }
 
+      let currentSemesterFilter = loanSemesterFilterEl
+        ? (loanSemesterFilterEl.value || getUiPref("loanSemesterFilter", ""))
+        : "";
       let currentGroupFilter = loanGroupFilterEl.value || getUiPref("loanGroupFilter", "");
       const currentMemberId = loanMemberEl.value;
       const currentMemberSearch = loanMemberSearchEl ? loanMemberSearchEl.value : "";
@@ -2641,6 +2679,7 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
       // semester-/deltakerstruktur.
       let members = getLoanMembersForFilters(
         currentDepartmentId,
+        currentSemesterFilter,
         selectedGroupId
       );
 
@@ -2711,8 +2750,10 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
       }
 
       loanDepartmentEl.value = currentDepartmentId;
+      if (loanSemesterFilterEl) loanSemesterFilterEl.value = currentSemesterFilter;
       loanGroupFilterEl.value = currentGroupFilter;
       setUiPref("loanDepartment", loanDepartmentEl.value || "");
+      setUiPref("loanSemesterFilter", loanSemesterFilterEl ? loanSemesterFilterEl.value || "" : "");
       setUiPref("loanGroupFilter", loanGroupFilterEl.value || "");
     }
 
@@ -2768,7 +2809,10 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
         ? byId("loanGroupFilter").value
         : "";
 
-      const members = getLoanMembersForFilters(departmentId, groupId);
+      const semesterId = byId("loanSemesterFilter")
+        ? byId("loanSemesterFilter").value
+        : "";
+      const members = getLoanMembersForFilters(departmentId, semesterId, groupId);
       const found = members.find((member) => {
         let label = String(member.name || "");
         const details = [];
@@ -8003,11 +8047,21 @@ attachSortHandlers();
 
     byId("loanDepartment").addEventListener("change", function () {
       setUiPref("loanDepartment", this.value || "");
+      setUiPref("loanSemesterFilter", "");
       setUiPref("loanGroupFilter", "");
+      refreshLoanSemesterOptions();
       refreshLoanGroupOptions();
       updateLoanSelectors();
       updateGroupDebugViews();
     });
+    if (byId("loanSemesterFilter")) {
+      byId("loanSemesterFilter").addEventListener("change", function () {
+        setUiPref("loanSemesterFilter", this.value || "");
+        setUiPref("loanGroupFilter", "");
+        refreshLoanGroupOptions();
+        updateLoanSelectors();
+      });
+    }
     byId("loanGroupFilter").addEventListener("change", function () {
       setUiPref("loanGroupFilter", this.value || "");
       updateLoanSelectors();
