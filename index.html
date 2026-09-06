@@ -2026,7 +2026,7 @@
     <div>
       <h2>Grupper</h2>
       <div class="help" style="margin-top:8px;">
-        Eksporterer alle registrerte skøyteskoledeltakere med navn, gruppe og fødselsår.
+        Eksporterer alle registrerte skøyteskoledeltakere med navn, gruppe, fødselsår, semester og e-postadresse.
       </div>
     </div>
     <div class="toolbar">
@@ -7498,10 +7498,21 @@ function populateMemberEditList() {
             (member && member.name) ||
             "";
 
+          const batch = (state.schoolBatches || []).find((item) =>
+            sameId(item.id, enrollment.batch_id)
+          );
+
+          const email =
+            (enrollment.members && enrollment.members.email) ||
+            (member && member.email) ||
+            "";
+
           return [
             name,
             getSchoolGroupNameForEnrollment(enrollment) || "Ikke fordelt",
-            enrollment.birth_year || ""
+            enrollment.birth_year || "",
+            batch ? (batch.name || "") : "",
+            email
           ];
         });
 
@@ -7513,9 +7524,9 @@ function populateMemberEditList() {
       exportRowsToXlsx(
         "Grupper.xlsx",
         "Grupper",
-        ["Navn", "Gruppe", "Fødselsår"],
+        ["Navn", "Gruppe", "Fødselsår", "Semester", "E-post"],
         rows,
-        [32, 20, 14]
+        [32, 20, 14, 22, 34]
       );
     }
 
