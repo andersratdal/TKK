@@ -1710,6 +1710,38 @@
         <div class="help" style="margin-top:8px;">
           Opprett et nytt semester for skøyteskolen. Standardgruppene Blå, Gul og Rød opprettes sammen med semesteret.
         </div>
+<div class="section-card" data-admin-section="departments" id="trainingGroupsAdminCard">
+  <h2>Treningsgrupper</h2>
+  <div class="help" style="margin-top:8px;">
+    Opprett og administrer permanente treningsgrupper for avdelinger som Trondheim kortbaneklubb.
+    Skøyteskolens grupper håndteres fortsatt per semester.
+  </div>
+
+  <div class="form-grid" style="margin-top:16px;">
+    <div class="col-4">
+      <label for="trainingGroupDepartment">Avdeling</label>
+      <select id="trainingGroupDepartment">
+        <option value="">Velg avdeling</option>
+      </select>
+    </div>
+    <div class="col-4">
+      <label for="trainingGroupName">Navn på treningsgruppe</label>
+      <input id="trainingGroupName" type="text" placeholder="F.eks. Rekrutt">
+    </div>
+    <div class="col-2">
+      <label for="trainingGroupSortOrder">Rekkefølge</label>
+      <input id="trainingGroupSortOrder" type="number" min="0" step="1" value="10">
+    </div>
+    <div class="col-2">
+      <label>&nbsp;</label>
+      <button id="btnSaveTrainingGroup" class="btn-primary" type="button">Legg til gruppe</button>
+    </div>
+  </div>
+
+  <div id="trainingGroupMessage" class="help" style="margin-top:10px;"></div>
+  <div id="trainingGroupsList" style="margin-top:14px;"></div>
+</div>
+
       </div>
     </div>
 
@@ -2127,6 +2159,28 @@
       </div>
     </div>
     <div class="member-card-grid" id="memberCardSummary"></div>
+<div class="section-card" style="margin-top:14px;">
+  <h3 style="margin-top:0;">Avdeling og treningsgruppe</h3>
+  <div class="form-grid">
+    <div class="col-6">
+      <label for="memberCardDepartmentSelect">Avdeling</label>
+      <select id="memberCardDepartmentSelect">
+        <option value="">Velg avdeling</option>
+      </select>
+    </div>
+    <div class="col-6">
+      <label for="memberCardTrainingGroupSelect">Treningsgruppe</label>
+      <select id="memberCardTrainingGroupSelect" disabled>
+        <option value="">Velg avdeling først</option>
+      </select>
+    </div>
+    <div class="col-12" style="display:flex;justify-content:flex-end;">
+      <button id="btnSaveMemberTrainingGroup" class="btn-primary btn-small" type="button">Lagre gruppetilhørighet</button>
+    </div>
+  </div>
+  <div id="memberTrainingGroupMessage" class="help" style="margin-top:8px;"></div>
+</div>
+
     <div class="section-card" style="margin-top:0;">
       <h3 style="margin-top:0;">Historikk på lånte skøyter</h3>
       <div id="memberCardHistoryWrap"></div>
@@ -2425,6 +2479,382 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
       });
     }
 
+    function getTrainingGroupsForDepartment(departmentId, includeInactive = false) {
+      return (state.groups || [])
+        .filter((group) =>
+          sameId(group.department_id, departmentId) &&
+          (includeInactive || group.is_active !== false)
+        )
+        .slice()
+        .sort((a, b) =>
+          Number(a.sort_order || 0) - Number(b.sort_order || 0) ||
+          String(a.name || "").localeCompare(String(b.name || ""), "no")
+        );
+    }
+
+    function isSkatingSchoolDepartment(departmentId) {
+      const department = (state.departments || []).find((item) =>
+        sameId(item.id, departmentId)
+      );
+      return String((department && department.name) || "")
+        .trim()
+        .toLowerCase()
+        .includes("skøyteskole");
+    }
+
+    function setTrainingGroupMessage(message, isError) {
+      const el = byId("trainingGroupMessage");
+      if (!el) return;
+      el.textContent = message || "";
+      el.className = isError ? "help msg-error" : "help msg-ok";
+    }
+
+    function setMemberTrainingGroupMessage(message, isError) {
+      const el = byId("memberTrainingGroupMessage");
+      if (!el) return;
+      el.textContent = message || "";
+      el.className = isError ? "help msg-error" : "help msg-ok";
+    }
+
+    function refreshTrainingGroupDepartmentOptions() {
+      const select = byId("trainingGroupDepartment");
+      if (!select) return;
+
+      const current = select.value;
+      select.innerHTML = '<option value="">Velg avdeling</option>';
+
+      (state.departments || []).forEach((department) => {
+        const opt = document.createElement("option");
+        opt.value = department.id;
+        opt.textContent = department.name;
+        select.appendChild(opt);
+      });
+
+      if ((state.departments || []).some((d) => sameId(d.id, current))) {
+        select.value = current;
+      }
+    }
+
+    function renderTrainingGroupsAdmin() {
+      const wrap = byId("trainingGroupsList");
+      const departmentSelect = byId("trainingGroupDepartment");
+      if (!wrap || !departmentSelect) return;
+
+      const departmentId = departmentSelect.value;
+
+      if (!departmentId) {
+        wrap.innerHTML = '<div class="empty">Velg en avdeling for å se treningsgruppene.</div>';
+        return;
+      }
+
+      if (isSkatingSchoolDepartment(departmentId)) {
+        wrap.innerHTML = '<div class="empty">Skøyteskolens grupper administreres per semester under Skøyteskole.</div>';
+        return;
+      }
+
+      const groups = getTrainingGroupsForDepartment(departmentId, true);
+
+      if (!groups.length) {
+        wrap.innerHTML = '<div class="empty">Ingen treningsgrupper registrert.</div>';
+        return;
+      }
+
+      wrap.innerHTML = "";
+
+      groups.forEach((group) => {
+        const row = document.createElement("div");
+        row.style.display = "grid";
+        row.style.gridTemplateColumns = "minmax(180px,1fr) 110px 130px 220px";
+        row.style.gap = "10px";
+        row.style.alignItems = "center";
+        row.style.padding = "10px 0";
+        row.style.borderBottom = "1px solid #e5e7eb";
+
+        const nameInput = document.createElement("input");
+        nameInput.value = group.name || "";
+
+        const sortInput = document.createElement("input");
+        sortInput.type = "number";
+        sortInput.min = "0";
+        sortInput.step = "1";
+        sortInput.value = Number(group.sort_order || 0);
+
+        const status = document.createElement("span");
+        status.textContent = group.is_active === false ? "Inaktiv" : "Aktiv";
+
+        const actions = document.createElement("div");
+        actions.style.display = "flex";
+        actions.style.gap = "8px";
+        actions.style.flexWrap = "wrap";
+
+        const saveBtn = document.createElement("button");
+        saveBtn.type = "button";
+        saveBtn.className = "btn-secondary btn-small";
+        saveBtn.textContent = "Lagre";
+
+        const toggleBtn = document.createElement("button");
+        toggleBtn.type = "button";
+        toggleBtn.className = group.is_active === false
+          ? "btn-secondary btn-small"
+          : "btn-danger btn-small";
+        toggleBtn.textContent = group.is_active === false ? "Aktiver" : "Deaktiver";
+
+        saveBtn.addEventListener("click", async () => {
+          const nextName = String(nameInput.value || "").trim();
+          const nextSort = Number(sortInput.value || 0);
+
+          if (!nextName) {
+            setTrainingGroupMessage("Gruppen må ha et navn.", true);
+            return;
+          }
+
+          try {
+            const result = await supabaseClient
+              .from("groups")
+              .update({
+                name: nextName,
+                sort_order: nextSort
+              })
+              .eq("id", group.id);
+
+            if (result.error) throw result.error;
+
+            group.name = nextName;
+            group.sort_order = nextSort;
+            setTrainingGroupMessage("Treningsgruppen er oppdatert.", false);
+            renderTrainingGroupsAdmin();
+            refreshLoanGroupOptions();
+          } catch (error) {
+            console.error(error);
+            setTrainingGroupMessage("Kunne ikke lagre gruppen. " + (error.message || error), true);
+          }
+        });
+
+        toggleBtn.addEventListener("click", async () => {
+          const nextActive = group.is_active === false;
+
+          try {
+            const result = await supabaseClient
+              .from("groups")
+              .update({ is_active: nextActive })
+              .eq("id", group.id);
+
+            if (result.error) throw result.error;
+
+            group.is_active = nextActive;
+            setTrainingGroupMessage(
+              nextActive ? "Treningsgruppen er aktivert." : "Treningsgruppen er deaktivert.",
+              false
+            );
+            renderTrainingGroupsAdmin();
+            refreshLoanGroupOptions();
+          } catch (error) {
+            console.error(error);
+            setTrainingGroupMessage("Kunne ikke endre status. " + (error.message || error), true);
+          }
+        });
+
+        actions.appendChild(saveBtn);
+        actions.appendChild(toggleBtn);
+
+        row.appendChild(nameInput);
+        row.appendChild(sortInput);
+        row.appendChild(status);
+        row.appendChild(actions);
+
+        wrap.appendChild(row);
+      });
+    }
+
+    async function createTrainingGroup() {
+      const departmentId = byId("trainingGroupDepartment") ? byId("trainingGroupDepartment").value : "";
+      const name = byId("trainingGroupName") ? byId("trainingGroupName").value.trim() : "";
+      const sortOrder = Number(byId("trainingGroupSortOrder") ? byId("trainingGroupSortOrder").value || 0 : 0);
+
+      if (!departmentId) {
+        setTrainingGroupMessage("Velg avdeling først.", true);
+        return;
+      }
+
+      if (isSkatingSchoolDepartment(departmentId)) {
+        setTrainingGroupMessage("Skøyteskolens grupper opprettes per semester.", true);
+        return;
+      }
+
+      if (!name) {
+        setTrainingGroupMessage("Skriv inn navn på treningsgruppen.", true);
+        return;
+      }
+
+      try {
+        const result = await supabaseClient
+          .from("groups")
+          .insert([{
+            department_id: departmentId,
+            name,
+            sort_order: sortOrder,
+            is_active: true
+          }])
+          .select()
+          .single();
+
+        if (result.error) throw result.error;
+
+        state.groups.push(result.data);
+
+        if (byId("trainingGroupName")) byId("trainingGroupName").value = "";
+        if (byId("trainingGroupSortOrder")) byId("trainingGroupSortOrder").value = "10";
+
+        setTrainingGroupMessage("Treningsgruppen er opprettet.", false);
+        renderTrainingGroupsAdmin();
+        refreshLoanGroupOptions();
+      } catch (error) {
+        console.error(error);
+        setTrainingGroupMessage("Kunne ikke opprette gruppen. " + (error.message || error), true);
+      }
+    }
+
+    function refreshMemberCardDepartmentOptions() {
+      const select = byId("memberCardDepartmentSelect");
+      if (!select) return;
+
+      const current = select.value;
+      select.innerHTML = '<option value="">Velg avdeling</option>';
+
+      (state.departments || []).forEach((department) => {
+        const opt = document.createElement("option");
+        opt.value = department.id;
+        opt.textContent = department.name;
+        select.appendChild(opt);
+      });
+
+      if ((state.departments || []).some((d) => sameId(d.id, current))) {
+        select.value = current;
+      }
+    }
+
+    function refreshMemberCardTrainingGroupOptions() {
+      const departmentSelect = byId("memberCardDepartmentSelect");
+      const groupSelect = byId("memberCardTrainingGroupSelect");
+      if (!departmentSelect || !groupSelect) return;
+
+      const departmentId = departmentSelect.value;
+
+      groupSelect.innerHTML = departmentId
+        ? '<option value="">Ingen treningsgruppe</option>'
+        : '<option value="">Velg avdeling først</option>';
+
+      if (!departmentId) {
+        groupSelect.disabled = true;
+        return;
+      }
+
+      if (isSkatingSchoolDepartment(departmentId)) {
+        groupSelect.innerHTML = '<option value="">Skøyteskolen bruker semestergrupper</option>';
+        groupSelect.disabled = true;
+        return;
+      }
+
+      const groups = getTrainingGroupsForDepartment(departmentId);
+
+      groups.forEach((group) => {
+        const opt = document.createElement("option");
+        opt.value = group.id;
+        opt.textContent = group.name;
+        groupSelect.appendChild(opt);
+      });
+
+      groupSelect.disabled = false;
+    }
+
+    function loadMemberTrainingGroupIntoCard(memberId) {
+      const departmentSelect = byId("memberCardDepartmentSelect");
+      const groupSelect = byId("memberCardTrainingGroupSelect");
+      if (!departmentSelect || !groupSelect) return;
+
+      const membership = (state.memberGroups || []).find((mg) =>
+        sameId(mg.member_id, memberId)
+      );
+
+      if (!membership) {
+        departmentSelect.value = "";
+        refreshMemberCardTrainingGroupOptions();
+        groupSelect.value = "";
+        return;
+      }
+
+      const group = (state.groups || []).find((g) =>
+        sameId(g.id, membership.group_id)
+      );
+
+      if (!group) return;
+
+      departmentSelect.value = group.department_id || "";
+      refreshMemberCardTrainingGroupOptions();
+      groupSelect.value = group.id;
+    }
+
+    async function saveMemberTrainingGroup() {
+      const memberId = editingMemberId;
+      const departmentSelect = byId("memberCardDepartmentSelect");
+      const groupSelect = byId("memberCardTrainingGroupSelect");
+
+      if (!memberId || !departmentSelect || !groupSelect) return;
+
+      const departmentId = departmentSelect.value;
+      const groupId = groupSelect.value;
+
+      if (departmentId && isSkatingSchoolDepartment(departmentId)) {
+        setMemberTrainingGroupMessage(
+          "Skøyteskoledeltakelse administreres via semester og gruppe under Skøyteskole.",
+          true
+        );
+        return;
+      }
+
+      try {
+        const current = (state.memberGroups || []).filter((mg) =>
+          sameId(mg.member_id, memberId)
+        );
+
+        for (const membership of current) {
+          const existingGroup = (state.groups || []).find((g) =>
+            sameId(g.id, membership.group_id)
+          );
+
+          if (
+            existingGroup &&
+            (!departmentId || sameId(existingGroup.department_id, departmentId))
+          ) {
+            const del = await supabaseClient
+              .from("member_groups")
+              .delete()
+              .eq("id", membership.id);
+
+            if (del.error) throw del.error;
+          }
+        }
+
+        if (groupId) {
+          const ins = await supabaseClient
+            .from("member_groups")
+            .insert([{ member_id: memberId, group_id: groupId }]);
+
+          if (ins.error) throw ins.error;
+        }
+
+        setMemberTrainingGroupMessage("Gruppetilhørigheten er lagret.", false);
+        await loadAll();
+        loadMemberTrainingGroupIntoCard(memberId);
+      } catch (error) {
+        console.error(error);
+        setMemberTrainingGroupMessage(
+          "Kunne ikke lagre gruppetilhørighet. " + (error.message || error),
+          true
+        );
+      }
+    }
+
     function getLoanSchoolBatchesForDepartment(departmentId) {
       const allBatches = (state.schoolBatches || []).slice();
 
@@ -2457,7 +2887,10 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
       if (!departmentId) return [];
 
       const regularGroups = (state.groups || [])
-        .filter((group) => sameId(group.department_id, departmentId))
+        .filter((group) =>
+          sameId(group.department_id, departmentId) &&
+          group.is_active !== false
+        )
         .map((group) => ({
           ...group,
           _loanSource: "regular",
@@ -5323,6 +5756,10 @@ function renderAll() {
       updateMemberDepartmentOptions();
       updateMemberGroupListByDepartment(byId("memberDepartment") ? byId("memberDepartment").value : "", byId("memberGroupsText") ? byId("memberGroupsText").value : "");
 
+      refreshTrainingGroupDepartmentOptions();
+      renderTrainingGroupsAdmin();
+      refreshMemberCardDepartmentOptions();
+
       const loanDepartment = byId("loanDepartment");
       if (loanDepartment) {
         const preferredValue = getUiPref("loanDepartment", loanDepartment.value || "");
@@ -7905,6 +8342,32 @@ async function loadAll() {
       this.textContent = missingContactOnly ? "Viser kun mangler kontaktinfo" : "Vis kun mangler kontaktinfo";
       renderMembers();
     });
+
+
+    if (byId("trainingGroupDepartment")) {
+      byId("trainingGroupDepartment").addEventListener("change", function () {
+        setTrainingGroupMessage("", false);
+        renderTrainingGroupsAdmin();
+      });
+    }
+
+    if (byId("btnSaveTrainingGroup")) {
+      byId("btnSaveTrainingGroup").addEventListener("click", createTrainingGroup);
+    }
+
+    if (byId("memberCardDepartmentSelect")) {
+      byId("memberCardDepartmentSelect").addEventListener("change", function () {
+        refreshMemberCardTrainingGroupOptions();
+        setMemberTrainingGroupMessage("", false);
+      });
+    }
+
+    if (byId("btnSaveMemberTrainingGroup")) {
+      byId("btnSaveMemberTrainingGroup").addEventListener(
+        "click",
+        saveMemberTrainingGroup
+      );
+    }
 
     byId("backBtn").addEventListener("click", goHome);
 
