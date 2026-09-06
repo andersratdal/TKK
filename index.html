@@ -2426,20 +2426,31 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
     }
 
     function getLoanSchoolBatchesForDepartment(departmentId) {
-      if (!departmentId) return [];
+      const allBatches = (state.schoolBatches || []).slice();
 
-      const rows = (state.schoolBatches || []).filter((batch) =>
-        sameId(batch.department_id, departmentId) &&
+      if (!departmentId) {
+        return allBatches;
+      }
+
+      const departmentBatches = allBatches.filter((batch) =>
+        sameId(batch.department_id, departmentId)
+      );
+
+      const activeDepartmentBatches = departmentBatches.filter((batch) =>
         String(batch.status || "").trim().toLowerCase() !== "avsluttet"
       );
 
-      // Dersom alle semester er avsluttet, behold muligheten til å finne
-      // deltakere i historiske semester i stedet for å vise en tom liste.
-      if (rows.length) return rows;
+      if (activeDepartmentBatches.length) return activeDepartmentBatches;
+      if (departmentBatches.length) return departmentBatches;
 
-      return (state.schoolBatches || []).filter((batch) =>
-        sameId(batch.department_id, departmentId)
+      // Eldre semester kan være opprettet før avdelingstilknytningen ble
+      // konsekvent brukt. Hvis valgt avdeling ikke har noen koblede semester,
+      // vises derfor semesterlisten likevel i Utlån.
+      const activeBatches = allBatches.filter((batch) =>
+        String(batch.status || "").trim().toLowerCase() !== "avsluttet"
       );
+
+      return activeBatches.length ? activeBatches : allBatches;
     }
 
     function getRelevantGroupsForDepartment(departmentId, semesterId) {
@@ -2453,8 +2464,9 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
           _loanLabel: String(group.name || "")
         }));
 
-      const schoolBatches = getLoanSchoolBatchesForDepartment(departmentId)
-        .filter((batch) => !semesterId || sameId(batch.id, semesterId));
+      const schoolBatches = semesterId
+        ? (state.schoolBatches || []).filter((batch) => sameId(batch.id, semesterId))
+        : getLoanSchoolBatchesForDepartment(departmentId);
       const batchById = new Map(
         schoolBatches.map((batch) => [String(batch.id), batch])
       );
@@ -2508,9 +2520,10 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
 
         // Skøyteskole: avdeling -> semester -> deltakere.
         const schoolBatchIds = new Set(
-          getLoanSchoolBatchesForDepartment(departmentId)
-            .filter((batch) => !semesterId || sameId(batch.id, semesterId))
-            .map((batch) => String(batch.id))
+          (semesterId
+            ? (state.schoolBatches || []).filter((batch) => sameId(batch.id, semesterId))
+            : getLoanSchoolBatchesForDepartment(departmentId)
+          ).map((batch) => String(batch.id))
         );
 
         (state.schoolEnrollments || []).forEach((enrollment) => {
@@ -2575,9 +2588,7 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
         .slice()
         .sort(compareSchoolBatchOrder);
 
-      semesterEl.innerHTML = departmentId
-        ? '<option value="">Alle semester</option>'
-        : '<option value="">Velg avdeling først</option>';
+      semesterEl.innerHTML = '<option value="">Alle semester</option>';
 
       batches.forEach((batch) => {
         const opt = document.createElement("option");
@@ -2590,7 +2601,7 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
       semesterEl.value = batches.some((batch) => sameId(batch.id, preferred))
         ? preferred
         : "";
-      semesterEl.disabled = !departmentId || batches.length === 0;
+      semesterEl.disabled = batches.length === 0;
     }
 
     function refreshLoanGroupOptions() {
@@ -5340,7 +5351,12 @@ function renderAll() {
         spondDepartment.value = stillExists ? currentValue : "";
       }
 
+      refreshLoanSemesterOptions();
       refreshLoanGroupOptions();
+      setUiPref(
+        "loanSemesterFilter",
+        byId("loanSemesterFilter") ? (byId("loanSemesterFilter").value || "") : ""
+      );
       setUiPref("loanGroupFilter", byId("loanGroupFilter") ? (byId("loanGroupFilter").value || "") : "");
 
       const existingLoansDepartment = byId("existingLoansDepartment");
