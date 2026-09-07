@@ -1712,6 +1712,7 @@
   <div class="admin-tabs" role="tablist" aria-label="Admin faner">
     <button type="button" class="admin-tab active" data-admin-tab="skates">Skøyter</button>
     <button type="button" class="admin-tab" data-admin-tab="members">Medlemmer</button>
+    <button type="button" class="admin-tab" data-admin-tab="users">Brukere</button>
     <button type="button" class="admin-tab" data-admin-tab="departments">Avdelinger</button>
     <button type="button" class="admin-tab" data-admin-tab="import">Import</button>
     <button type="button" class="admin-tab" data-admin-tab="labels">QR / NFC</button>
@@ -1719,6 +1720,62 @@
   </div>
 </div>
 
+<div class="section-card" data-admin-section="users" id="adminUsersSection">
+  <div class="section-header">
+    <div>
+      <h2>Brukere</h2>
+      <div class="help" style="margin-top:8px;">
+        Opprett og administrer brukere som har tilgang til appen. Nye brukere får invitasjon på e-post.
+      </div>
+    </div>
+    <div class="toolbar">
+      <button class="btn-secondary btn-small" id="btnRefreshAdminUsers" type="button">Oppdater</button>
+    </div>
+  </div>
+
+  <div class="form-grid" style="margin-top:16px;">
+    <div class="col-4">
+      <label for="adminUserEmail">E-post</label>
+      <input id="adminUserEmail" type="email" autocomplete="off" placeholder="navn@epost.no">
+    </div>
+    <div class="col-4">
+      <label for="adminUserDisplayName">Navn</label>
+      <input id="adminUserDisplayName" type="text" autocomplete="off" placeholder="Fornavn Etternavn">
+    </div>
+    <div class="col-2">
+      <label for="adminUserRole">Rolle</label>
+      <select id="adminUserRole">
+        <option value="admin">Admin</option>
+        <option value="utlan">Utlån</option>
+        <option value="skoyteskole">Skøyteskole</option>
+        <option value="idrettsrad">Idrettsråd</option>
+      </select>
+    </div>
+    <div class="col-2">
+      <label>&nbsp;</label>
+      <button class="btn-primary" id="btnCreateAdminUser" type="button">Opprett bruker</button>
+    </div>
+  </div>
+
+  <div class="help" id="adminUsersMessage" style="margin-top:10px;"></div>
+  <div class="table-wrap" style="margin-top:14px;">
+    <table>
+      <thead>
+        <tr>
+          <th>Navn</th>
+          <th>E-post</th>
+          <th>Rolle</th>
+          <th>Status</th>
+          <th>Sist innlogget</th>
+          <th>Handlinger</th>
+        </tr>
+      </thead>
+      <tbody id="adminUsersTableBody">
+        <tr><td colspan="6">Åpne fanen for å hente brukere.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
 
 <div class="section-card">
 <h2>Avdelinger</h2>
@@ -3693,6 +3750,10 @@ function attachSortHandlers() {
       });
 
       setUiPref("adminSubtab", target);
+
+      if (target === "users" && typeof loadAdminUsers === "function") {
+        loadAdminUsers();
+      }
     }
 
     function setupAdminTabs() {
@@ -3716,6 +3777,293 @@ function attachSortHandlers() {
       showAdminSubtab(getUiPref("adminSubtab", "skates"));
     }
 
+
+
+    function setAdminUsersMessage(message, isError) {
+      const el = byId("adminUsersMessage");
+      if (!el) return;
+      el.textContent = message || "";
+      el.className = isError ? "help msg-error" : "help msg-ok";
+    }
+
+    function formatAdminUserDate(value) {
+      if (!value) return "–";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return "–";
+      return date.toLocaleString("no-NO");
+    }
+
+    async function getAdminUsersAccessToken() {
+      if (!supabaseClient || !supabaseClient.auth) {
+        throw new Error("Innlogging er ikke tilgjengelig.");
+      }
+      const result = await supabaseClient.auth.getSession();
+      if (result.error) throw result.error;
+      const token = result.data && result.data.session
+        ? result.data.session.access_token
+        : "";
+      if (!token) throw new Error("Du er ikke logget inn.");
+      return token;
+    }
+
+    async function adminUsersRequest(method, body, query) {
+      const token = await getAdminUsersAccessToken();
+      let url = "/.netlify/functions/admin-users";
+      if (query) url += "?" + query;
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token
+        },
+        body: body === undefined ? undefined : JSON.stringify(body)
+      });
+
+      let payload = null;
+      try { payload = await response.json(); } catch (_) {}
+
+      if (!response.ok) {
+        throw new Error(
+          (payload && payload.error) ||
+          (response.status === 403
+            ? "Du har ikke administratorrettigheter."
+            : "Brukeradministrasjonen feilet.")
+        );
+      }
+      return payload || {};
+    }
+
+    function roleLabel(role) {
+      const labels = {
+        admin: "Admin",
+        utlan: "Utlån",
+        skoyteskole: "Skøyteskole",
+        idrettsrad: "Idrettsråd"
+      };
+      return labels[String(role || "")] || String(role || "–");
+    }
+
+    function makeAdminRoleSelect(role) {
+      const select = document.createElement("select");
+      [
+        ["admin", "Admin"],
+        ["utlan", "Utlån"],
+        ["skoyteskole", "Skøyteskole"],
+        ["idrettsrad", "Idrettsråd"]
+      ].forEach(([value, label]) => {
+        const opt = document.createElement("option");
+        opt.value = value;
+        opt.textContent = label;
+        select.appendChild(opt);
+      });
+      select.value = role || "utlan";
+      return select;
+    }
+
+    function renderAdminUsers(users) {
+      const body = byId("adminUsersTableBody");
+      if (!body) return;
+      body.innerHTML = "";
+
+      if (!users || !users.length) {
+        body.innerHTML = '<tr><td colspan="6">Ingen brukere funnet.</td></tr>';
+        return;
+      }
+
+      users.forEach((user) => {
+        const tr = document.createElement("tr");
+
+        const nameTd = document.createElement("td");
+        const nameInput = document.createElement("input");
+        nameInput.type = "text";
+        nameInput.value = user.display_name || "";
+        nameInput.placeholder = "Navn";
+        nameInput.style.minWidth = "170px";
+        nameTd.appendChild(nameInput);
+
+        const emailTd = document.createElement("td");
+        emailTd.textContent = user.email || "";
+
+        const roleTd = document.createElement("td");
+        const roleSelect = makeAdminRoleSelect(user.role);
+        roleTd.appendChild(roleSelect);
+
+        const statusTd = document.createElement("td");
+        const status = document.createElement("span");
+        status.className = "pill";
+        status.textContent = user.is_active === false ? "Inaktiv" : "Aktiv";
+        statusTd.appendChild(status);
+
+        const loginTd = document.createElement("td");
+        loginTd.textContent = formatAdminUserDate(user.last_sign_in_at);
+
+        const actionsTd = document.createElement("td");
+        const actions = document.createElement("div");
+        actions.style.display = "flex";
+        actions.style.gap = "6px";
+        actions.style.flexWrap = "wrap";
+
+        const saveBtn = document.createElement("button");
+        saveBtn.type = "button";
+        saveBtn.className = "btn-secondary btn-small";
+        saveBtn.textContent = "Lagre";
+
+        const toggleBtn = document.createElement("button");
+        toggleBtn.type = "button";
+        toggleBtn.className = "btn-secondary btn-small";
+        toggleBtn.textContent = user.is_active === false ? "Aktiver" : "Deaktiver";
+
+        const resetBtn = document.createElement("button");
+        resetBtn.type = "button";
+        resetBtn.className = "btn-secondary btn-small";
+        resetBtn.textContent = "Send passordlenke";
+
+        saveBtn.addEventListener("click", async () => {
+          saveBtn.disabled = true;
+          try {
+            await adminUsersRequest("PATCH", {
+              action: "update",
+              user_id: user.id,
+              email: user.email,
+              display_name: nameInput.value.trim(),
+              role: roleSelect.value,
+              is_active: user.is_active !== false
+            });
+            setAdminUsersMessage("Brukeren er oppdatert.", false);
+            await loadAdminUsers();
+            await refreshCurrentUserDisplayName();
+          } catch (error) {
+            setAdminUsersMessage(error.message || error, true);
+          } finally {
+            saveBtn.disabled = false;
+          }
+        });
+
+        toggleBtn.addEventListener("click", async () => {
+          const nextActive = user.is_active === false;
+          const actionText = nextActive ? "aktivere" : "deaktivere";
+          if (!window.confirm("Vil du " + actionText + " " + (user.email || "brukeren") + "?")) return;
+          toggleBtn.disabled = true;
+          try {
+            await adminUsersRequest("PATCH", {
+              action: "update",
+              user_id: user.id,
+              email: user.email,
+              display_name: nameInput.value.trim(),
+              role: roleSelect.value,
+              is_active: nextActive
+            });
+            setAdminUsersMessage(nextActive ? "Brukeren er aktivert." : "Brukeren er deaktivert.", false);
+            await loadAdminUsers();
+          } catch (error) {
+            setAdminUsersMessage(error.message || error, true);
+          } finally {
+            toggleBtn.disabled = false;
+          }
+        });
+
+        resetBtn.addEventListener("click", async () => {
+          resetBtn.disabled = true;
+          try {
+            await adminUsersRequest("POST", {
+              action: "reset_password",
+              email: user.email
+            });
+            setAdminUsersMessage("Passordlenke er sendt til " + user.email + ".", false);
+          } catch (error) {
+            setAdminUsersMessage(error.message || error, true);
+          } finally {
+            resetBtn.disabled = false;
+          }
+        });
+
+        actions.appendChild(saveBtn);
+        actions.appendChild(toggleBtn);
+        actions.appendChild(resetBtn);
+        actionsTd.appendChild(actions);
+
+        tr.appendChild(nameTd);
+        tr.appendChild(emailTd);
+        tr.appendChild(roleTd);
+        tr.appendChild(statusTd);
+        tr.appendChild(loginTd);
+        tr.appendChild(actionsTd);
+        body.appendChild(tr);
+      });
+    }
+
+    let adminUsersLoading = false;
+    async function loadAdminUsers() {
+      if (adminUsersLoading) return;
+      const body = byId("adminUsersTableBody");
+      if (!body) return;
+      adminUsersLoading = true;
+      body.innerHTML = '<tr><td colspan="6">Henter brukere ...</td></tr>';
+      try {
+        const payload = await adminUsersRequest("GET", undefined, "mode=list");
+        renderAdminUsers(payload.users || []);
+        setAdminUsersMessage("", false);
+      } catch (error) {
+        body.innerHTML = '<tr><td colspan="6">Kunne ikke hente brukere.</td></tr>';
+        setAdminUsersMessage(error.message || error, true);
+      } finally {
+        adminUsersLoading = false;
+      }
+    }
+
+    async function createAdminUser() {
+      const emailEl = byId("adminUserEmail");
+      const nameEl = byId("adminUserDisplayName");
+      const roleEl = byId("adminUserRole");
+      const btn = byId("btnCreateAdminUser");
+
+      const email = emailEl ? emailEl.value.trim().toLowerCase() : "";
+      const displayName = nameEl ? nameEl.value.trim() : "";
+      const role = roleEl ? roleEl.value : "utlan";
+
+      if (!email) {
+        setAdminUsersMessage("Fyll inn e-postadresse.", true);
+        return;
+      }
+      if (!displayName) {
+        setAdminUsersMessage("Fyll inn navn.", true);
+        return;
+      }
+
+      if (btn) btn.disabled = true;
+      try {
+        await adminUsersRequest("POST", {
+          action: "create",
+          email,
+          display_name: displayName,
+          role
+        });
+        if (emailEl) emailEl.value = "";
+        if (nameEl) nameEl.value = "";
+        if (roleEl) roleEl.value = "utlan";
+        setAdminUsersMessage("Brukeren er opprettet og invitasjon er sendt.", false);
+        await loadAdminUsers();
+      } catch (error) {
+        setAdminUsersMessage(error.message || error, true);
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    async function refreshCurrentUserDisplayName() {
+      const label = byId("appUserLabel");
+      if (!label) return;
+      try {
+        const payload = await adminUsersRequest("GET", undefined, "mode=me");
+        if (payload && payload.user) {
+          label.textContent = payload.user.display_name || payload.user.email || "Konto";
+        }
+      } catch (_) {
+        // E-post-fallback settes allerede av auth-koden.
+      }
+    }
 
 function renderSkates() {
       const wrap = byId("skatesWrap");
@@ -8067,6 +8415,7 @@ async function loadAll() {
         state.schoolSignupsLoadError = schoolSignupsLoadError;
 
         renderAll();
+        try { await refreshCurrentUserDisplayName(); } catch (_) {}
       } catch (error) {
         console.error(error);
         alert("Kunne ikke laste data.\n\n" + error.message);
@@ -8742,6 +9091,9 @@ async function loadAll() {
         saveMemberTrainingGroup
       );
     }
+
+    if (byId("btnCreateAdminUser")) byId("btnCreateAdminUser").addEventListener("click", createAdminUser);
+    if (byId("btnRefreshAdminUsers")) byId("btnRefreshAdminUsers").addEventListener("click", loadAdminUsers);
 
     byId("backBtn").addEventListener("click", goHome);
 
