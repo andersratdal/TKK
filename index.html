@@ -3794,17 +3794,40 @@ function attachSortHandlers() {
     }
 
     async function getAdminUsersAccessToken() {
-      if (!supabaseClient || !supabaseClient.auth) {
-        throw new Error("Innlogging er ikke tilgjengelig.");
-      }
-      const result = await supabaseClient.auth.getSession();
-      if (result.error) throw result.error;
-      const token = result.data && result.data.session
-        ? result.data.session.access_token
-        : "";
-      if (!token) throw new Error("Du er ikke logget inn.");
-      return token;
+  let client = null;
+
+  try {
+    if (typeof getAuthGuardClient === "function") {
+      client = getAuthGuardClient();
     }
+  } catch (_) {}
+
+  if (!client && supabaseClient && supabaseClient.auth) {
+    client = supabaseClient;
+  }
+
+  if (!client || !client.auth) {
+    throw new Error("Innlogging er ikke tilgjengelig.");
+  }
+
+  const result = await client.auth.getSession();
+
+  if (result.error) {
+    throw result.error;
+  }
+
+  const session =
+    result.data &&
+    result.data.session
+      ? result.data.session
+      : null;
+
+  if (!session || !session.access_token) {
+    throw new Error("Du er ikke logget inn.");
+  }
+
+  return session.access_token;
+}
 
     async function adminUsersRequest(method, body, query) {
       const token = await getAdminUsersAccessToken();
