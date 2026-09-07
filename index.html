@@ -1235,6 +1235,44 @@
 .auth-forgot-form.hidden {
   display: none !important;
 }
+
+/* TKK toppfelt */
+.app-header {
+  justify-content: space-between;
+  gap: 18px;
+  min-height: 72px;
+}
+.app-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+.app-header-brand img {
+  height: 56px;
+  width: auto;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+.app-header-club-name {
+  font-size: 25px;
+  line-height: 1.02;
+  font-weight: 800;
+  letter-spacing: 0.035em;
+  color: var(--text);
+}
+.club-name-break { display: none; }
+
+@media (max-width: 700px) {
+  .app-header { gap: 8px; min-height: 62px; }
+  .app-header-brand { gap: 9px; }
+  .app-header-brand img { height: 45px; }
+  .app-header-club-name { font-size: 18px; line-height: 1.05; }
+  .club-name-break { display: block; }
+  .app-user-button { padding-left: 4px; padding-right: 4px; }
+  .app-user-icon { display: none; }
+  .app-user-label { max-width: 105px; }
+}
 </style>
 
 <script src="env-config.js"></script>
@@ -1243,6 +1281,10 @@
 <div class="container">
 
 <header class="app-header">
+  <div class="app-header-brand">
+    <img alt="Trondheim Kortbaneklubb" src="logo.png"/>
+    <div class="app-header-club-name">TRONDHEIM<br class="club-name-break"> KORTBANEKLUBB</div>
+  </div>
   <div class="app-user-menu">
     <button class="app-user-button" id="appUserButton" type="button"
             aria-haspopup="true" aria-expanded="false" title="Brukermeny">
@@ -1441,14 +1483,7 @@
 
 
 <div id="homeView">
-<div class="brand">
-<img alt="Trondheim Kortbaneklubb" src="logo.png"/>
-<div class="brand-text">
-<div class="eyebrow">Trondheim Kortbaneklubb</div>
-<h1 class="brand-title">Skøyteutleie</h1>
-<div class="brand-subtitle">Velg arbeidsflate for å gå videre i appen.</div>
-</div>
-</div>
+
 <div class="landing-grid app-menu">
   <button class="app-menu-card" data-target="loanTab" type="button">
     <span class="app-menu-icon"><img src="utlan-skoyte-ikon.png" alt="" class="app-menu-image-icon"></span>
@@ -1616,7 +1651,7 @@
     <div class="section-header">
       <div>
         <h2>Deltakere i valgt semester</h2>
-        <div class="help" style="margin-top:8px;">Her vises deltakerne fordelt på gruppene. Du kan flytte deltakere mellom Blå, Gul og Rød.</div>
+        <div class="help" style="margin-top:8px;">Her vises deltakerne fordelt på gruppene. Du kan flytte deltakere mellom Blå, Gul og Rød, eller videre til Rekrutt 1.</div>
       </div>
       <div class="toolbar">
         <input id="schoolParticipantSearch" placeholder="Søk medlem..." />
@@ -4922,6 +4957,81 @@ function renderSchoolBatchOverview() {
       if (modal) modal.classList.add("hidden");
     }
 
+
+const SCHOOL_TO_RECRUIT_VALUE = "__training_rekrutt_1__";
+
+function findRecruit1TrainingGroup() {
+  const department = (state.departments || []).find((item) =>
+    String(item.name || "").trim().toLowerCase() === "trondheim kortbaneklubb"
+  );
+
+  if (!department) {
+    return { department: null, group: null };
+  }
+
+  const group = (state.groups || []).find((item) =>
+    sameId(item.department_id, department.id) &&
+    String(item.name || "").trim().toLowerCase() === "rekrutt 1" &&
+    item.is_active !== false
+  );
+
+  return {
+    department,
+    group: group || null
+  };
+}
+
+async function moveSchoolEnrollmentToRecruit1(enrollment) {
+  if (!supabaseClient) {
+    throw new Error("Supabase-oppsett mangler.");
+  }
+
+  if (!enrollment || !enrollment.id || !enrollment.member_id) {
+    throw new Error("Mangler deltakerdata.");
+  }
+
+  const target = findRecruit1TrainingGroup();
+
+  if (!target.department) {
+    throw new Error('Fant ikke avdelingen "Trondheim kortbaneklubb".');
+  }
+
+  if (!target.group) {
+    throw new Error(
+      'Fant ikke en aktiv treningsgruppe som heter "Rekrutt 1" under Trondheim kortbaneklubb.'
+    );
+  }
+
+  const memberId = enrollment.member_id;
+
+  const existingMembership = (state.memberGroups || []).find((membership) =>
+    sameId(membership.member_id, memberId) &&
+    sameId(membership.group_id, target.group.id)
+  );
+
+  if (!existingMembership) {
+    const insertResult = await supabaseClient
+      .from("member_groups")
+      .insert([{
+        member_id: memberId,
+        group_id: target.group.id
+      }]);
+
+    if (insertResult.error) throw insertResult.error;
+  }
+
+  // Viktig: slett KUN den konkrete deltakelsen som flyttes.
+  // Andre deltakere og eventuelle andre semester berøres ikke.
+  const deleteResult = await supabaseClient
+    .from("skating_school_enrollments")
+    .delete()
+    .eq("id", enrollment.id);
+
+  if (deleteResult.error) throw deleteResult.error;
+
+  return target.group;
+}
+
 function renderSchoolParticipants() {
   const wrap = byId("schoolParticipantsWrap");
   if (!wrap) return;
@@ -4976,6 +5086,12 @@ function renderSchoolParticipants() {
       opt.textContent = col.title;
       select.appendChild(opt);
     });
+
+    const recruitOpt = document.createElement("option");
+    recruitOpt.value = SCHOOL_TO_RECRUIT_VALUE;
+    recruitOpt.textContent = "Rekrutt 1";
+    select.appendChild(recruitOpt);
+
     select.value = enrollment.school_group_id ? String(enrollment.school_group_id) : "";
     return select;
   }
@@ -4983,14 +5099,53 @@ function renderSchoolParticipants() {
   async function saveMove(enrollment, newGroupId, controls) {
     try {
       controls.forEach((el) => { if (el) el.disabled = true; });
-      const res = await updateSchoolEnrollmentGroup(enrollment.id, newGroupId || null);
-      if (res && res.error) throw res.error;
-      setSchoolMessage("schoolParticipantMessage", newGroupId ? "Deltaker flyttet." : "Gruppe nullstilt.", false);
+
+      if (newGroupId === SCHOOL_TO_RECRUIT_VALUE) {
+        const memberName = safeText(
+          enrollment.members && enrollment.members.name
+        );
+
+        const confirmed = window.confirm(
+          "Flytte " + memberName +
+          " ut av Skøyteskolen og inn i Rekrutt 1?"
+        );
+
+        if (!confirmed) {
+          controls.forEach((el) => { if (el) el.disabled = false; });
+          return;
+        }
+
+        const group = await moveSchoolEnrollmentToRecruit1(enrollment);
+
+        setSchoolMessage(
+          "schoolParticipantMessage",
+          memberName + " er flyttet til " + group.name + ".",
+          false
+        );
+      } else {
+        const res = await updateSchoolEnrollmentGroup(
+          enrollment.id,
+          newGroupId || null
+        );
+
+        if (res && res.error) throw res.error;
+
+        setSchoolMessage(
+          "schoolParticipantMessage",
+          newGroupId ? "Deltaker flyttet." : "Gruppe nullstilt.",
+          false
+        );
+      }
+
       closeMobileSchoolModal();
       await loadAll();
     } catch (error) {
       console.error(error);
-      setSchoolMessage("schoolParticipantMessage", "Kunne ikke oppdatere gruppe. " + error.message, true);
+      setSchoolMessage(
+        "schoolParticipantMessage",
+        "Kunne ikke flytte deltakeren. " + (error.message || error),
+        true
+      );
       controls.forEach((el) => { if (el) el.disabled = false; });
     }
   }
@@ -5014,6 +5169,12 @@ function renderSchoolParticipants() {
       opt.textContent = col.title;
       select.appendChild(opt);
     });
+
+    const recruitOpt = document.createElement("option");
+    recruitOpt.value = SCHOOL_TO_RECRUIT_VALUE;
+    recruitOpt.textContent = "Rekrutt 1";
+    select.appendChild(recruitOpt);
+
     select.value = enrollment.school_group_id ? String(enrollment.school_group_id) : "";
 
     saveBtn.onclick = function () {
