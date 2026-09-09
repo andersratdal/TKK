@@ -7980,7 +7980,8 @@ async function moveEditedMemberToSkatingSchool() {
         const deleteRes = await supabaseClient
           .from("member_groups")
           .delete()
-          .eq("id", membership.id);
+          .eq("member_id", memberId)
+          .eq("group_id", membership.group_id);
 
         if (deleteRes.error) throw deleteRes.error;
       }
