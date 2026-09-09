@@ -2027,11 +2027,15 @@
 </form>
 
 <div id="moveMemberToSchoolPanel" class="notice hidden" style="margin-top:16px;">
-  <div style="display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap;">
+  <div style="display:grid; grid-template-columns:minmax(220px,1fr) auto; gap:12px; align-items:end;">
     <div>
       <strong>Flytt til Skøyteskole</strong>
+      <label for="moveMemberSchoolBatch" style="display:block; margin-top:10px;">Semester</label>
+      <select id="moveMemberSchoolBatch" style="margin-top:5px;">
+        <option value="">Velg semester</option>
+      </select>
       <div class="help" id="moveMemberToSchoolHelp" style="margin-top:5px;">
-        Flytter medlemmet ut av Trondheim Kortbaneklubb og inn som deltaker i aktivt skøyteskolesemester.
+        Velg hvilket skøyteskolesemester utøveren skal flyttes til.
       </div>
     </div>
     <button class="btn-primary" id="btnMoveMemberToSchool" type="button">Flytt til Skøyteskole</button>
@@ -7823,6 +7827,7 @@ function setMoveMemberToSchoolMessage(message, isError) {
 function updateMoveMemberToSchoolPanel(memberId) {
   const panel = byId("moveMemberToSchoolPanel");
   const help = byId("moveMemberToSchoolHelp");
+  const select = byId("moveMemberSchoolBatch");
   if (!panel) return;
 
   const visible = !!memberId && memberBelongsToTrondheimShortTrack(memberId);
@@ -7833,17 +7838,37 @@ function updateMoveMemberToSchoolPanel(memberId) {
     return;
   }
 
-  let batchLabel = "aktivt skøyteskolesemester";
-  try {
-    const batch = getActiveSchoolBatchForMemberMove();
-    if (batch && batch.name) batchLabel = batch.name;
-  } catch (_) {}
+  if (select) {
+    const current = select.value || "";
+    select.innerHTML = '<option value="">Velg semester</option>';
+
+    (state.schoolBatches || [])
+      .slice()
+      .sort((a, b) => compareBatchNames(a.name, b.name))
+      .reverse()
+      .forEach((batch) => {
+        const opt = document.createElement("option");
+        opt.value = batch.id;
+        opt.textContent = String(batch.name || "Semester") +
+          (String(batch.status || "").trim().toLowerCase() === "aktiv" ? " (Aktiv)" : "");
+        select.appendChild(opt);
+      });
+
+    if (current && (state.schoolBatches || []).some((b) => sameId(b.id, current))) {
+      select.value = current;
+    } else {
+      try {
+        const activeBatch = getActiveSchoolBatchForMemberMove();
+        select.value = activeBatch ? String(activeBatch.id) : "";
+      } catch (_) {
+        select.value = "";
+      }
+    }
+  }
 
   if (help) {
     help.textContent =
-      "Flytter medlemmet ut av Trondheim Kortbaneklubb og inn i Skøyteskole, semester " +
-      batchLabel +
-      ". Medlemmet legges først som ikke fordelt, slik at Blå/Gul/Rød kan velges etterpå.";
+      "Velg hvilket semester medlemmet skal inn i. Deltakeren legges som Ikke fordelt, slik at Blå/Gul/Rød kan velges etterpå.";
   }
 }
 
@@ -7870,11 +7895,21 @@ async function moveEditedMemberToSkatingSchool() {
     return;
   }
 
-  let batch;
-  try {
-    batch = getActiveSchoolBatchForMemberMove();
-  } catch (error) {
-    setMoveMemberToSchoolMessage(error.message || error, true);
+  const selectedBatchId = byId("moveMemberSchoolBatch")
+    ? byId("moveMemberSchoolBatch").value
+    : "";
+
+  if (!selectedBatchId) {
+    setMoveMemberToSchoolMessage("Velg semester først.", true);
+    return;
+  }
+
+  const batch = (state.schoolBatches || []).find((item) =>
+    sameId(item.id, selectedBatchId)
+  );
+
+  if (!batch) {
+    setMoveMemberToSchoolMessage("Fant ikke valgt semester.", true);
     return;
   }
 
