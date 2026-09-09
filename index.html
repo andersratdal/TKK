@@ -2025,6 +2025,19 @@
 <button class="btn-primary" id="memberSubmitBtn" type="submit">Lagre medlem</button>
 </div>
 </form>
+
+<div id="moveMemberToSchoolPanel" class="notice hidden" style="margin-top:16px;">
+  <div style="display:flex; justify-content:space-between; gap:12px; align-items:center; flex-wrap:wrap;">
+    <div>
+      <strong>Flytt til Skøyteskole</strong>
+      <div class="help" id="moveMemberToSchoolHelp" style="margin-top:5px;">
+        Flytter medlemmet ut av Trondheim Kortbaneklubb og inn som deltaker i aktivt skøyteskolesemester.
+      </div>
+    </div>
+    <button class="btn-primary" id="btnMoveMemberToSchool" type="button">Flytt til Skøyteskole</button>
+  </div>
+  <div class="help" id="moveMemberToSchoolMessage" style="margin-top:8px;"></div>
+</div>
 </div>
 <div class="section-card">
 <h2>Import av eksisterende utlån</h2>
@@ -7722,8 +7735,262 @@ async function importSkates() {
       byId("memberName").focus();
     }
 
-    function resetMemberForm() {
+    
+function normalizeClubName(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .replace(/ø/g, "o")
+    .replace(/å/g, "a")
+    .replace(/æ/g, "ae");
+}
+
+function findTrondheimShortTrackDepartment() {
+  return (state.departments || []).find((department) =>
+    normalizeClubName(department.name) === "trondheim kortbaneklubb"
+  ) || null;
+}
+
+function getMemberRegularDepartmentIds(memberId) {
+  const groupIds = new Set(
+    (state.memberGroups || [])
+      .filter((membership) => sameId(membership.member_id, memberId))
+      .map((membership) => String(membership.group_id))
+  );
+
+  return new Set(
+    (state.groups || [])
+      .filter((group) => groupIds.has(String(group.id)))
+      .map((group) => String(group.department_id || ""))
+      .filter(Boolean)
+  );
+}
+
+function memberBelongsToTrondheimShortTrack(memberId) {
+  const department = findTrondheimShortTrackDepartment();
+  if (!department || !memberId) return false;
+  return getMemberRegularDepartmentIds(memberId).has(String(department.id));
+}
+
+function findSkatingSchoolDepartment() {
+  const exact = (state.departments || []).find((department) =>
+    normalizeClubName(department.name) === "skoyteskole"
+  );
+  if (exact) return exact;
+
+  return (state.departments || []).find((department) =>
+    normalizeClubName(department.name).includes("skoyteskole")
+  ) || null;
+}
+
+function getActiveSchoolBatchForMemberMove() {
+  const schoolDepartment = findSkatingSchoolDepartment();
+
+  let active = (state.schoolBatches || []).filter((batch) =>
+    String(batch.status || "").trim().toLowerCase() === "aktiv"
+  );
+
+  if (schoolDepartment) {
+    const linked = active.filter((batch) =>
+      sameId(batch.department_id, schoolDepartment.id)
+    );
+
+    // Bruk eksplisitt avdelingstilknytning når den finnes.
+    if (linked.length) active = linked;
+  }
+
+  if (active.length === 1) return active[0];
+
+  if (active.length > 1) {
+    throw new Error(
+      "Det finnes flere aktive skøyteskolesemester. Sett bare ett semester til Aktiv før flytting."
+    );
+  }
+
+  throw new Error(
+    "Fant ikke et aktivt skøyteskolesemester. Sett ønsket semester til Aktiv først."
+  );
+}
+
+function setMoveMemberToSchoolMessage(message, isError) {
+  const el = byId("moveMemberToSchoolMessage");
+  if (!el) return;
+  el.textContent = message || "";
+  el.className = isError ? "help msg-error" : "help msg-ok";
+}
+
+function updateMoveMemberToSchoolPanel(memberId) {
+  const panel = byId("moveMemberToSchoolPanel");
+  const help = byId("moveMemberToSchoolHelp");
+  if (!panel) return;
+
+  const visible = !!memberId && memberBelongsToTrondheimShortTrack(memberId);
+  panel.classList.toggle("hidden", !visible);
+
+  if (!visible) {
+    setMoveMemberToSchoolMessage("", false);
+    return;
+  }
+
+  let batchLabel = "aktivt skøyteskolesemester";
+  try {
+    const batch = getActiveSchoolBatchForMemberMove();
+    if (batch && batch.name) batchLabel = batch.name;
+  } catch (_) {}
+
+  if (help) {
+    help.textContent =
+      "Flytter medlemmet ut av Trondheim Kortbaneklubb og inn i Skøyteskole, semester " +
+      batchLabel +
+      ". Medlemmet legges først som ikke fordelt, slik at Blå/Gul/Rød kan velges etterpå.";
+  }
+}
+
+async function moveEditedMemberToSkatingSchool() {
+  if (!supabaseClient) {
+    setMoveMemberToSchoolMessage("Supabase-oppsett mangler.", true);
+    return;
+  }
+
+  const memberId = editingMemberId;
+  const member = (state.members || []).find((item) => sameId(item.id, memberId));
+
+  if (!memberId || !member) {
+    setMoveMemberToSchoolMessage("Hent et medlem for redigering først.", true);
+    return;
+  }
+
+  const sourceDepartment = findTrondheimShortTrackDepartment();
+  if (!sourceDepartment || !memberBelongsToTrondheimShortTrack(memberId)) {
+    setMoveMemberToSchoolMessage(
+      'Medlemmet tilhører ikke avdelingen "Trondheim Kortbaneklubb".',
+      true
+    );
+    return;
+  }
+
+  let batch;
+  try {
+    batch = getActiveSchoolBatchForMemberMove();
+  } catch (error) {
+    setMoveMemberToSchoolMessage(error.message || error, true);
+    return;
+  }
+
+  const confirmed = window.confirm(
+    "Flytte " + String(member.name || "medlemmet") +
+    " fra Trondheim Kortbaneklubb til Skøyteskole (" +
+    String(batch.name || "aktivt semester") + ")?\n\n" +
+    "Medlemmet fjernes fra treningsgruppene i Trondheim Kortbaneklubb og legges inn som ikke fordelt i Skøyteskolen."
+  );
+
+  if (!confirmed) return;
+
+  const button = byId("btnMoveMemberToSchool");
+  if (button) button.disabled = true;
+  setMoveMemberToSchoolMessage("Flytter medlem ...", false);
+
+  try {
+    await ensureDefaultSchoolGroups(batch.id);
+
+    // Behold fødselsår dersom medlemmet tidligere har vært registrert i Skøyteskolen.
+    const previousEnrollment = (state.schoolEnrollments || [])
+      .filter((enrollment) => sameId(enrollment.member_id, memberId))
+      .find((enrollment) => enrollment.birth_year);
+
+    const existingRes = await supabaseClient
+      .from("skating_school_enrollments")
+      .select("id, batch_id, member_id")
+      .eq("batch_id", batch.id)
+      .eq("member_id", memberId)
+      .maybeSingle();
+
+    if (existingRes.error) throw existingRes.error;
+
+    if (!existingRes.data) {
+      const insertRes = await supabaseClient
+        .from("skating_school_enrollments")
+        .insert([{
+          batch_id: batch.id,
+          member_id: memberId,
+          birth_year: previousEnrollment ? previousEnrollment.birth_year : null,
+          school_group_id: null,
+          assignment_reason: "Flyttet fra Trondheim Kortbaneklubb",
+          manual_override: false
+        }]);
+
+      if (insertRes.error) throw insertRes.error;
+    }
+
+    // Oppdater medlemsrollen til Skøyteskole.
+    const memberUpdate = await supabaseClient
+      .from("members")
+      .update({ role: "Skøyteskole" })
+      .eq("id", memberId);
+
+    if (memberUpdate.error) throw memberUpdate.error;
+
+    // Fjern KUN ordinære gruppetilknytninger i Trondheim Kortbaneklubb.
+    // Eventuelle tilknytninger i andre avdelinger beholdes.
+    const sourceGroupIds = (state.groups || [])
+      .filter((group) => sameId(group.department_id, sourceDepartment.id))
+      .map((group) => String(group.id));
+
+    for (const membership of (state.memberGroups || [])) {
+      if (
+        sameId(membership.member_id, memberId) &&
+        sourceGroupIds.includes(String(membership.group_id))
+      ) {
+        const deleteRes = await supabaseClient
+          .from("member_groups")
+          .delete()
+          .eq("id", membership.id);
+
+        if (deleteRes.error) throw deleteRes.error;
+      }
+    }
+
+    await loadAll();
+
+    const refreshedMember = (state.members || []).find((item) =>
+      sameId(item.id, memberId)
+    );
+
+    if (refreshedMember) {
+      loadMemberIntoForm(refreshedMember);
+    }
+
+    setMoveMemberToSchoolMessage(
+      String(member.name || "Medlemmet") +
+      " er flyttet til Skøyteskole (" +
+      String(batch.name || "aktivt semester") +
+      "). Velg Blå, Gul eller Rød under Skøyteskole.",
+      false
+    );
+
+    // Panelet skjules etter flytt fordi medlemmet ikke lenger ligger i
+    // Trondheim Kortbaneklubb. Vis derfor sluttmelding som dialog også.
+    window.alert(
+      String(member.name || "Medlemmet") +
+      " er flyttet til Skøyteskole (" +
+      String(batch.name || "aktivt semester") +
+      ").\n\nDeltakeren ligger under Ikke fordelt til du velger Blå, Gul eller Rød."
+    );
+  } catch (error) {
+    console.error(error);
+    setMoveMemberToSchoolMessage(
+      "Kunne ikke flytte medlemmet. " + (error.message || error),
+      true
+    );
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
+
+function resetMemberForm() {
       editingMemberId = null;
+      updateMoveMemberToSchoolPanel(null);
       byId("memberSubmitBtn").textContent = "Lagre medlem";
       byId("memberForm").reset();
       if (byId("memberDepartment")) byId("memberDepartment").value = "";
@@ -7755,6 +8022,7 @@ async function importSkates() {
       if (searchInput) {
         searchInput.value = member.name || "";
       }
+      updateMoveMemberToSchoolPanel(member.id);
       showSection("adminTab");
       byId("memberName").focus();
       return true;
@@ -9280,6 +9548,9 @@ attachSortHandlers();
     byId("memberCancelEditBtn").addEventListener("click", function () {
       resetMemberForm();
     });
+    if (byId("btnMoveMemberToSchool")) {
+      byId("btnMoveMemberToSchool").addEventListener("click", moveEditedMemberToSkatingSchool);
+    }
     if (byId("memberDepartment")) byId("memberDepartment").addEventListener("change", function () {
       updateMemberGroupListByDepartment(this.value || "", byId("memberGroupsText") ? byId("memberGroupsText").value : "");
     });
