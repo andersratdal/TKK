@@ -1919,8 +1919,11 @@
 </select>
 </div>
 <div class="col-3">
-<label for="memberGroupsText">Grupper</label>
-<input id="memberGroupsText" list="groupList" placeholder="Velg eller skriv grupper (kommaseparert)"/>
+<label for="memberGroupSelect">Gruppe</label>
+<select id="memberGroupSelect">
+<option value="">Ingen gruppe</option>
+</select>
+<input id="memberGroupsText" type="hidden"/>
 <datalist id="groupList"></datalist>
 </div>
 <div class="col-12">
@@ -7635,37 +7638,51 @@ function updateMemberDepartmentOptions() {
 function updateMemberGroupListByDepartment(selectedDepartmentId, currentGroupsText = "") {
   const list = byId("groupList");
   const input = byId("memberGroupsText");
-  if (!list) return;
+  const select = byId("memberGroupSelect");
+  if (!list || !select) return;
 
-  const relevantGroups = selectedDepartmentId
+  const relevantGroups = (selectedDepartmentId
     ? state.groups.filter((g) => String(g.department_id || "") === String(selectedDepartmentId))
-    : state.groups.slice();
+    : state.groups.slice()
+  )
+    .filter((g) => g.is_active !== false)
+    .slice()
+    .sort((a, b) =>
+      Number(a.sort_order || 0) - Number(b.sort_order || 0) ||
+      String(a.name || "").localeCompare(String(b.name || ""), "no")
+    );
 
   list.innerHTML = "";
-  relevantGroups
-    .slice()
-    .sort((a, b) => compareBatchNames(a.name, b.name))
-    .forEach((group) => {
-      const opt = document.createElement("option");
-      opt.value = group.name || "";
-      list.appendChild(opt);
-    });
+  select.innerHTML = '<option value="">Ingen gruppe</option>';
 
-  if (input) {
-    if (!selectedDepartmentId) {
-      if (typeof currentGroupsText === "string") input.value = currentGroupsText;
-      return;
-    }
+  relevantGroups.forEach((group) => {
+    const name = String(group.name || "").trim();
+    if (!name) return;
 
-    const allowedNames = new Set(relevantGroups.map((g) => String(g.name || "").trim().toLowerCase()).filter(Boolean));
-    const filtered = String(currentGroupsText || input.value || "")
-      .split(",")
-      .map((x) => x.trim())
-      .filter(Boolean)
-      .filter((name) => allowedNames.has(String(name).toLowerCase()));
+    const dataOpt = document.createElement("option");
+    dataOpt.value = name;
+    list.appendChild(dataOpt);
 
-    input.value = filtered.join(", ");
-  }
+    const selectOpt = document.createElement("option");
+    selectOpt.value = name;
+    selectOpt.textContent = name;
+    select.appendChild(selectOpt);
+  });
+
+  const requestedNames = String(currentGroupsText || (input ? input.value : "") || "")
+    .split(",")
+    .map((x) => x.trim())
+    .filter(Boolean);
+
+  const selectedName = requestedNames.find((name) =>
+    relevantGroups.some((group) =>
+      String(group.name || "").trim().toLowerCase() === String(name).toLowerCase()
+    )
+  ) || "";
+
+  select.value = selectedName;
+  if (input) input.value = selectedName;
+  select.disabled = !selectedDepartmentId || relevantGroups.length === 0;
 }
 
 function populateMemberEditList() {
@@ -9114,6 +9131,9 @@ attachSortHandlers();
     }
     if (byId("memberDepartment")) byId("memberDepartment").addEventListener("change", function () {
       updateMemberGroupListByDepartment(this.value || "", byId("memberGroupsText") ? byId("memberGroupsText").value : "");
+    });
+    if (byId("memberGroupSelect")) byId("memberGroupSelect").addEventListener("change", function () {
+      if (byId("memberGroupsText")) byId("memberGroupsText").value = this.value || "";
     });
     byId("searchActiveLoans").addEventListener("input", renderActiveLoans);
     window.addEventListener("resize", function () {
