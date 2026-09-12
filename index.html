@@ -7481,14 +7481,16 @@ async function moveEditedMemberToSkatingSchool() {
 
     const existingRes = await supabaseClient
       .from("skating_school_enrollments")
-      .select("id, batch_id, member_id")
+      .select("id, batch_id, member_id, school_group_id, birth_year")
       .eq("batch_id", batch.id)
       .eq("member_id", memberId)
       .maybeSingle();
 
     if (existingRes.error) throw existingRes.error;
 
-    if (!existingRes.data) {
+    let enrollment = existingRes.data || null;
+
+    if (!enrollment) {
       const insertRes = await supabaseClient
         .from("skating_school_enrollments")
         .insert([{
@@ -7498,9 +7500,44 @@ async function moveEditedMemberToSkatingSchool() {
           school_group_id: null,
           assignment_reason: "Flyttet fra Trondheim Kortbaneklubb",
           manual_override: false
-        }]);
+        }])
+        .select("id, batch_id, member_id, school_group_id, birth_year")
+        .single();
 
       if (insertRes.error) throw insertRes.error;
+      if (!insertRes.data || !insertRes.data.id) {
+        throw new Error("Deltakerkoblingen ble ikke opprettet korrekt.");
+      }
+      enrollment = insertRes.data;
+    } else {
+      // Hvis medlemmet allerede finnes i semesteret, nullstilles gruppen slik at
+      // flyttingen alltid ender under "Ikke fordelt".
+      const resetRes = await supabaseClient
+        .from("skating_school_enrollments")
+        .update({
+          school_group_id: null,
+          assignment_reason: "Flyttet fra Trondheim Kortbaneklubb",
+          manual_override: false
+        })
+        .eq("id", enrollment.id)
+        .select("id, batch_id, member_id, school_group_id, birth_year")
+        .single();
+
+      if (resetRes.error) throw resetRes.error;
+      enrollment = resetRes.data || enrollment;
+    }
+
+    // Verifiser direkte mot Supabase før medlemmet fjernes fra treningsgruppen.
+    const verifyRes = await supabaseClient
+      .from("skating_school_enrollments")
+      .select("id, batch_id, member_id, school_group_id")
+      .eq("batch_id", batch.id)
+      .eq("member_id", memberId)
+      .maybeSingle();
+
+    if (verifyRes.error) throw verifyRes.error;
+    if (!verifyRes.data) {
+      throw new Error("Kunne ikke bekrefte at medlemmet ble lagt inn i valgt skøyteskolesemester.");
     }
 
     const memberUpdate = await supabaseClient
@@ -7531,6 +7568,34 @@ async function moveEditedMemberToSkatingSchool() {
 
     await loadAll();
 
+    // Kontroller også at den nylig lastede app-state inneholder deltakeren.
+    const loadedEnrollment = (state.schoolEnrollments || []).find((item) =>
+      sameId(item.batch_id, batch.id) && sameId(item.member_id, memberId)
+    );
+
+    if (!loadedEnrollment) {
+      throw new Error(
+        "Deltakeren finnes i databasen, men ble ikke lest inn i Skøyteskole-visningen etter oppdatering."
+      );
+    }
+
+    // Tving visningen til semesteret medlemmet faktisk ble flyttet til.
+    const picker = byId("schoolBatchPicker");
+    if (picker) {
+      picker.value = String(batch.id);
+      setUiPref("schoolBatchPicker", String(batch.id));
+    }
+
+    if (typeof renderSchoolBatchOverview === "function") {
+      renderSchoolBatchOverview();
+    }
+    if (typeof updateSchoolParticipantMemberPicker === "function") {
+      updateSchoolParticipantMemberPicker();
+    }
+    if (typeof renderSchoolParticipants === "function") {
+      renderSchoolParticipants();
+    }
+
     const refreshedMember = (state.members || []).find((item) =>
       sameId(item.id, memberId)
     );
@@ -7538,6 +7603,14 @@ async function moveEditedMemberToSkatingSchool() {
     if (refreshedMember) {
       loadMemberIntoForm(refreshedMember);
     }
+
+    setMoveMemberToSchoolMessage(
+      String(member.name || "Medlemmet") +
+      " er flyttet til Skøyteskole (" +
+      String(batch.name || "valgt semester") +
+      ") og ligger under Ikke fordelt.",
+      false
+    );
 
     window.alert(
       String(member.name || "Medlemmet") +
