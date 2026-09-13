@@ -1149,6 +1149,50 @@
       align-items: end;
     }
 
+
+    /* Oppmøte / instruktørregistrering */
+    .attendance-topbar {
+      display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between;
+      margin-bottom:14px;
+    }
+    .attendance-tabs { display:flex; gap:8px; flex-wrap:wrap; }
+    .attendance-tab { background:#e7edf5; color:var(--text); }
+    .attendance-tab.active { background:var(--accent); color:#fff; }
+    .attendance-panel.hidden { display:none !important; }
+    .attendance-kpi-grid {
+      display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin:14px 0;
+    }
+    .attendance-kpi {
+      border:1px solid var(--line); border-radius:16px; padding:14px; background:#f8fbff;
+    }
+    .attendance-kpi-value { font-size:26px; font-weight:700; margin-top:5px; }
+    .attendance-register-card {
+      border:1px solid #bbf7d0; background:#f0fdf4; border-radius:18px; padding:18px; margin-top:12px;
+    }
+    .attendance-register-btn {
+      width:100%; padding:16px; font-size:18px; border-radius:14px; background:#166534; color:#fff;
+    }
+    .attendance-register-btn.registered { background:#e2e8f0; color:#334155; }
+    .attendance-history-list { display:grid; gap:10px; margin-top:12px; }
+    .attendance-history-item {
+      border:1px solid var(--line); border-radius:14px; padding:12px 14px; background:#fff;
+      display:grid; grid-template-columns:1fr auto; gap:8px; align-items:center;
+    }
+    .attendance-matrix-wrap { overflow:auto; -webkit-overflow-scrolling:touch; max-height:620px; }
+    .attendance-matrix { min-width:720px; }
+    .attendance-matrix th:first-child,
+    .attendance-matrix td:first-child {
+      position:sticky; left:0; background:#fff; z-index:2;
+    }
+    .attendance-check {
+      width:36px; height:36px; padding:0; border-radius:10px; background:#e2e8f0; color:#64748b;
+    }
+    .attendance-check.present { background:#16a34a; color:#fff; }
+    @media (max-width: 700px) {
+      .attendance-kpi-grid { grid-template-columns:1fr; }
+      .attendance-history-item { grid-template-columns:1fr; }
+    }
+
 </style>
 
 <style>
@@ -1474,6 +1518,12 @@
     <span class="app-menu-icon">📊</span>
     <span class="app-menu-title">Rapporter</span>
   </button>
+
+  <button class="app-menu-card" data-target="attendanceTab" type="button">
+    <span class="app-menu-icon">✅</span>
+    <span class="app-menu-title">Oppmøte</span>
+  </button>
+
 </div>
 <div style="display:flex; justify-content:center; margin-top:12px;">
   <a href="pamelding.html" target="_blank" style="display:inline-block; padding:10px 16px; background:#1f4fff; color:#ffffff; border-radius:10px; text-decoration:none; font-weight:700; box-shadow:0 8px 18px rgba(31,79,255,0.18);">
@@ -1551,6 +1601,183 @@
 </div>
 </form>
 </div>
+
+<div class="section-card hidden" id="attendanceTab">
+  <div class="section-header">
+    <div>
+      <h2>Oppmøte instruktører og trenere</h2>
+      <div class="help" style="margin-top:6px;">
+        Registrer oppmøte, se historikk og lag lønnsgrunnlag.
+      </div>
+    </div>
+    <div class="attendance-tabs">
+      <button class="attendance-tab active" data-attendance-view="mine" type="button">Min oppmøte</button>
+      <button class="attendance-tab attendance-admin-only hidden" data-attendance-view="register" type="button">Registrering</button>
+      <button class="attendance-tab attendance-admin-only hidden" data-attendance-view="manage" type="button">Administrasjon</button>
+      <button class="attendance-tab attendance-admin-only hidden" data-attendance-view="payroll" type="button">Lønnsgrunnlag</button>
+    </div>
+  </div>
+
+  <div class="notice hidden" id="attendanceSetupNotice"></div>
+  <div class="help" id="attendanceMessage" style="margin-top:10px;"></div>
+
+  <!-- MIN OPPMØTE -->
+  <div class="attendance-panel" id="attendanceViewMine">
+    <div class="attendance-register-card">
+      <div class="help">Dagens / neste åpne økt</div>
+      <h3 id="attendanceMyNextTitle" style="margin-top:6px;">Ingen åpen økt</h3>
+      <div class="help" id="attendanceMyNextMeta" style="margin-top:6px;"></div>
+      <button class="attendance-register-btn" id="btnAttendanceSelfRegister" type="button" disabled style="margin-top:14px;">
+        Registrer meg som til stede
+      </button>
+    </div>
+
+    <div class="attendance-kpi-grid">
+      <div class="attendance-kpi">
+        <div class="help">Mine økter i valgt periode</div>
+        <div class="attendance-kpi-value" id="attendanceMySessions">0</div>
+      </div>
+      <div class="attendance-kpi">
+        <div class="help">Mine timer</div>
+        <div class="attendance-kpi-value" id="attendanceMyHours">0</div>
+      </div>
+      <div class="attendance-kpi">
+        <div class="help">Godkjente timer</div>
+        <div class="attendance-kpi-value" id="attendanceMyApprovedHours">0</div>
+      </div>
+    </div>
+
+    <div class="section-card" style="box-shadow:none; margin-top:12px;">
+      <div class="section-header">
+        <div>
+          <h3>Mine oppmøter</h3>
+          <div class="help">Historikken bruker samme data som lønnsgrunnlaget.</div>
+        </div>
+        <div class="toolbar">
+          <input id="attendanceMyFrom" type="date" style="width:auto;">
+          <input id="attendanceMyTo" type="date" style="width:auto;">
+          <button class="btn-secondary btn-small" id="btnAttendanceRefreshMine" type="button">Oppdater</button>
+        </div>
+      </div>
+      <div class="attendance-history-list" id="attendanceMyHistory"></div>
+    </div>
+  </div>
+
+  <!-- ADMIN REGISTRERING -->
+  <div class="attendance-panel hidden" id="attendanceViewRegister">
+    <div class="section-card" style="box-shadow:none;">
+      <div class="section-header">
+        <div>
+          <h3>Hurtigregistrering</h3>
+          <div class="help">Velg økt og kryss av hvem som var til stede.</div>
+        </div>
+        <select id="attendanceSessionPicker" style="max-width:340px;"></select>
+      </div>
+      <div id="attendanceQuickList" class="attendance-history-list"></div>
+    </div>
+
+    <div class="section-card" style="box-shadow:none;">
+      <div class="section-header">
+        <div>
+          <h3>Krysseliste</h3>
+          <div class="help">Personer i rader og økter i kolonner.</div>
+        </div>
+      </div>
+      <div class="attendance-matrix-wrap">
+        <table class="attendance-matrix">
+          <thead id="attendanceMatrixHead"></thead>
+          <tbody id="attendanceMatrixBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMINISTRASJON -->
+  <div class="attendance-panel hidden" id="attendanceViewManage">
+    <div class="section-card" style="box-shadow:none;">
+      <h3>Ny instruktør / trener</h3>
+      <form class="form-grid" id="attendancePersonForm" style="margin-top:12px;">
+        <div class="col-4">
+          <label for="attendancePersonName">Navn</label>
+          <input id="attendancePersonName" required>
+        </div>
+        <div class="col-4">
+          <label for="attendancePersonEmail">E-post / innlogging</label>
+          <input id="attendancePersonEmail" type="email" placeholder="navn@epost.no">
+        </div>
+        <div class="col-4">
+          <label for="attendancePersonRole">Rolle</label>
+          <input id="attendancePersonRole" placeholder="Instruktør">
+        </div>
+        <div class="col-4">
+          <label for="attendancePersonGroupType">Område</label>
+          <select id="attendancePersonGroupType">
+            <option value="skoyteskole">Skøyteskolen</option>
+            <option value="rekrutt">Rekrutt-gruppene</option>
+          </select>
+        </div>
+        <div class="col-4">
+          <label for="attendancePersonHourlyRate">Timesats (valgfritt)</label>
+          <input id="attendancePersonHourlyRate" type="number" min="0" step="0.01">
+        </div>
+        <div class="col-4">
+          <button class="btn-primary" type="submit">Legg til person</button>
+        </div>
+      </form>
+      <div id="attendancePeopleList" style="margin-top:14px;"></div>
+    </div>
+
+    <div class="section-card" style="box-shadow:none;">
+      <h3>Ny dato / økt</h3>
+      <form class="form-grid" id="attendanceSessionForm" style="margin-top:12px;">
+        <div class="col-3">
+          <label for="attendanceSessionDate">Dato</label>
+          <input id="attendanceSessionDate" required type="date">
+        </div>
+        <div class="col-3">
+          <label for="attendanceSessionHours">Timer</label>
+          <input id="attendanceSessionHours" required type="number" step="0.25" min="0.25" value="1">
+        </div>
+        <div class="col-3">
+          <label for="attendanceSessionGroupType">Område</label>
+          <select id="attendanceSessionGroupType">
+            <option value="skoyteskole">Skøyteskolen</option>
+            <option value="rekrutt">Rekrutt-gruppene</option>
+          </select>
+        </div>
+        <div class="col-3">
+          <button class="btn-primary" type="submit">Opprett økt</button>
+        </div>
+      </form>
+      <div id="attendanceSessionsList" style="margin-top:14px;"></div>
+    </div>
+  </div>
+
+  <!-- LØNNSGRUNNLAG -->
+  <div class="attendance-panel hidden" id="attendanceViewPayroll">
+    <div class="section-card" style="box-shadow:none;">
+      <div class="section-header">
+        <div>
+          <h3>Lønnsgrunnlag</h3>
+          <div class="help">Oppsummering basert på registrerte timer.</div>
+        </div>
+        <div class="toolbar">
+          <input id="attendancePayrollFrom" type="date" style="width:auto;">
+          <input id="attendancePayrollTo" type="date" style="width:auto;">
+          <select id="attendancePayrollGroup" style="width:auto;">
+            <option value="">Alle</option>
+            <option value="skoyteskole">Skøyteskolen</option>
+            <option value="rekrutt">Rekrutt-gruppene</option>
+          </select>
+          <button class="btn-secondary btn-small" id="btnAttendancePayrollRefresh" type="button">Oppdater</button>
+          <button class="btn-primary btn-small" id="btnAttendancePayrollExport" type="button">Eksporter Excel</button>
+        </div>
+      </div>
+      <div id="attendancePayrollTable"></div>
+    </div>
+  </div>
+</div>
+
 <div class="section-card hidden" id="returnTab">
 <div class="section-header">
 <div>
@@ -2390,6 +2617,546 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
       el.textContent = message;
       el.className = isError ? "help msg-error" : "help msg-ok";
     }
+
+    // ============================================================
+    // OPPMØTE INSTRUKTØRER / TRENERE
+    // Krever Supabase-tabellene attendance_people,
+    // attendance_sessions og attendance_records.
+    // ============================================================
+    const attendanceState = {
+      people: [],
+      sessions: [],
+      records: [],
+      currentUser: null,
+      currentPerson: null,
+      isAdmin: false,
+      ready: false
+    };
+
+    function setAttendanceMessage(message, isError) {
+      const el = byId("attendanceMessage");
+      if (!el) return;
+      el.textContent = message || "";
+      el.className = isError ? "help msg-error" : "help msg-ok";
+    }
+
+    function attendanceDateLabel(value) {
+      if (!value) return "";
+      const d = new Date(value + "T12:00:00");
+      return d.toLocaleDateString("no-NO");
+    }
+
+    function attendanceGroupLabel(value) {
+      return value === "rekrutt" ? "Rekrutt-gruppene" : "Skøyteskolen";
+    }
+
+    function attendanceMonthStart() {
+      const d = new Date();
+      return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0,10);
+    }
+
+    function attendanceMonthEnd() {
+      const d = new Date();
+      return new Date(d.getFullYear(), d.getMonth()+1, 0).toISOString().slice(0,10);
+    }
+
+    function setupAttendanceDateDefaults() {
+      ["attendanceMyFrom", "attendancePayrollFrom"].forEach((id) => {
+        const el = byId(id);
+        if (el && !el.value) el.value = attendanceMonthStart();
+      });
+      ["attendanceMyTo", "attendancePayrollTo"].forEach((id) => {
+        const el = byId(id);
+        if (el && !el.value) el.value = attendanceMonthEnd();
+      });
+      const sessionDate = byId("attendanceSessionDate");
+      if (sessionDate && !sessionDate.value) sessionDate.value = new Date().toISOString().slice(0,10);
+    }
+
+    async function getAttendanceCurrentUser() {
+      if (!supabaseClient) return null;
+      const { data, error } = await supabaseClient.auth.getSession();
+      if (error) throw error;
+      return data && data.session ? data.session.user : null;
+    }
+
+    async function getAttendanceIsAdmin(user) {
+      if (!user || !user.email) return false;
+      const { data, error } = await supabaseClient
+        .from("app_user_roles")
+        .select("role,is_active")
+        .eq("email", user.email)
+        .maybeSingle();
+      if (error) return false;
+      return !!(data && data.is_active !== false && String(data.role || "").toLowerCase() === "admin");
+    }
+
+    async function loadAttendanceData() {
+      const [peopleRes, sessionsRes, recordsRes] = await Promise.all([
+        supabaseClient.from("attendance_people").select("*").order("name"),
+        supabaseClient.from("attendance_sessions").select("*").order("session_date", { ascending: false }),
+        supabaseClient.from("attendance_records").select("*")
+      ]);
+
+      const errors = [peopleRes.error, sessionsRes.error, recordsRes.error].filter(Boolean);
+      if (errors.length) {
+        const missing = errors.find((e) => /does not exist|schema cache/i.test(String(e.message || "")));
+        if (missing) {
+          const notice = byId("attendanceSetupNotice");
+          if (notice) {
+            notice.classList.remove("hidden");
+            notice.innerHTML = "<strong>Oppmøte er lagt inn i Dev-index, men databasen er ikke satt opp ennå.</strong><br>Kjør SQL-oppsettet for attendance_people, attendance_sessions og attendance_records før funksjonen kan brukes.";
+          }
+          attendanceState.ready = false;
+          return false;
+        }
+        throw errors[0];
+      }
+
+      const notice = byId("attendanceSetupNotice");
+      if (notice) notice.classList.add("hidden");
+
+      attendanceState.people = peopleRes.data || [];
+      attendanceState.sessions = sessionsRes.data || [];
+      attendanceState.records = recordsRes.data || [];
+      attendanceState.ready = true;
+      return true;
+    }
+
+    async function loadAttendanceModule() {
+      setupAttendanceDateDefaults();
+      setAttendanceMessage("Laster oppmøte ...", false);
+      try {
+        attendanceState.currentUser = await getAttendanceCurrentUser();
+        attendanceState.isAdmin = await getAttendanceIsAdmin(attendanceState.currentUser);
+
+        document.querySelectorAll(".attendance-admin-only").forEach((el) => {
+          el.classList.toggle("hidden", !attendanceState.isAdmin);
+        });
+
+        const ok = await loadAttendanceData();
+        if (!ok) {
+          setAttendanceMessage("", false);
+          renderAttendanceMine();
+          return;
+        }
+
+        const email = String((attendanceState.currentUser && attendanceState.currentUser.email) || "").trim().toLowerCase();
+        attendanceState.currentPerson = attendanceState.people.find((p) =>
+          String(p.email || "").trim().toLowerCase() === email ||
+          (p.user_id && attendanceState.currentUser && String(p.user_id) === String(attendanceState.currentUser.id))
+        ) || null;
+
+        renderAttendanceAll();
+        setAttendanceMessage("", false);
+      } catch (error) {
+        console.error("loadAttendanceModule", error);
+        setAttendanceMessage("Kunne ikke laste oppmøte. " + (error.message || error), true);
+      }
+    }
+
+    function renderAttendanceAll() {
+      renderAttendanceMine();
+      renderAttendanceSessionPicker();
+      renderAttendanceQuick();
+      renderAttendanceMatrix();
+      renderAttendancePeople();
+      renderAttendanceSessions();
+      renderAttendancePayroll();
+    }
+
+    function getAttendanceRecord(personId, sessionId) {
+      return attendanceState.records.find((r) =>
+        String(r.person_id) === String(personId) &&
+        String(r.session_id) === String(sessionId)
+      ) || null;
+    }
+
+    function renderAttendanceMine() {
+      const person = attendanceState.currentPerson;
+      const history = byId("attendanceMyHistory");
+      const btn = byId("btnAttendanceSelfRegister");
+      const title = byId("attendanceMyNextTitle");
+      const meta = byId("attendanceMyNextMeta");
+
+      if (!attendanceState.ready) {
+        if (history) history.innerHTML = '<div class="empty">Databasen for oppmøte er ikke satt opp ennå.</div>';
+        if (btn) btn.disabled = true;
+        return;
+      }
+
+      if (!person) {
+        if (title) title.textContent = "Du er ikke koblet til en instruktørprofil";
+        if (meta) meta.textContent = "En administrator må legge inn samme e-postadresse som du bruker til innlogging.";
+        if (btn) btn.disabled = true;
+        if (history) history.innerHTML = '<div class="empty">Ingen oppmøtehistorikk er koblet til denne brukeren.</div>';
+        return;
+      }
+
+      const today = new Date().toISOString().slice(0,10);
+      const relevantSessions = attendanceState.sessions
+        .filter((s) => s.active !== false && (!person.group_type || s.group_type === person.group_type))
+        .slice()
+        .sort((a,b) => String(a.session_date).localeCompare(String(b.session_date)));
+
+      let nextSession = relevantSessions.find((s) => String(s.session_date) >= today) || relevantSessions[relevantSessions.length - 1] || null;
+      if (nextSession) {
+        const rec = getAttendanceRecord(person.id, nextSession.id);
+        if (title) title.textContent = attendanceDateLabel(nextSession.session_date) + " – " + attendanceGroupLabel(nextSession.group_type);
+        if (meta) meta.textContent = (Number(nextSession.hours || 0) || 0) + " timer";
+        if (btn) {
+          btn.disabled = false;
+          btn.dataset.sessionId = nextSession.id;
+          btn.classList.toggle("registered", !!(rec && rec.present));
+          btn.textContent = rec && rec.present ? "Registrert ✓ – trykk for å angre" : "Registrer meg som til stede";
+        }
+      } else {
+        if (title) title.textContent = "Ingen åpen økt";
+        if (meta) meta.textContent = "";
+        if (btn) btn.disabled = true;
+      }
+
+      const from = byId("attendanceMyFrom") ? byId("attendanceMyFrom").value : "";
+      const to = byId("attendanceMyTo") ? byId("attendanceMyTo").value : "";
+      const rows = attendanceState.records
+        .filter((r) => String(r.person_id) === String(person.id) && r.present)
+        .map((r) => {
+          const session = attendanceState.sessions.find((s) => String(s.id) === String(r.session_id));
+          return { record:r, session };
+        })
+        .filter((x) => x.session)
+        .filter((x) => (!from || x.session.session_date >= from) && (!to || x.session.session_date <= to))
+        .sort((a,b) => String(b.session.session_date).localeCompare(String(a.session.session_date)));
+
+      const totalHours = rows.reduce((sum, x) => sum + Number(x.record.hours_worked ?? x.session.hours ?? 0), 0);
+      const approvedHours = rows.filter((x) => x.record.approved).reduce((sum, x) => sum + Number(x.record.hours_worked ?? x.session.hours ?? 0), 0);
+
+      if (byId("attendanceMySessions")) byId("attendanceMySessions").textContent = rows.length;
+      if (byId("attendanceMyHours")) byId("attendanceMyHours").textContent = totalHours.toFixed(2).replace(".", ",");
+      if (byId("attendanceMyApprovedHours")) byId("attendanceMyApprovedHours").textContent = approvedHours.toFixed(2).replace(".", ",");
+
+      if (history) {
+        history.innerHTML = rows.length ? rows.map((x) => {
+          const hours = Number(x.record.hours_worked ?? x.session.hours ?? 0);
+          const status = x.record.approved ? "Godkjent" : "Registrert";
+          return `
+            <div class="attendance-history-item">
+              <div>
+                <strong>${escapeHtml(attendanceDateLabel(x.session.session_date))}</strong>
+                <div class="help">${escapeHtml(attendanceGroupLabel(x.session.group_type))}</div>
+              </div>
+              <div style="text-align:right;">
+                <strong>${hours.toFixed(2).replace(".", ",")} t</strong>
+                <div class="help">${status}</div>
+              </div>
+            </div>`;
+        }).join("") : '<div class="empty">Ingen registrerte oppmøter i valgt periode.</div>';
+      }
+    }
+
+    async function attendanceSelfRegister() {
+      const person = attendanceState.currentPerson;
+      const btn = byId("btnAttendanceSelfRegister");
+      if (!person || !btn || !btn.dataset.sessionId) return;
+      const session = attendanceState.sessions.find((s) => String(s.id) === String(btn.dataset.sessionId));
+      if (!session) return;
+      const existing = getAttendanceRecord(person.id, session.id);
+      const newPresent = !(existing && existing.present);
+
+      try {
+        if (existing) {
+          const { error } = await supabaseClient
+            .from("attendance_records")
+            .update({
+              present: newPresent,
+              hours_worked: newPresent ? Number(existing.hours_worked ?? session.hours ?? 0) : 0,
+              registered_by: attendanceState.currentUser ? attendanceState.currentUser.id : null,
+              registered_at: new Date().toISOString()
+            })
+            .eq("id", existing.id);
+          if (error) throw error;
+        } else {
+          const { error } = await supabaseClient.from("attendance_records").insert([{
+            person_id: person.id,
+            session_id: session.id,
+            present: true,
+            hours_worked: Number(session.hours || 0),
+            registered_by: attendanceState.currentUser ? attendanceState.currentUser.id : null
+          }]);
+          if (error) throw error;
+        }
+        await loadAttendanceData();
+        renderAttendanceAll();
+      } catch (error) {
+        setAttendanceMessage("Kunne ikke registrere oppmøte. " + (error.message || error), true);
+      }
+    }
+
+    function switchAttendanceView(view) {
+      document.querySelectorAll(".attendance-panel").forEach((el) => el.classList.add("hidden"));
+      document.querySelectorAll(".attendance-tab").forEach((el) => el.classList.remove("active"));
+      const map = {
+        mine:"attendanceViewMine",
+        register:"attendanceViewRegister",
+        manage:"attendanceViewManage",
+        payroll:"attendanceViewPayroll"
+      };
+      const panel = byId(map[view] || map.mine);
+      if (panel) panel.classList.remove("hidden");
+      const btn = document.querySelector(`[data-attendance-view="${view}"]`);
+      if (btn) btn.classList.add("active");
+      if (view === "payroll") renderAttendancePayroll();
+    }
+
+    function renderAttendanceSessionPicker() {
+      const select = byId("attendanceSessionPicker");
+      if (!select) return;
+      select.innerHTML = attendanceState.sessions.length
+        ? attendanceState.sessions.map((s) => `<option value="${s.id}">${escapeHtml(attendanceDateLabel(s.session_date))} – ${escapeHtml(attendanceGroupLabel(s.group_type))} (${Number(s.hours || 0)} t)</option>`).join("")
+        : '<option value="">Ingen økter</option>';
+    }
+
+    function renderAttendanceQuick() {
+      const list = byId("attendanceQuickList");
+      const picker = byId("attendanceSessionPicker");
+      if (!list || !picker) return;
+      const session = attendanceState.sessions.find((s) => String(s.id) === String(picker.value)) || attendanceState.sessions[0];
+      if (!session) {
+        list.innerHTML = '<div class="empty">Opprett en økt først.</div>';
+        return;
+      }
+      const people = attendanceState.people.filter((p) => p.active !== false && (!p.group_type || p.group_type === session.group_type));
+      list.innerHTML = people.length ? people.map((p) => {
+        const rec = getAttendanceRecord(p.id, session.id);
+        const checked = !!(rec && rec.present);
+        return `
+          <button type="button" class="attendance-history-item attendance-quick-person" data-person-id="${p.id}" data-session-id="${session.id}" style="width:100%; text-align:left;">
+            <div>
+              <strong>${escapeHtml(p.name || "")}</strong>
+              <div class="help">${escapeHtml(p.role || "")}</div>
+            </div>
+            <span class="status ${checked ? "status-ledig" : ""}">${checked ? "Tilstede ✓" : "Ikke tilstede"}</span>
+          </button>`;
+      }).join("") : '<div class="empty">Ingen personer i dette området.</div>';
+    }
+
+    async function toggleAttendanceAdmin(personId, sessionId) {
+      if (!attendanceState.isAdmin) return;
+      const session = attendanceState.sessions.find((s) => String(s.id) === String(sessionId));
+      const existing = getAttendanceRecord(personId, sessionId);
+      const newPresent = !(existing && existing.present);
+      try {
+        if (existing) {
+          const { error } = await supabaseClient.from("attendance_records")
+            .update({ present:newPresent, hours_worked:newPresent ? Number(existing.hours_worked ?? session.hours ?? 0) : 0 })
+            .eq("id", existing.id);
+          if (error) throw error;
+        } else {
+          const { error } = await supabaseClient.from("attendance_records").insert([{
+            person_id:personId, session_id:sessionId, present:true, hours_worked:Number(session.hours || 0),
+            registered_by: attendanceState.currentUser ? attendanceState.currentUser.id : null
+          }]);
+          if (error) throw error;
+        }
+        await loadAttendanceData();
+        renderAttendanceQuick();
+        renderAttendanceMatrix();
+        renderAttendancePayroll();
+      } catch (error) {
+        setAttendanceMessage("Kunne ikke endre oppmøte. " + (error.message || error), true);
+      }
+    }
+
+    function renderAttendanceMatrix() {
+      const head = byId("attendanceMatrixHead");
+      const body = byId("attendanceMatrixBody");
+      if (!head || !body) return;
+      const sessions = attendanceState.sessions.slice().sort((a,b) => String(a.session_date).localeCompare(String(b.session_date)));
+      head.innerHTML = `<tr><th>Navn</th>${sessions.map((s) => `<th>${escapeHtml(attendanceDateLabel(s.session_date))}<br><span class="help">${Number(s.hours || 0)} t</span></th>`).join("")}</tr>`;
+      body.innerHTML = attendanceState.people.filter((p) => p.active !== false).map((p) => `
+        <tr>
+          <td><strong>${escapeHtml(p.name || "")}</strong><div class="help">${escapeHtml(p.role || "")}</div></td>
+          ${sessions.map((s) => {
+            const rec = getAttendanceRecord(p.id, s.id);
+            const present = !!(rec && rec.present);
+            return `<td><button class="attendance-check ${present ? "present" : ""}" data-att-toggle="${p.id}|${s.id}" type="button">${present ? "✓" : ""}</button></td>`;
+          }).join("")}
+        </tr>`).join("");
+    }
+
+    function renderAttendancePeople() {
+      const el = byId("attendancePeopleList");
+      if (!el) return;
+      el.innerHTML = attendanceState.people.length ? `
+        <table>
+          <thead><tr><th>Navn</th><th>E-post</th><th>Rolle</th><th>Område</th><th>Timesats</th></tr></thead>
+          <tbody>${attendanceState.people.map((p) => `<tr>
+            <td>${escapeHtml(p.name || "")}</td>
+            <td>${escapeHtml(p.email || "")}</td>
+            <td>${escapeHtml(p.role || "")}</td>
+            <td>${escapeHtml(attendanceGroupLabel(p.group_type))}</td>
+            <td>${p.hourly_rate == null ? "" : Number(p.hourly_rate).toFixed(2).replace(".", ",")}</td>
+          </tr>`).join("")}</tbody>
+        </table>` : '<div class="empty">Ingen personer registrert.</div>';
+    }
+
+    function renderAttendanceSessions() {
+      const el = byId("attendanceSessionsList");
+      if (!el) return;
+      el.innerHTML = attendanceState.sessions.length ? `
+        <table>
+          <thead><tr><th>Dato</th><th>Område</th><th>Timer</th></tr></thead>
+          <tbody>${attendanceState.sessions.map((s) => `<tr>
+            <td>${escapeHtml(attendanceDateLabel(s.session_date))}</td>
+            <td>${escapeHtml(attendanceGroupLabel(s.group_type))}</td>
+            <td>${Number(s.hours || 0)}</td>
+          </tr>`).join("")}</tbody>
+        </table>` : '<div class="empty">Ingen økter registrert.</div>';
+    }
+
+    async function createAttendancePerson(event) {
+      event.preventDefault();
+      if (!attendanceState.isAdmin) return;
+      const row = {
+        name: byId("attendancePersonName").value.trim(),
+        email: byId("attendancePersonEmail").value.trim() || null,
+        role: byId("attendancePersonRole").value.trim() || null,
+        group_type: byId("attendancePersonGroupType").value,
+        hourly_rate: byId("attendancePersonHourlyRate").value ? Number(byId("attendancePersonHourlyRate").value) : null,
+        active: true
+      };
+      try {
+        const { error } = await supabaseClient.from("attendance_people").insert([row]);
+        if (error) throw error;
+        event.target.reset();
+        await loadAttendanceData();
+        renderAttendanceAll();
+      } catch (error) {
+        setAttendanceMessage("Kunne ikke legge til person. " + (error.message || error), true);
+      }
+    }
+
+    async function createAttendanceSession(event) {
+      event.preventDefault();
+      if (!attendanceState.isAdmin) return;
+      const row = {
+        session_date: byId("attendanceSessionDate").value,
+        hours: Number(byId("attendanceSessionHours").value || 0),
+        group_type: byId("attendanceSessionGroupType").value,
+        active: true
+      };
+      try {
+        const { error } = await supabaseClient.from("attendance_sessions").insert([row]);
+        if (error) throw error;
+        await loadAttendanceData();
+        renderAttendanceAll();
+      } catch (error) {
+        setAttendanceMessage("Kunne ikke opprette økt. " + (error.message || error), true);
+      }
+    }
+
+    function getAttendancePayrollRows() {
+      const from = byId("attendancePayrollFrom") ? byId("attendancePayrollFrom").value : "";
+      const to = byId("attendancePayrollTo") ? byId("attendancePayrollTo").value : "";
+      const group = byId("attendancePayrollGroup") ? byId("attendancePayrollGroup").value : "";
+      return attendanceState.people.map((p) => {
+        const recs = attendanceState.records.filter((r) => String(r.person_id) === String(p.id) && r.present);
+        let sessionCount = 0, hours = 0, approvedHours = 0;
+        recs.forEach((r) => {
+          const s = attendanceState.sessions.find((x) => String(x.id) === String(r.session_id));
+          if (!s) return;
+          if (from && s.session_date < from) return;
+          if (to && s.session_date > to) return;
+          if (group && s.group_type !== group) return;
+          const h = Number(r.hours_worked ?? s.hours ?? 0);
+          sessionCount += 1;
+          hours += h;
+          if (r.approved) approvedHours += h;
+        });
+        const rate = Number(p.hourly_rate || 0);
+        return {
+          name:p.name || "", role:p.role || "", sessions:sessionCount,
+          hours, approvedHours, rate, amount:hours * rate
+        };
+      }).filter((r) => r.sessions > 0);
+    }
+
+    function renderAttendancePayroll() {
+      const el = byId("attendancePayrollTable");
+      if (!el) return;
+      const rows = getAttendancePayrollRows();
+      el.innerHTML = rows.length ? `
+        <table>
+          <thead><tr><th>Navn</th><th>Rolle</th><th>Økter</th><th>Timer</th><th>Godkjent</th><th>Timesats</th><th>Beløp</th></tr></thead>
+          <tbody>${rows.map((r) => `<tr>
+            <td>${escapeHtml(r.name)}</td><td>${escapeHtml(r.role)}</td><td>${r.sessions}</td>
+            <td>${r.hours.toFixed(2).replace(".", ",")}</td>
+            <td>${r.approvedHours.toFixed(2).replace(".", ",")}</td>
+            <td>${r.rate ? r.rate.toFixed(2).replace(".", ",") : ""}</td>
+            <td>${r.rate ? r.amount.toFixed(2).replace(".", ",") : ""}</td>
+          </tr>`).join("")}</tbody>
+        </table>` : '<div class="empty">Ingen oppmøter i valgt periode.</div>';
+    }
+
+    function exportAttendancePayrollXlsx() {
+      const rows = getAttendancePayrollRows();
+      if (!rows.length) {
+        setAttendanceMessage("Ingen lønnsdata å eksportere i valgt periode.", true);
+        return;
+      }
+      if (!window.XLSX) {
+        setAttendanceMessage("Excel-biblioteket er ikke lastet.", true);
+        return;
+      }
+      const data = rows.map((r) => ({
+        Navn:r.name,
+        Rolle:r.role,
+        "Antall økter":r.sessions,
+        Timer:r.hours,
+        "Godkjente timer":r.approvedHours,
+        Timesats:r.rate || "",
+        Beløp:r.rate ? r.amount : ""
+      }));
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(data);
+      XLSX.utils.book_append_sheet(wb, ws, "Lønnsgrunnlag");
+      XLSX.writeFile(wb, "TKK_lønnsgrunnlag_" + new Date().toISOString().slice(0,10) + ".xlsx");
+    }
+
+    function setupAttendanceEvents() {
+      document.querySelectorAll(".attendance-tab").forEach((btn) => {
+        btn.addEventListener("click", () => switchAttendanceView(btn.dataset.attendanceView || "mine"));
+      });
+      const selfBtn = byId("btnAttendanceSelfRegister");
+      if (selfBtn) selfBtn.addEventListener("click", attendanceSelfRegister);
+      const refreshMine = byId("btnAttendanceRefreshMine");
+      if (refreshMine) refreshMine.addEventListener("click", renderAttendanceMine);
+      const picker = byId("attendanceSessionPicker");
+      if (picker) picker.addEventListener("change", renderAttendanceQuick);
+      const personForm = byId("attendancePersonForm");
+      if (personForm) personForm.addEventListener("submit", createAttendancePerson);
+      const sessionForm = byId("attendanceSessionForm");
+      if (sessionForm) sessionForm.addEventListener("submit", createAttendanceSession);
+      const payrollRefresh = byId("btnAttendancePayrollRefresh");
+      if (payrollRefresh) payrollRefresh.addEventListener("click", renderAttendancePayroll);
+      const payrollExport = byId("btnAttendancePayrollExport");
+      if (payrollExport) payrollExport.addEventListener("click", exportAttendancePayrollXlsx);
+
+      document.addEventListener("click", (event) => {
+        const quick = event.target.closest(".attendance-quick-person");
+        if (quick) {
+          toggleAttendanceAdmin(quick.dataset.personId, quick.dataset.sessionId);
+          return;
+        }
+        const matrix = event.target.closest("[data-att-toggle]");
+        if (matrix) {
+          const parts = String(matrix.dataset.attToggle || "").split("|");
+          if (parts.length === 2) toggleAttendanceAdmin(parts[0], parts[1]);
+        }
+      });
+    }
+
+
     function setImportStatus(message, isError) {
       const el = byId("importStatus");
       if (!el) return;
@@ -2423,12 +3190,15 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
       byId("homeView").classList.add("hidden");
       byId("workspace").classList.add("active");
       byId("backRow").classList.add("visible");
-      ["loanTab", "returnTab", "adminTab", "reportsTab", "skatingSchoolTab"].forEach((id) => {
+      ["loanTab", "returnTab", "adminTab", "reportsTab", "skatingSchoolTab", "attendanceTab"].forEach((id) => {
         const el = byId(id);
         if (el) el.classList.add("hidden");
       });
       const target = byId(sectionId);
       if (target) target.classList.remove("hidden");
+      if (sectionId === "attendanceTab" && typeof loadAttendanceModule === "function") {
+        await loadAttendanceModule();
+      }
     }
 
     async function goHome() {
@@ -2437,7 +3207,7 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
       byId("homeView").classList.remove("hidden");
       byId("workspace").classList.remove("active");
       byId("backRow").classList.remove("visible");
-      ["loanTab", "returnTab", "adminTab", "reportsTab", "skatingSchoolTab"].forEach((id) => {
+      ["loanTab", "returnTab", "adminTab", "reportsTab", "skatingSchoolTab", "attendanceTab"].forEach((id) => {
         const el = byId(id);
         if (el) el.classList.add("hidden");
       });
@@ -9529,6 +10299,7 @@ if (byId("btnMoveSelectedSchoolSignups")) byId("btnMoveSelectedSchoolSignups").a
     if (byId("memberCardModal")) byId("memberCardModal").addEventListener("click", function (e) {
       if (e.target === this) closeMemberCard();
     });
+    setupAttendanceEvents();
     document.querySelectorAll(".landing-card, .app-menu-card").forEach((card) => {
       card.addEventListener("click", function () { showSection(this.dataset.target); });
     });
