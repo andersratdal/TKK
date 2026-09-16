@@ -2090,7 +2090,7 @@
     <div>
       <h2>Til idrettsrådet</h2>
       <div class="help" style="margin-top:8px;">
-        Eksporterer kun skøyteskolepåmeldinger med påmeldingskode. Inneholder navn, kode og status for betalt medlemsavgift.
+        Eksporterer kun skøyteskolepåmeldinger med påmeldingskode. Inneholder navn, fødselsdato, kode og status for betalt medlemsavgift.
       </div>
     </div>
     <div class="toolbar">
@@ -8344,8 +8344,33 @@ function populateMemberEditList() {
           return;
         }
 
+        function getCouncilBirthDate(row) {
+          if (row && row.birth_date) {
+            return formatBirthDate(row.birth_date);
+          }
+
+          const rowName = String((row && row.name) || "").trim().toLowerCase();
+          const rowCode = String((row && row.code) || "").trim().toLowerCase();
+
+          const matches = (state.schoolSignups || []).filter((signup) => {
+            const signupName = String(signup.child_name || "").trim().toLowerCase();
+            const signupCode = String(signup.access_code || "").trim().toLowerCase();
+
+            if (rowCode && rowCode !== "kodepåmelding" && signupCode) {
+              return signupName === rowName && signupCode === rowCode;
+            }
+
+            return signupName === rowName;
+          });
+
+          return matches.length === 1
+            ? formatBirthDate(matches[0].birth_date)
+            : "";
+        }
+
         const rows = reportRows.map((row) => [
           row.name || "",
+          getCouncilBirthDate(row),
           row.code || "",
           row.membership_fee_paid === true
             ? "Betalt"
@@ -8357,9 +8382,9 @@ function populateMemberEditList() {
         exportRowsToXlsx(
           "Til-idrettsradet.xlsx",
           "Til idrettsrådet",
-          ["Navn", "Kode", "Betalt medlemsavgift"],
+          ["Navn", "Fødselsdato", "Kode", "Betalt medlemsavgift"],
           rows,
-          [32, 22, 24]
+          [32, 16, 22, 24]
         );
       } catch (error) {
         console.error(error);
