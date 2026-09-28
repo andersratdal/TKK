@@ -1656,7 +1656,7 @@ width: 50px;
 <script src="env-config.js"></script>
 </head>
 <body>
-<div class="container">
+<div class="container" style="display:none;">
 
 <header class="app-header">
   <div class="app-header-brand">
@@ -10270,9 +10270,10 @@ if (byId("skateFlowHomeLink")) byId("skateFlowHomeLink").addEventListener("click
     byId("loanDate").value = nowLocalInputValue();
     if (byId("existingLoansDate")) byId("existingLoansDate").value = "2025-01-01";
     const started = initFromSavedConfig();
-    if (started) {
-      loadAll();
-      startAutoRefresh();
+    // Data lastes først etter at Auth Guard har bekreftet en gyldig sesjon.
+    // Dette hindrer at appen blir funksjonell før innlogging.
+    if (!started) {
+      console.warn("Supabase-oppsett mangler eller kunne ikke startes.");
     }
   
 
@@ -10882,6 +10883,9 @@ if (byId("skateFlowHomeLink")) byId("skateFlowHomeLink").addEventListener("click
   function showAuthLoginView(message) {
     removeAuthLoginView();
     setMainAppVisible(false);
+    try {
+      if (typeof stopAutoRefresh === "function") stopAutoRefresh();
+    } catch (_) {}
 
     const view = document.createElement("div");
     view.id = "authLoginView";
@@ -11033,6 +11037,9 @@ if (byId("skateFlowHomeLink")) byId("skateFlowHomeLink").addEventListener("click
         try {
           if (typeof loadAll === "function") await loadAll();
           if (typeof startAutoRefresh === "function") startAutoRefresh();
+          if (typeof refreshCurrentUserDisplayName === "function") {
+            await refreshCurrentUserDisplayName();
+          }
         } catch (error) {
           console.warn("Kunne ikke laste appdata etter innlogging:", error);
         }
@@ -11082,6 +11089,14 @@ if (byId("skateFlowHomeLink")) byId("skateFlowHomeLink").addEventListener("click
         showAuthLoginView("");
       } else {
         setMainAppVisible(true);
+
+        try {
+          if (typeof loadAll === "function") await loadAll();
+          if (typeof startAutoRefresh === "function") startAutoRefresh();
+        } catch (loadError) {
+          console.warn("Kunne ikke laste appdata etter session-kontroll:", loadError);
+        }
+
         const label = document.getElementById("appUserLabel");
         if (label && session.user) {
           label.textContent = "Konto";
