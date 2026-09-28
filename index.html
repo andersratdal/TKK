@@ -1493,6 +1493,78 @@ width: 50px;
   }
 }
 
+
+/* Hamburgermeny i toppfeltet */
+.app-nav-menu {
+  position: relative;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+.app-nav-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid #bfd2ef;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--text);
+  font-size: 23px;
+  line-height: 1;
+  cursor: pointer;
+}
+.app-nav-button:hover {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.app-nav-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 190px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 14px 32px rgba(16,35,63,0.16);
+  z-index: 1200;
+}
+.app-nav-dropdown.hidden {
+  display: none !important;
+}
+.app-nav-dropdown button {
+  display: block;
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.app-nav-dropdown button:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.app-header .app-user-menu {
+  margin-left: 6px !important;
+}
+@media (max-width: 700px) {
+  .app-nav-button {
+    width: 38px;
+    height: 38px;
+  }
+  .app-nav-dropdown {
+    min-width: 180px;
+  }
+}
+
 </style>
 
 <style>
@@ -1591,6 +1663,19 @@ width: 50px;
     <a href="#" id="skateFlowHomeLink" class="skateflow-home-link" aria-label="Gå til startsiden">
       <img src="skateflow-logo.png" alt="TKK SkateFlow" class="skateflow-header-logo"/>
     </a>
+  </div>
+  <div class="app-nav-menu">
+    <button class="app-nav-button" id="appNavButton" type="button"
+            aria-haspopup="true" aria-expanded="false" aria-label="Åpne meny" title="Meny">
+      <span aria-hidden="true">☰</span>
+    </button>
+    <div class="app-nav-dropdown hidden" id="appNavDropdown">
+      <button type="button" data-nav-target="loanTab">Utlån</button>
+      <button type="button" data-nav-target="returnTab">Innlevering</button>
+      <button type="button" data-nav-target="skatingSchoolTab">Skøyteskole</button>
+      <button type="button" data-nav-target="adminTab">Admin</button>
+      <button type="button" data-nav-target="reportsTab">Rapporter</button>
+    </div>
   </div>
   <div class="app-user-menu">
     <button class="app-user-button" id="appUserButton" type="button"
@@ -10104,7 +10189,38 @@ attachSortHandlers();
     if (byId("btnExportSkatesReport")) byId("btnExportSkatesReport").addEventListener("click", exportSkatesReportCsv);
     if (byId("btnExportArchivedSkatesReport")) byId("btnExportArchivedSkatesReport").addEventListener("click", exportArchivedSkatesReportCsv);
     if (byId("btnExportMembersReport")) byId("btnExportMembersReport").addEventListener("click", exportMembersReportCsv);
-    if (byId("skateFlowHomeLink")) byId("skateFlowHomeLink").addEventListener("click", async function (event) {
+    
+    if (byId("appNavButton")) {
+      byId("appNavButton").addEventListener("click", function (event) {
+        event.stopPropagation();
+        const dropdown = byId("appNavDropdown");
+        if (!dropdown) return;
+        const opening = dropdown.classList.contains("hidden");
+        dropdown.classList.toggle("hidden");
+        this.setAttribute("aria-expanded", opening ? "true" : "false");
+      });
+    }
+
+    if (byId("appNavDropdown")) {
+      byId("appNavDropdown").querySelectorAll("[data-nav-target]").forEach(function (button) {
+        button.addEventListener("click", async function () {
+          const target = this.getAttribute("data-nav-target");
+          byId("appNavDropdown").classList.add("hidden");
+          if (byId("appNavButton")) byId("appNavButton").setAttribute("aria-expanded", "false");
+          await showSection(target);
+        });
+      });
+    }
+
+    document.addEventListener("click", function (event) {
+      const menu = document.querySelector(".app-nav-menu");
+      const dropdown = byId("appNavDropdown");
+      if (!menu || !dropdown || menu.contains(event.target)) return;
+      dropdown.classList.add("hidden");
+      if (byId("appNavButton")) byId("appNavButton").setAttribute("aria-expanded", "false");
+    });
+
+if (byId("skateFlowHomeLink")) byId("skateFlowHomeLink").addEventListener("click", async function (event) {
       event.preventDefault();
       await goHome();
     });
