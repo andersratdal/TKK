@@ -1565,6 +1565,12 @@ width: 50px;
   }
 }
 
+
+/* Hard auth lock: appinnhold kan ikke vises før Auth Guard åpner det */
+body.auth-locked > .container {
+  display: none !important;
+}
+
 </style>
 
 <style>
@@ -1655,8 +1661,8 @@ width: 50px;
 
 <script src="env-config.js"></script>
 </head>
-<body>
-<div class="container" style="display:none;">
+<body class="auth-locked">
+<div class="container">
 
 <header class="app-header">
   <div class="app-header-brand">
@@ -1896,9 +1902,6 @@ width: 50px;
 
 
 <div id="homeView">
-
-</div>
-</div>
 <div class="landing-grid app-menu" id="mainMenu">
   <button class="app-menu-card" data-target="loanTab" type="button">
     <span class="app-menu-icon"><img src="utlan-skoyte-ikon.png" alt="" class="app-menu-image-icon"></span>
@@ -10872,7 +10875,13 @@ if (byId("skateFlowHomeLink")) byId("skateFlowHomeLink").addEventListener("click
 
   function setMainAppVisible(visible) {
     const app = document.querySelector("body > .container");
-    if (app) app.style.display = visible ? "" : "none";
+    if (visible) {
+      document.body.classList.remove("auth-locked");
+      if (app) app.style.removeProperty("display");
+    } else {
+      document.body.classList.add("auth-locked");
+      if (app) app.style.setProperty("display", "none", "important");
+    }
   }
 
   function removeAuthLoginView() {
