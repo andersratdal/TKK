@@ -1750,27 +1750,28 @@ width: 50px;
       try {
         const sessionResult = await authClient.auth.getSession();
         const session = sessionResult?.data?.session || null;
-        const authUser = session?.user || null;
-        let displayName =
-          authUser?.user_metadata?.full_name ||
-          authUser?.user_metadata?.name ||
-          authUser?.user_metadata?.display_name ||
-          "";
-
-        if (authUser?.id) {
+        if (session?.access_token) {
           try {
-            const roleResult = await authClient
-              .from("app_user_roles")
-              .select("display_name")
-              .eq("user_id", authUser.id)
-              .maybeSingle();
-            displayName = roleResult?.data?.display_name || displayName;
+            const response = await fetch("/.netlify/functions/admin-users?mode=me", {
+              method: "GET",
+              headers: {
+                "Accept": "application/json",
+                "Authorization": "Bearer " + session.access_token
+              }
+            });
+            const payload = await response.json();
+            if (response.ok && payload?.user) {
+              label.textContent = payload.user.display_name || "Konto";
+            } else {
+              label.textContent = "Konto";
+            }
           } catch (nameError) {
             console.warn("Kunne ikke hente visningsnavn:", nameError);
+            label.textContent = "Konto";
           }
+        } else {
+          label.textContent = "Konto";
         }
-
-        label.textContent = displayName || "Konto";
       } catch (error) {
         console.warn("Kunne ikke hente bruker:", error);
         label.textContent = "Konto";
@@ -4549,7 +4550,7 @@ function attachSortHandlers() {
       try {
         const payload = await adminUsersRequest("GET", undefined, "mode=me");
         if (payload && payload.user) {
-          label.textContent = payload.user.display_name || payload.user.email || "Konto";
+          label.textContent = payload.user.display_name || "Konto";
         }
       } catch (_) {
         // E-post-fallback settes allerede av auth-koden.
@@ -10240,6 +10241,8 @@ attachSortHandlers();
       if (byId("appNavButton")) byId("appNavButton").setAttribute("aria-expanded", "false");
     });
 
+    refreshCurrentUserDisplayName();
+
 if (byId("skateFlowHomeLink")) byId("skateFlowHomeLink").addEventListener("click", async function (event) {
       event.preventDefault();
       await goHome();
@@ -11016,7 +11019,14 @@ if (byId("skateFlowHomeLink")) byId("skateFlowHomeLink").addEventListener("click
         // Oppdater brukernavnet i toppmenyen uten å være avhengig av hovedscriptet.
         const label = document.getElementById("appUserLabel");
         if (label && result.data && result.data.user) {
-          label.textContent = result.data.user.email || "Konto";
+          label.textContent = "Konto";
+          try {
+            if (typeof refreshCurrentUserDisplayName === "function") {
+              await refreshCurrentUserDisplayName();
+            }
+          } catch (nameError) {
+            console.warn("Kunne ikke hente visningsnavn:", nameError);
+          }
         }
 
         // Last inn data når hovedappens funksjoner finnes.
@@ -11074,7 +11084,14 @@ if (byId("skateFlowHomeLink")) byId("skateFlowHomeLink").addEventListener("click
         setMainAppVisible(true);
         const label = document.getElementById("appUserLabel");
         if (label && session.user) {
-          label.textContent = session.user.email || "Konto";
+          label.textContent = "Konto";
+          try {
+            if (typeof refreshCurrentUserDisplayName === "function") {
+              await refreshCurrentUserDisplayName();
+            }
+          } catch (nameError) {
+            console.warn("Kunne ikke hente visningsnavn:", nameError);
+          }
         }
       }
     } catch (error) {
