@@ -1151,82 +1151,91 @@
 
 
     /* Forenklet innlevering */
+    #returnTab {
+      padding-top: 14px;
+    }
+    #returnTab .section-header {
+      margin-bottom: 8px;
+    }
     #returnTab .return-search-wrap {
       max-width: 720px;
-      margin: 22px auto 0;
-    }
-    #returnTab .return-search-label {
-      display: block;
-      font-size: 15px;
-      font-weight: 700;
-      margin-bottom: 8px;
-      text-align: center;
+      margin: 6px auto 0;
     }
     #returnTab #searchActiveLoans {
-      font-size: 28px;
+      font-size: 26px;
       font-weight: 700;
       text-align: center;
-      padding: 18px 20px;
+      padding: 14px 16px;
       border: 2px solid var(--accent);
-      border-radius: 16px;
+      border-radius: 14px;
       letter-spacing: 0.04em;
-    }
-    #returnTab .return-search-actions {
-      display: flex;
-      justify-content: center;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-top: 10px;
     }
     #returnTab .return-result-card {
       max-width: 720px;
-      margin: 18px auto 0;
+      margin: 8px auto 0;
       border: 1px solid var(--line);
-      border-radius: 18px;
+      border-radius: 14px;
       background: #fff;
-      padding: 20px;
-      box-shadow: 0 10px 24px rgba(16,35,63,0.08);
+      padding: 12px 14px;
+      box-shadow: 0 8px 18px rgba(16,35,63,0.07);
     }
-    #returnTab .return-result-skate {
-      color: var(--muted);
-      font-size: 14px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .08em;
+    #returnTab .return-result-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: nowrap;
     }
     #returnTab .return-result-code {
-      font-size: 30px;
+      font-size: 24px;
       font-weight: 700;
-      margin-top: 4px;
-    }
-    #returnTab .return-result-name-label {
-      color: var(--muted);
-      font-size: 13px;
-      margin-top: 18px;
+      white-space: nowrap;
     }
     #returnTab .return-result-name {
-      font-size: 26px;
+      font-size: 22px;
       font-weight: 700;
-      margin-top: 3px;
-    }
-    #returnTab .return-result-meta {
-      color: var(--muted);
-      margin-top: 6px;
-      font-size: 14px;
+      text-align: right;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+      flex: 1 1 auto;
     }
     #returnTab .return-confirm-button {
       width: 100%;
-      margin-top: 18px;
-      padding: 15px 18px;
-      font-size: 17px;
+      margin-top: 10px;
+      padding: 13px 16px;
+      font-size: 16px;
     }
+
     @media (max-width: 600px) {
-      #returnTab #searchActiveLoans {
-        font-size: 23px;
-        padding: 16px 14px;
+      #returnTab {
+        padding: 10px;
       }
-      #returnTab .return-result-code { font-size: 26px; }
-      #returnTab .return-result-name { font-size: 23px; }
+      #returnTab .section-header {
+        margin-bottom: 4px;
+      }
+      #returnTab h2 {
+        font-size: 20px;
+      }
+      #returnTab #searchActiveLoans {
+        font-size: 24px;
+        padding: 12px 10px;
+      }
+      #returnTab .return-result-card {
+        margin-top: 6px;
+        padding: 10px 12px;
+      }
+      #returnTab .return-result-code {
+        font-size: 20px;
+      }
+      #returnTab .return-result-name {
+        font-size: 19px;
+      }
+      #returnTab .return-confirm-button {
+        margin-top: 8px;
+        padding: 12px 14px;
+      }
     }
 
 </style>
@@ -1635,7 +1644,6 @@
 <div class="section-header">
 <div>
 <h2>Innlevering</h2>
-<div class="help" style="margin-top:8px;">Skriv serienummeret på skøyten. Du får se hvem som har lånt den før du bekrefter innleveringen.</div>
 </div>
 <span class="pill" id="loanCountPill">0 aktive</span>
 </div>
@@ -1648,20 +1656,14 @@
 <option value="">Alle grupper</option>
 </select>
 <div id="returnGroupDebug"></div>
+<button id="btnStartQrReturn" type="button"></button>
+<button id="btnStopQrReturn" type="button"></button>
+<div id="returnQrStatus"></div>
+<div id="returnQrPanel"><div id="returnReader"></div></div>
 </div>
 
 <div class="return-search-wrap">
-<label class="return-search-label" for="searchActiveLoans">Serienummer / skøyte-ID</label>
-<input id="searchActiveLoans" inputmode="text" autocomplete="off" placeholder="F.eks. 124" />
-<div class="return-search-actions">
-<button class="btn-secondary btn-small" id="btnStartQrReturn" type="button">Skann QR-kode</button>
-<button class="btn-secondary btn-small hidden" id="btnStopQrReturn" type="button">Stopp skanning</button>
-</div>
-<div class="help qr-inline-help" id="returnQrStatus" style="text-align:center;"></div>
-<div class="qr-panel hidden" id="returnQrPanel">
-<div class="help">Skann QR-koden på skøyten. Appen viser låntaker før du bekrefter innleveringen.</div>
-<div id="returnReader"></div>
-</div>
+<input id="searchActiveLoans" inputmode="text" autocomplete="off" placeholder="Skøytenummer" />
 </div>
 
 <div id="activeLoansWrap"></div>
@@ -4766,7 +4768,7 @@ function renderMembers() {
       if (!search) {
         wrap.innerHTML =
           '<div class="empty" style="max-width:720px;margin:18px auto 0;text-align:center;">' +
-          'Skriv inn serienummeret på skøyten for å finne aktivt utlån.' +
+          'Skriv skøytenummer.' +
           '</div>';
         return;
       }
@@ -4814,17 +4816,14 @@ function renderMembers() {
         const card = document.createElement("div");
         card.className = "return-result-card";
         card.innerHTML =
-          '<div class="return-result-skate">Skøyte</div>' +
-          '<div class="return-result-code"></div>' +
-          '<div class="return-result-name-label">Lånt av</div>' +
-          '<div class="return-result-name"></div>' +
-          '<div class="return-result-meta"></div>';
+          '<div class="return-result-line">' +
+            '<div class="return-result-code"></div>' +
+            '<div class="return-result-name"></div>' +
+          '</div>';
 
         card.querySelector(".return-result-code").textContent =
           skateCode + (size ? " · str. " + size : "");
         card.querySelector(".return-result-name").textContent = memberName;
-        card.querySelector(".return-result-meta").textContent =
-          loanedAt ? "Utlånt " + loanedAt : "";
 
         const button = document.createElement("button");
         button.type = "button";
@@ -4872,7 +4871,7 @@ function renderMembers() {
       const help = document.createElement("div");
       help.className = "help";
       help.textContent =
-        "Flere serienumre matcher. Skriv flere tegn eller velg riktig skøyte.";
+        "Flere treff.";
       container.appendChild(help);
 
       const list = document.createElement("div");
