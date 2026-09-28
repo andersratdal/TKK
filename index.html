@@ -1261,6 +1261,238 @@
       }
     }
 
+
+    /* SkateFlow-logo og innlogget bruker på samme linje */
+    header,
+    .app-header,
+    .topbar,
+    .top-bar {
+      align-items: center;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+
+    .user-menu-wrap {
+      display: flex;
+      align-items: center;
+      flex: 0 0 auto;
+      margin-left: auto;
+    }
+
+    .skateflow-header-logo {
+      width: min(360px, 44vw);
+      max-height: 68px;
+    }
+
+    @media (max-width: 700px) {
+      .brand {
+        flex: 1 1 auto;
+      }
+
+      .skateflow-header-logo {
+        width: min(210px, 53vw);
+        max-height: 50px;
+      }
+
+      .user-menu-wrap {
+        margin-left: 8px;
+      }
+    }
+
+
+/* SkateFlow-logo og bruker på samme faktiske topplinje */
+.app-header {
+  justify-content: space-between !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+}
+.app-header-brand {
+  display: flex;
+  align-items: center;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.app-header .skateflow-header-logo {
+  width: min(330px, 42vw) !important;
+  height: auto !important;
+  max-height: 58px !important;
+  margin: 0 !important;
+}
+.app-header .app-user-menu {
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+@media (max-width: 700px) {
+  .app-header {
+    gap: 8px;
+  }
+  .app-header .skateflow-header-logo {
+    width: min(185px, 45vw) !important;
+    max-height: 44px !important;
+  }
+  .app-header .app-user-button {
+    max-width: 49vw;
+  }
+}
+
+
+/* Hovedmeny - samme smale bredde som kompakt-versjonen */
+.landing-grid {
+display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+}
+.landing-grid, .stats {
+grid-template-columns: 1fr;
+}
+/* Kompakt hovedmeny */
+.app-menu {
+display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+.app-menu-card {
+border: 1px solid rgba(16,35,63,0.08);
+  background: #ffffff;
+  color: var(--text);
+  border-radius: 18px;
+  box-shadow: 0 8px 22px rgba(16,35,63,0.10);
+  padding: 12px 10px;
+  min-height: 82px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  cursor: pointer;
+  text-align: center;
+}
+.app-menu-card:hover {
+transform: translateY(-2px);
+  border-color: rgba(31,79,255,0.22);
+}
+.app-menu-icon {
+width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 20px;
+  line-height: 1;
+}
+.app-menu-title {
+font-size: 15px;
+  font-weight: 500;
+  line-height: 1.1;
+}
+.app-menu-card:nth-child(5) {
+grid-column: 1 / -1;
+}
+.app-menu {
+gap: 8px;
+}
+.app-menu-card {
+min-height: 72px;
+    padding: 10px 8px;
+    border-radius: 16px;
+}
+.app-menu-icon {
+width: 30px;
+    height: 30px;
+    font-size: 18px;
+}
+.app-menu-title {
+font-size: 14px;
+}
+/* Bildeikon for utlånsknappen */
+.app-menu-image-icon {
+width: 56px;
+  height: 42px;
+  object-fit: contain;
+  display: block;
+}
+.app-menu-image-icon {
+width: 50px;
+    height: 38px;
+}
+
+
+/* Hovedmeny: begrens selve menycontaineren på desktop */
+#homeView + .landing-grid.app-menu,
+.landing-grid.app-menu {
+  width: min(100%, 980px) !important;
+  max-width: 980px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* Litt smalere kort og luft mellom kolonnene */
+.landing-grid.app-menu {
+  gap: 12px !important;
+}
+
+@media (max-width: 1020px) {
+  #homeView + .landing-grid.app-menu,
+  .landing-grid.app-menu {
+    width: calc(100% - 32px) !important;
+  }
+}
+
+@media (max-width: 700px) {
+  #homeView + .landing-grid.app-menu,
+  .landing-grid.app-menu {
+    width: calc(100% - 20px) !important;
+  }
+}
+
+
+/* Skjul startsidens innhold når en undermeny er åpen */
+#mainMenu.hidden {
+  display: none !important;
+}
+
+
+/* Desktop: undersider skal ikke fylle hele skjermen */
+@media (min-width: 901px) {
+  .app-header,
+  #workspace {
+    width: min(100%, 1100px) !important;
+    max-width: 1100px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  #workspace .section-card,
+  #workspace > .section-card,
+  #workspace #adminTab,
+  #workspace #reportsTab,
+  #workspace #loanTab,
+  #workspace #returnTab,
+  #workspace #skatingSchoolTab {
+    max-width: 1100px !important;
+  }
+}
+
+/* Mobil/nettbrett beholder full tilgjengelig bredde */
+@media (max-width: 900px) {
+  .app-header,
+  #workspace {
+    width: 100% !important;
+    max-width: none !important;
+  }
+}
+
 </style>
 
 <style>
@@ -1355,6 +1587,11 @@
 <div class="container">
 
 <header class="app-header">
+  <div class="app-header-brand">
+    <a href="#" id="skateFlowHomeLink" class="skateflow-home-link" aria-label="Gå til startsiden">
+      <img src="skateflow-logo.png" alt="TKK SkateFlow" class="skateflow-header-logo"/>
+    </a>
+  </div>
   <div class="app-user-menu">
     <button class="app-user-button" id="appUserButton" type="button"
             aria-haspopup="true" aria-expanded="false" title="Brukermeny">
@@ -1553,16 +1790,10 @@
 
 
 <div id="homeView">
-<div class="brand">
-<a href="#" id="skateFlowHomeLink" class="skateflow-home-link" aria-label="Gå til startsiden">
-<img src="skateflow-logo.png" alt="TKK SkateFlow" class="skateflow-header-logo"/>
-</a>
-</div>
-<h1 class="brand-title">Skøyteutleie</h1>
-<div class="brand-subtitle">Velg arbeidsflate for å gå videre i appen.</div>
+
 </div>
 </div>
-<div class="landing-grid app-menu">
+<div class="landing-grid app-menu" id="mainMenu">
   <button class="app-menu-card" data-target="loanTab" type="button">
     <span class="app-menu-icon"><img src="utlan-skoyte-ikon.png" alt="" class="app-menu-image-icon"></span>
     <span class="app-menu-title">Utlån</span>
@@ -1589,15 +1820,13 @@
   </button>
 </div>
 <div style="display:flex; justify-content:center; margin-top:12px;">
-  <a href="pamelding.html" target="_blank" style="display:inline-block; padding:10px 16px; background:#1f4fff; color:#ffffff; border-radius:10px; text-decoration:none; font-weight:700; box-shadow:0 8px 18px rgba(31,79,255,0.18);">
+  <a href="pamelding.html" target="_blank" style="display:inline-block; padding:10px 16px; background:#1f4fff; color:#ffffff; border-radius:10px; text-decoration:none; font-weight:700; box-shadow:0 8px 18px rgba(31,79,255,0.18);" id="schoolSignupHomeCta">
     ➕ Åpne påmeldingsskjema for skøyteskole
   </a>
 </div>
 </div>
 <div class="workspace" id="workspace">
-<div class="back-row" id="backRow">
-<button class="btn-secondary" id="backBtn" type="button">← Til forsiden</button>
-</div>
+<div id="backRow" class="hidden"></div>
 <div class="section-card hidden" id="loanTab">
 <h2>Registrer utlån</h2>
 <div class="help" style="margin-top:8px;">Velg gruppe, medlem og ledig skøyte.</div>
@@ -2535,6 +2764,8 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
       await stopLoanMemberQrScanner();
       await stopLoanMemberQrScanner();
       byId("homeView").classList.add("hidden");
+      if (byId("mainMenu")) byId("mainMenu").classList.add("hidden");
+      if (byId("schoolSignupHomeCta")) byId("schoolSignupHomeCta").classList.add("hidden");
       byId("workspace").classList.add("active");
       byId("backRow").classList.add("visible");
       ["loanTab", "returnTab", "adminTab", "reportsTab", "skatingSchoolTab"].forEach((id) => {
@@ -2560,6 +2791,8 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
       await stopLoanQrScanner();
       await stopReturnQrScanner();
       byId("homeView").classList.remove("hidden");
+      if (byId("mainMenu")) byId("mainMenu").classList.remove("hidden");
+      if (byId("schoolSignupHomeCta")) byId("schoolSignupHomeCta").classList.remove("hidden");
       byId("workspace").classList.remove("active");
       byId("backRow").classList.remove("visible");
       ["loanTab", "returnTab", "adminTab", "reportsTab", "skatingSchoolTab"].forEach((id) => {
@@ -9659,7 +9892,7 @@ async function loadAll() {
       );
     }
 
-    byId("backBtn").addEventListener("click", goHome);
+    if (byId("backBtn")) byId("backBtn").addEventListener("click", goHome);
 
     if (byId("schoolBatchForm")) byId("schoolBatchForm").addEventListener("submit", async function (e) {
       e.preventDefault();
