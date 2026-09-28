@@ -1750,7 +1750,27 @@ width: 50px;
       try {
         const sessionResult = await authClient.auth.getSession();
         const session = sessionResult?.data?.session || null;
-        label.textContent = session?.user?.email || "Konto";
+        const authUser = session?.user || null;
+        let displayName =
+          authUser?.user_metadata?.full_name ||
+          authUser?.user_metadata?.name ||
+          authUser?.user_metadata?.display_name ||
+          "";
+
+        if (authUser?.id) {
+          try {
+            const roleResult = await authClient
+              .from("app_user_roles")
+              .select("display_name")
+              .eq("user_id", authUser.id)
+              .maybeSingle();
+            displayName = roleResult?.data?.display_name || displayName;
+          } catch (nameError) {
+            console.warn("Kunne ikke hente visningsnavn:", nameError);
+          }
+        }
+
+        label.textContent = displayName || "Konto";
       } catch (error) {
         console.warn("Kunne ikke hente bruker:", error);
         label.textContent = "Konto";
