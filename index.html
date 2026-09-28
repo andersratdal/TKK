@@ -1149,6 +1149,428 @@
       align-items: end;
     }
 
+
+    /* Forenklet innlevering */
+    #returnTab {
+      padding-top: 14px;
+    }
+    #returnTab .section-header {
+      margin-bottom: 8px;
+    }
+    #returnTab .return-search-wrap {
+      max-width: 720px;
+      margin: 6px auto 0;
+    }
+    #returnTab #searchActiveLoans {
+      font-size: 26px;
+      font-weight: 700;
+      text-align: center;
+      padding: 14px 16px;
+      border: 2px solid var(--accent);
+      border-radius: 14px;
+      letter-spacing: 0.04em;
+    }
+    #returnTab .return-result-card {
+      max-width: 720px;
+      margin: 8px auto 0;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fff;
+      padding: 12px 14px;
+      box-shadow: 0 8px 18px rgba(16,35,63,0.07);
+    }
+    #returnTab .return-result-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: nowrap;
+    }
+    #returnTab .return-result-code {
+      font-size: 24px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    #returnTab .return-result-name {
+      font-size: 22px;
+      font-weight: 700;
+      text-align: right;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+    #returnTab .return-confirm-button {
+      width: 100%;
+      margin-top: 10px;
+      padding: 13px 16px;
+      font-size: 16px;
+    }
+
+    @media (max-width: 600px) {
+      #returnTab {
+        padding: 10px;
+      }
+      #returnTab .section-header {
+        margin-bottom: 4px;
+      }
+      #returnTab h2 {
+        font-size: 20px;
+      }
+      #returnTab #searchActiveLoans {
+        font-size: 24px;
+        padding: 12px 10px;
+      }
+      #returnTab .return-result-card {
+        margin-top: 6px;
+        padding: 10px 12px;
+      }
+      #returnTab .return-result-code {
+        font-size: 20px;
+      }
+      #returnTab .return-result-name {
+        font-size: 19px;
+      }
+      #returnTab .return-confirm-button {
+        margin-top: 8px;
+        padding: 12px 14px;
+      }
+    }
+
+
+    .skateflow-home-link {
+      display: inline-flex;
+      align-items: center;
+      text-decoration: none;
+      line-height: 0;
+      cursor: pointer;
+    }
+    .skateflow-header-logo {
+      display: block;
+      width: min(420px, 48vw);
+      height: auto;
+      max-height: 82px;
+      object-fit: contain;
+      object-position: left center;
+    }
+    @media (max-width: 700px) {
+      .skateflow-header-logo {
+        width: min(250px, 62vw);
+        max-height: 58px;
+      }
+    }
+
+
+    /* SkateFlow-logo og innlogget bruker på samme linje */
+    header,
+    .app-header,
+    .topbar,
+    .top-bar {
+      align-items: center;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+
+    .user-menu-wrap {
+      display: flex;
+      align-items: center;
+      flex: 0 0 auto;
+      margin-left: auto;
+    }
+
+    .skateflow-header-logo {
+      width: min(360px, 44vw);
+      max-height: 68px;
+    }
+
+    @media (max-width: 700px) {
+      .brand {
+        flex: 1 1 auto;
+      }
+
+      .skateflow-header-logo {
+        width: min(210px, 53vw);
+        max-height: 50px;
+      }
+
+      .user-menu-wrap {
+        margin-left: 8px;
+      }
+    }
+
+
+/* SkateFlow-logo og bruker på samme faktiske topplinje */
+.app-header {
+  justify-content: space-between !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+}
+.app-header-brand {
+  display: flex;
+  align-items: center;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.app-header .skateflow-header-logo {
+  width: min(330px, 42vw) !important;
+  height: auto !important;
+  max-height: 58px !important;
+  margin: 0 !important;
+}
+.app-header .app-user-menu {
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+@media (max-width: 700px) {
+  .app-header {
+    gap: 8px;
+  }
+  .app-header .skateflow-header-logo {
+    width: min(185px, 45vw) !important;
+    max-height: 44px !important;
+  }
+  .app-header .app-user-button {
+    max-width: 49vw;
+  }
+}
+
+
+/* Hovedmeny - samme smale bredde som kompakt-versjonen */
+.landing-grid {
+display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+}
+.landing-grid, .stats {
+grid-template-columns: 1fr;
+}
+/* Kompakt hovedmeny */
+.app-menu {
+display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+.app-menu-card {
+border: 1px solid rgba(16,35,63,0.08);
+  background: #ffffff;
+  color: var(--text);
+  border-radius: 18px;
+  box-shadow: 0 8px 22px rgba(16,35,63,0.10);
+  padding: 12px 10px;
+  min-height: 82px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  cursor: pointer;
+  text-align: center;
+}
+.app-menu-card:hover {
+transform: translateY(-2px);
+  border-color: rgba(31,79,255,0.22);
+}
+.app-menu-icon {
+width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 20px;
+  line-height: 1;
+}
+.app-menu-title {
+font-size: 15px;
+  font-weight: 500;
+  line-height: 1.1;
+}
+.app-menu-card:nth-child(5) {
+grid-column: 1 / -1;
+}
+.app-menu {
+gap: 8px;
+}
+.app-menu-card {
+min-height: 72px;
+    padding: 10px 8px;
+    border-radius: 16px;
+}
+.app-menu-icon {
+width: 30px;
+    height: 30px;
+    font-size: 18px;
+}
+.app-menu-title {
+font-size: 14px;
+}
+/* Bildeikon for utlånsknappen */
+.app-menu-image-icon {
+width: 56px;
+  height: 42px;
+  object-fit: contain;
+  display: block;
+}
+.app-menu-image-icon {
+width: 50px;
+    height: 38px;
+}
+
+
+/* Hovedmeny: begrens selve menycontaineren på desktop */
+#homeView + .landing-grid.app-menu,
+.landing-grid.app-menu {
+  width: min(100%, 980px) !important;
+  max-width: 980px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* Litt smalere kort og luft mellom kolonnene */
+.landing-grid.app-menu {
+  gap: 12px !important;
+}
+
+@media (max-width: 1020px) {
+  #homeView + .landing-grid.app-menu,
+  .landing-grid.app-menu {
+    width: calc(100% - 32px) !important;
+  }
+}
+
+@media (max-width: 700px) {
+  #homeView + .landing-grid.app-menu,
+  .landing-grid.app-menu {
+    width: calc(100% - 20px) !important;
+  }
+}
+
+
+/* Skjul startsidens innhold når en undermeny er åpen */
+#mainMenu.hidden {
+  display: none !important;
+}
+
+
+/* Desktop: undersider skal ikke fylle hele skjermen */
+@media (min-width: 901px) {
+  .app-header,
+  #workspace {
+    width: min(100%, 1100px) !important;
+    max-width: 1100px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  #workspace .section-card,
+  #workspace > .section-card,
+  #workspace #adminTab,
+  #workspace #reportsTab,
+  #workspace #loanTab,
+  #workspace #returnTab,
+  #workspace #skatingSchoolTab {
+    max-width: 1100px !important;
+  }
+}
+
+/* Mobil/nettbrett beholder full tilgjengelig bredde */
+@media (max-width: 900px) {
+  .app-header,
+  #workspace {
+    width: 100% !important;
+    max-width: none !important;
+  }
+}
+
+
+/* Hamburgermeny i toppfeltet */
+.app-nav-menu {
+  position: relative;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+.app-nav-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid #bfd2ef;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--text);
+  font-size: 23px;
+  line-height: 1;
+  cursor: pointer;
+}
+.app-nav-button:hover {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.app-nav-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 190px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 14px 32px rgba(16,35,63,0.16);
+  z-index: 1200;
+}
+.app-nav-dropdown.hidden {
+  display: none !important;
+}
+.app-nav-dropdown button {
+  display: block;
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.app-nav-dropdown button:hover {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.app-header .app-user-menu {
+  margin-left: 6px !important;
+}
+@media (max-width: 700px) {
+  .app-nav-button {
+    width: 38px;
+    height: 38px;
+  }
+  .app-nav-dropdown {
+    min-width: 180px;
+  }
+}
+
+
+/* Hard auth lock: appinnhold kan ikke vises før Auth Guard åpner det */
+body.auth-locked > .container {
+  display: none !important;
+}
+
 </style>
 
 <style>
@@ -1239,10 +1661,28 @@
 
 <script src="env-config.js"></script>
 </head>
-<body>
+<body class="auth-locked">
 <div class="container">
 
 <header class="app-header">
+  <div class="app-header-brand">
+    <a href="#" id="skateFlowHomeLink" class="skateflow-home-link" aria-label="Gå til startsiden">
+      <img src="skateflow-logo.png" alt="TKK SkateFlow" class="skateflow-header-logo"/>
+    </a>
+  </div>
+  <div class="app-nav-menu">
+    <button class="app-nav-button" id="appNavButton" type="button"
+            aria-haspopup="true" aria-expanded="false" aria-label="Åpne meny" title="Meny">
+      <span aria-hidden="true">☰</span>
+    </button>
+    <div class="app-nav-dropdown hidden" id="appNavDropdown">
+      <button type="button" data-nav-target="loanTab">Utlån</button>
+      <button type="button" data-nav-target="returnTab">Innlevering</button>
+      <button type="button" data-nav-target="skatingSchoolTab">Skøyteskole</button>
+      <button type="button" data-nav-target="adminTab">Admin</button>
+      <button type="button" data-nav-target="reportsTab">Rapporter</button>
+    </div>
+  </div>
   <div class="app-user-menu">
     <button class="app-user-button" id="appUserButton" type="button"
             aria-haspopup="true" aria-expanded="false" title="Brukermeny">
@@ -1316,7 +1756,28 @@
       try {
         const sessionResult = await authClient.auth.getSession();
         const session = sessionResult?.data?.session || null;
-        label.textContent = session?.user?.email || "Konto";
+        if (session?.access_token) {
+          try {
+            const response = await fetch("/.netlify/functions/admin-users?mode=me", {
+              method: "GET",
+              headers: {
+                "Accept": "application/json",
+                "Authorization": "Bearer " + session.access_token
+              }
+            });
+            const payload = await response.json();
+            if (response.ok && payload?.user) {
+              label.textContent = payload.user.display_name || "Konto";
+            } else {
+              label.textContent = "Konto";
+            }
+          } catch (nameError) {
+            console.warn("Kunne ikke hente visningsnavn:", nameError);
+            label.textContent = "Konto";
+          }
+        } else {
+          label.textContent = "Konto";
+        }
       } catch (error) {
         console.warn("Kunne ikke hente bruker:", error);
         label.textContent = "Konto";
@@ -1441,15 +1902,7 @@
 
 
 <div id="homeView">
-<div class="brand">
-<img alt="Trondheim Kortbaneklubb" src="logo.png"/>
-<div class="brand-text">
-<div class="eyebrow">Trondheim Kortbaneklubb</div>
-<h1 class="brand-title">Skøyteutleie</h1>
-<div class="brand-subtitle">Velg arbeidsflate for å gå videre i appen.</div>
-</div>
-</div>
-<div class="landing-grid app-menu">
+<div class="landing-grid app-menu" id="mainMenu">
   <button class="app-menu-card" data-target="loanTab" type="button">
     <span class="app-menu-icon"><img src="utlan-skoyte-ikon.png" alt="" class="app-menu-image-icon"></span>
     <span class="app-menu-title">Utlån</span>
@@ -1476,15 +1929,13 @@
   </button>
 </div>
 <div style="display:flex; justify-content:center; margin-top:12px;">
-  <a href="pamelding.html" target="_blank" style="display:inline-block; padding:10px 16px; background:#1f4fff; color:#ffffff; border-radius:10px; text-decoration:none; font-weight:700; box-shadow:0 8px 18px rgba(31,79,255,0.18);">
+  <a href="pamelding.html" target="_blank" style="display:inline-block; padding:10px 16px; background:#1f4fff; color:#ffffff; border-radius:10px; text-decoration:none; font-weight:700; box-shadow:0 8px 18px rgba(31,79,255,0.18);" id="schoolSignupHomeCta">
     ➕ Åpne påmeldingsskjema for skøyteskole
   </a>
 </div>
 </div>
 <div class="workspace" id="workspace">
-<div class="back-row" id="backRow">
-<button class="btn-secondary" id="backBtn" type="button">← Til forsiden</button>
-</div>
+<div id="backRow" class="hidden"></div>
 <div class="section-card hidden" id="loanTab">
 <h2>Registrer utlån</h2>
 <div class="help" style="margin-top:8px;">Velg gruppe, medlem og ledig skøyte.</div>
@@ -1555,27 +2006,28 @@
 <div class="section-header">
 <div>
 <h2>Innlevering</h2>
-<div class="help" style="margin-top:8px;">Søk på skøyte-ID eller navn. Klikk «Lever inn» når skøytene kommer tilbake.</div>
 </div>
 <span class="pill" id="loanCountPill">0 aktive</span>
 </div>
-<div class="toolbar" style="margin-top: 12px;">
+
+<div class="hidden" aria-hidden="true">
 <select id="returnDepartmentFilter">
 <option value="">Alle avdelinger</option>
 </select>
 <select id="returnGroupFilter">
 <option value="">Alle grupper</option>
 </select>
-<div class="help" id="returnGroupDebug" style="margin-top:6px; min-width:260px;"></div>
-<input id="searchActiveLoans" placeholder="Søk på skøyte-ID eller navn..."/>
-<button class="btn-secondary btn-small" id="btnStartQrReturn" type="button">Skann skøyte</button>
-<button class="btn-secondary btn-small hidden" id="btnStopQrReturn" type="button">Stopp skanning</button>
+<div id="returnGroupDebug"></div>
+<button id="btnStartQrReturn" type="button"></button>
+<button id="btnStopQrReturn" type="button"></button>
+<div id="returnQrStatus"></div>
+<div id="returnQrPanel"><div id="returnReader"></div></div>
 </div>
-<div class="help qr-inline-help" id="returnQrStatus"></div>
-<div class="qr-panel hidden" id="returnQrPanel">
-<div class="help">Skann skøyten for å finne aktivt utlån. Hvis det bare finnes ett treff, blir den innlevert automatisk.</div>
-<div id="returnReader"></div>
+
+<div class="return-search-wrap">
+<input id="searchActiveLoans" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="Skøytenummer" />
 </div>
+
 <div id="activeLoansWrap"></div>
 </div>
 
@@ -2421,6 +2873,8 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
       await stopLoanMemberQrScanner();
       await stopLoanMemberQrScanner();
       byId("homeView").classList.add("hidden");
+      if (byId("mainMenu")) byId("mainMenu").classList.add("hidden");
+      if (byId("schoolSignupHomeCta")) byId("schoolSignupHomeCta").classList.add("hidden");
       byId("workspace").classList.add("active");
       byId("backRow").classList.add("visible");
       ["loanTab", "returnTab", "adminTab", "reportsTab", "skatingSchoolTab"].forEach((id) => {
@@ -2429,12 +2883,25 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
       });
       const target = byId(sectionId);
       if (target) target.classList.remove("hidden");
+
+      if (sectionId === "returnTab") {
+        const search = byId("searchActiveLoans");
+        if (search) {
+          search.value = "";
+          renderActiveLoans();
+          setTimeout(function () {
+            try { search.focus(); } catch (_) {}
+          }, 50);
+        }
+      }
     }
 
     async function goHome() {
       await stopLoanQrScanner();
       await stopReturnQrScanner();
       byId("homeView").classList.remove("hidden");
+      if (byId("mainMenu")) byId("mainMenu").classList.remove("hidden");
+      if (byId("schoolSignupHomeCta")) byId("schoolSignupHomeCta").classList.remove("hidden");
       byId("workspace").classList.remove("active");
       byId("backRow").classList.remove("visible");
       ["loanTab", "returnTab", "adminTab", "reportsTab", "skatingSchoolTab"].forEach((id) => {
@@ -4086,7 +4553,7 @@ function attachSortHandlers() {
       try {
         const payload = await adminUsersRequest("GET", undefined, "mode=me");
         if (payload && payload.user) {
-          label.textContent = payload.user.display_name || payload.user.email || "Konto";
+          label.textContent = payload.user.display_name || "Konto";
         }
       } catch (_) {
         // E-post-fallback settes allerede av auth-koden.
@@ -4659,101 +5126,151 @@ function renderMembers() {
 
     function renderActiveLoans() {
       const wrap = byId("activeLoansWrap");
-      const search = byId("searchActiveLoans").value.trim().toLowerCase();
-      const departmentFilter = byId("returnDepartmentFilter") ? byId("returnDepartmentFilter").value : "";
-      const selectedGroupId = byId("returnGroupFilter") ? String(byId("returnGroupFilter").value || "") : "";
-      let rows = state.loans.filter((loan) => !loan.returned_at);
+      const searchEl = byId("searchActiveLoans");
+      const search = String((searchEl && searchEl.value) || "").trim().toLowerCase();
 
-      if (departmentFilter) {
-        rows = rows.filter((loan) => String(loan.department_id || "") === String(departmentFilter));
+      if (!wrap) return;
+
+      if (!search) {
+        wrap.innerHTML =
+          '<div class="empty" style="max-width:720px;margin:18px auto 0;text-align:center;">' +
+          'Skriv skøytenummer.' +
+          '</div>';
+        return;
       }
 
-      if (selectedGroupId) {
-        rows = rows.filter((loan) => {
-          const memberId = loan.member_id;
-          const memberGroupIds = state.memberGroups
-            .filter((mg) => sameId(mg.member_id, memberId))
-            .map((mg) => mg.group_id);
-          return memberGroupIds.some((groupId) => sameId(groupId, selectedGroupId));
+      const rows = (state.loans || [])
+        .filter((loan) => !loan.returned_at)
+        .filter((loan) => {
+          const skateCode = String((loan.skates && loan.skates.skate_code) || "")
+            .trim()
+            .toLowerCase();
+          return skateCode.includes(search);
+        })
+        .sort((a, b) => {
+          const aCode = String((a.skates && a.skates.skate_code) || "");
+          const bCode = String((b.skates && b.skates.skate_code) || "");
+          return aCode.localeCompare(bCode, "no", { numeric: true });
         });
-      }
-
-      if (search) {
-        rows = rows.filter((loan) => {
-          const skateCode = String((loan.skates && loan.skates.skate_code) || "").toLowerCase();
-          const memberName = String((loan.members && loan.members.name) || "").toLowerCase();
-          return skateCode.includes(search) || memberName.includes(search);
-        });
-      }
 
       if (!rows.length) {
-        wrap.innerHTML = '<div class="empty">' + (search ? "Ingen aktive utlån matcher søket." : "Ingen aktive utlån akkurat nå.") + '</div>';
+        wrap.innerHTML =
+          '<div class="empty" style="max-width:720px;margin:18px auto 0;text-align:center;">' +
+          'Fant ingen aktivt utlånt skøyte med serienummer <strong>' +
+          escapeHtml(searchEl ? searchEl.value.trim() : search) +
+          '</strong>.' +
+          '</div>';
         return;
       }
 
-      const isMobileLayout = window.innerWidth <= 700;
+      // Prioriter eksakt serienummer dersom det finnes.
+      const exactRows = rows.filter((loan) =>
+        String((loan.skates && loan.skates.skate_code) || "")
+          .trim()
+          .toLowerCase() === search
+      );
 
-      if (isMobileLayout) {
-        const list = document.createElement("div");
-        list.className = "loan-card-list";
+      const selectedRows = exactRows.length === 1 ? exactRows : rows;
 
-        for (const loan of rows) {
-          const card = document.createElement("div");
-          card.className = "loan-card";
+      if (selectedRows.length === 1) {
+        const loan = selectedRows[0];
+        const skateCode = safeText(loan.skates && loan.skates.skate_code);
+        const size = loan.skates && loan.skates.size ? String(loan.skates.size) : "";
+        const memberName = safeText(loan.members && loan.members.name);
+        const loanedAt = loan.loaned_at ? formatDate(loan.loaned_at) : "";
 
-          let skateLabel = safeText(loan.skates && loan.skates.skate_code);
-          if (loan.skates && loan.skates.size) skateLabel += " (str " + loan.skates.size + ")";
+        const card = document.createElement("div");
+        card.className = "return-result-card";
+        card.innerHTML =
+          '<div class="return-result-line">' +
+            '<div class="return-result-code"></div>' +
+            '<div class="return-result-name"></div>' +
+          '</div>';
 
-          const memberName = safeText(loan.members && loan.members.name);
-          card.innerHTML = "<div class='loan-card-title'></div><div class='loan-card-actions'></div>";
-          card.querySelector(".loan-card-title").textContent = memberName + " - " + skateLabel;
+        card.querySelector(".return-result-code").textContent =
+          skateCode + (size ? " · str. " + size : "");
+        card.querySelector(".return-result-name").textContent = memberName;
 
-          const actions = card.querySelector(".loan-card-actions");
-          const btn = document.createElement("button");
-          btn.className = "btn-primary btn-small";
-          btn.textContent = "Lever inn";
-          btn.addEventListener("click", async function () {
-            const ok = confirm("Registrere innlevering av skøyte " + safeText(loan.skates && loan.skates.skate_code) + " for " + safeText(loan.members && loan.members.name) + "?");
-            if (!ok) return;
-            await returnLoan(loan.id);
-          });
-          actions.appendChild(btn);
-          list.appendChild(card);
-        }
-
-        wrap.innerHTML = "";
-        wrap.appendChild(list);
-        return;
-      }
-
-      const table = document.createElement("table");
-      table.innerHTML = "<thead><tr><th>Avdeling</th><th>Skøyte</th><th>Medlem</th><th>Kontakt</th><th>Utlånt</th><th>Handling</th></tr></thead>";
-      const tbody = document.createElement("tbody");
-      for (const loan of rows) {
-        const tr = document.createElement("tr");
-        tr.innerHTML = "<td data-label='Avdeling'></td><td data-label='Skøyte'></td><td data-label='Medlem'></td><td data-label='Kontakt'></td><td data-label='Utlånt'></td><td data-label='Handling'></td>";
-        let skateLabel = safeText(loan.skates && loan.skates.skate_code);
-        if (loan.skates && loan.skates.size) skateLabel += " (str " + loan.skates.size + ")";
-        tr.children[0].textContent = safeText(loan.departments && loan.departments.name);
-        tr.children[1].textContent = skateLabel;
-        tr.children[2].textContent = safeText(loan.members && loan.members.name);
-        tr.children[3].textContent = safeText((loan.members && (loan.members.phone || loan.members.email)) || "");
-        tr.children[4].textContent = formatDate(loan.loaned_at);
-
-        const btn = document.createElement("button");
-        btn.className = "btn-primary btn-small";
-        btn.textContent = "Lever inn";
-        btn.addEventListener("click", async function () {
-          const ok = confirm("Registrere innlevering av skøyte " + safeText(loan.skates && loan.skates.skate_code) + " for " + safeText(loan.members && loan.members.name) + "?");
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "btn-primary return-confirm-button";
+        button.textContent = "Bekreft innlevering";
+        button.addEventListener("click", async function () {
+          const ok = window.confirm(
+            "Bekrefte innlevering?\n\n" +
+            "Skøyte: " + skateCode + "\n" +
+            "Lånt av: " + memberName
+          );
           if (!ok) return;
-          await returnLoan(loan.id);
+
+          button.disabled = true;
+          button.textContent = "Registrerer ...";
+
+          try {
+            await returnLoan(loan.id);
+            if (searchEl) {
+              searchEl.value = "";
+              searchEl.focus();
+            }
+            setQrStatus(
+              "returnQrStatus",
+              "Innlevering registrert for " + skateCode + " (" + memberName + ").",
+              false
+            );
+            renderActiveLoans();
+          } catch (error) {
+            console.error(error);
+            button.disabled = false;
+            button.textContent = "Bekreft innlevering";
+          }
         });
-        tr.children[5].appendChild(btn);
-        tbody.appendChild(tr);
+
+        card.appendChild(button);
+        wrap.innerHTML = "";
+        wrap.appendChild(card);
+        return;
       }
-      table.appendChild(tbody);
+
+      const container = document.createElement("div");
+      container.className = "return-result-card";
+
+      const help = document.createElement("div");
+      help.className = "help";
+      help.textContent =
+        "Flere treff.";
+      container.appendChild(help);
+
+      const list = document.createElement("div");
+      list.className = "loan-card-list";
+
+      selectedRows.forEach((loan) => {
+        const skateCode = safeText(loan.skates && loan.skates.skate_code);
+        const memberName = safeText(loan.members && loan.members.name);
+
+        const row = document.createElement("button");
+        row.type = "button";
+        row.className = "loan-card";
+        row.style.width = "100%";
+        row.style.textAlign = "left";
+        row.innerHTML =
+          '<div class="loan-card-title"></div>' +
+          '<div class="help" style="margin-top:4px;"></div>';
+        row.querySelector(".loan-card-title").textContent = skateCode;
+        row.querySelector(".help").textContent = "Lånt av " + memberName;
+
+        row.addEventListener("click", function () {
+          if (searchEl) {
+            searchEl.value = skateCode;
+            renderActiveLoans();
+          }
+        });
+
+        list.appendChild(row);
+      });
+
+      container.appendChild(list);
       wrap.innerHTML = "";
-      wrap.appendChild(table);
+      wrap.appendChild(container);
     }
 
     function renderHistory() {
@@ -9065,26 +9582,43 @@ async function loadAll() {
       const normalized = normalizeQrText(decodedText);
       if (!normalized || normalized === returnQrLastText) return;
       returnQrLastText = normalized;
+
       const skate = findSkateByQrText(normalized, false);
+
       if (!skate) {
-        setQrStatus("returnQrStatus", "Fant ingen skøyte med kode " + normalized + ".", true);
+        setQrStatus(
+          "returnQrStatus",
+          "Fant ingen skøyte med kode " + normalized + ".",
+          true
+        );
         setTimeout(function () { returnQrLastText = ""; }, 1500);
         return;
       }
-      const loan = state.loans.find((item) => item.skate_id === skate.id && !item.returned_at);
-      if (!loan) {
-        byId("searchActiveLoans").value = String(skate.skate_code || "");
-        renderActiveLoans();
-        setQrStatus("returnQrStatus", "Skøyte " + skate.skate_code + " er ikke registrert som utlånt.", true);
-        await stopReturnQrScanner();
-        return;
-      }
-      setQrStatus("returnQrStatus", "Fant aktivt utlån på " + skate.skate_code + ". Registrerer innlevering ...", false);
-      await stopReturnQrScanner();
-      await returnLoan(loan.id);
+
+      const loan = state.loans.find(
+        (item) => item.skate_id === skate.id && !item.returned_at
+      );
+
       byId("searchActiveLoans").value = String(skate.skate_code || "");
       renderActiveLoans();
-      setQrStatus("returnQrStatus", "Innlevering registrert for " + skate.skate_code + ".", false);
+      await stopReturnQrScanner();
+
+      if (!loan) {
+        setQrStatus(
+          "returnQrStatus",
+          "Skøyte " + skate.skate_code + " er ikke registrert som utlånt.",
+          true
+        );
+        return;
+      }
+
+      const memberName = safeText(loan.members && loan.members.name);
+      setQrStatus(
+        "returnQrStatus",
+        "Fant " + skate.skate_code + " – lånt av " + memberName +
+        ". Kontroller navnet og bekreft innleveringen under.",
+        false
+      );
     }
 
     async function startReturnQrScanner() {
@@ -9467,7 +10001,7 @@ async function loadAll() {
       );
     }
 
-    byId("backBtn").addEventListener("click", goHome);
+    if (byId("backBtn")) byId("backBtn").addEventListener("click", goHome);
 
     if (byId("schoolBatchForm")) byId("schoolBatchForm").addEventListener("submit", async function (e) {
       e.preventDefault();
@@ -9679,6 +10213,43 @@ attachSortHandlers();
     if (byId("btnExportSkatesReport")) byId("btnExportSkatesReport").addEventListener("click", exportSkatesReportCsv);
     if (byId("btnExportArchivedSkatesReport")) byId("btnExportArchivedSkatesReport").addEventListener("click", exportArchivedSkatesReportCsv);
     if (byId("btnExportMembersReport")) byId("btnExportMembersReport").addEventListener("click", exportMembersReportCsv);
+    
+    if (byId("appNavButton")) {
+      byId("appNavButton").addEventListener("click", function (event) {
+        event.stopPropagation();
+        const dropdown = byId("appNavDropdown");
+        if (!dropdown) return;
+        const opening = dropdown.classList.contains("hidden");
+        dropdown.classList.toggle("hidden");
+        this.setAttribute("aria-expanded", opening ? "true" : "false");
+      });
+    }
+
+    if (byId("appNavDropdown")) {
+      byId("appNavDropdown").querySelectorAll("[data-nav-target]").forEach(function (button) {
+        button.addEventListener("click", async function () {
+          const target = this.getAttribute("data-nav-target");
+          byId("appNavDropdown").classList.add("hidden");
+          if (byId("appNavButton")) byId("appNavButton").setAttribute("aria-expanded", "false");
+          await showSection(target);
+        });
+      });
+    }
+
+    document.addEventListener("click", function (event) {
+      const menu = document.querySelector(".app-nav-menu");
+      const dropdown = byId("appNavDropdown");
+      if (!menu || !dropdown || menu.contains(event.target)) return;
+      dropdown.classList.add("hidden");
+      if (byId("appNavButton")) byId("appNavButton").setAttribute("aria-expanded", "false");
+    });
+
+    refreshCurrentUserDisplayName();
+
+if (byId("skateFlowHomeLink")) byId("skateFlowHomeLink").addEventListener("click", async function (event) {
+      event.preventDefault();
+      await goHome();
+    });
     if (byId("btnCloseLoanSuccess")) byId("btnCloseLoanSuccess").addEventListener("click", closeLoanSuccessModal);
     if (byId("btnStartQrLoan")) byId("btnStartQrLoan").addEventListener("click", async function () { await startLoanQrScanner(); });
     if (byId("btnStopQrLoan")) byId("btnStopQrLoan").addEventListener("click", async function () { await stopLoanQrScanner(); setQrStatus("loanQrStatus", "QR-skanning stoppet.", false); });
@@ -9702,9 +10273,10 @@ attachSortHandlers();
     byId("loanDate").value = nowLocalInputValue();
     if (byId("existingLoansDate")) byId("existingLoansDate").value = "2025-01-01";
     const started = initFromSavedConfig();
-    if (started) {
-      loadAll();
-      startAutoRefresh();
+    // Data lastes først etter at Auth Guard har bekreftet en gyldig sesjon.
+    // Dette hindrer at appen blir funksjonell før innlogging.
+    if (!started) {
+      console.warn("Supabase-oppsett mangler eller kunne ikke startes.");
     }
   
 
@@ -10303,7 +10875,13 @@ attachSortHandlers();
 
   function setMainAppVisible(visible) {
     const app = document.querySelector("body > .container");
-    if (app) app.style.display = visible ? "" : "none";
+    if (visible) {
+      document.body.classList.remove("auth-locked");
+      if (app) app.style.removeProperty("display");
+    } else {
+      document.body.classList.add("auth-locked");
+      if (app) app.style.setProperty("display", "none", "important");
+    }
   }
 
   function removeAuthLoginView() {
@@ -10314,6 +10892,9 @@ attachSortHandlers();
   function showAuthLoginView(message) {
     removeAuthLoginView();
     setMainAppVisible(false);
+    try {
+      if (typeof stopAutoRefresh === "function") stopAutoRefresh();
+    } catch (_) {}
 
     const view = document.createElement("div");
     view.id = "authLoginView";
@@ -10451,13 +11032,23 @@ attachSortHandlers();
         // Oppdater brukernavnet i toppmenyen uten å være avhengig av hovedscriptet.
         const label = document.getElementById("appUserLabel");
         if (label && result.data && result.data.user) {
-          label.textContent = result.data.user.email || "Konto";
+          label.textContent = "Konto";
+          try {
+            if (typeof refreshCurrentUserDisplayName === "function") {
+              await refreshCurrentUserDisplayName();
+            }
+          } catch (nameError) {
+            console.warn("Kunne ikke hente visningsnavn:", nameError);
+          }
         }
 
         // Last inn data når hovedappens funksjoner finnes.
         try {
           if (typeof loadAll === "function") await loadAll();
           if (typeof startAutoRefresh === "function") startAutoRefresh();
+          if (typeof refreshCurrentUserDisplayName === "function") {
+            await refreshCurrentUserDisplayName();
+          }
         } catch (error) {
           console.warn("Kunne ikke laste appdata etter innlogging:", error);
         }
@@ -10507,9 +11098,24 @@ attachSortHandlers();
         showAuthLoginView("");
       } else {
         setMainAppVisible(true);
+
+        try {
+          if (typeof loadAll === "function") await loadAll();
+          if (typeof startAutoRefresh === "function") startAutoRefresh();
+        } catch (loadError) {
+          console.warn("Kunne ikke laste appdata etter session-kontroll:", loadError);
+        }
+
         const label = document.getElementById("appUserLabel");
         if (label && session.user) {
-          label.textContent = session.user.email || "Konto";
+          label.textContent = "Konto";
+          try {
+            if (typeof refreshCurrentUserDisplayName === "function") {
+              await refreshCurrentUserDisplayName();
+            }
+          } catch (nameError) {
+            console.warn("Kunne ikke hente visningsnavn:", nameError);
+          }
         }
       }
     } catch (error) {
