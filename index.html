@@ -1238,6 +1238,29 @@
       }
     }
 
+
+    .skateflow-home-link {
+      display: inline-flex;
+      align-items: center;
+      text-decoration: none;
+      line-height: 0;
+      cursor: pointer;
+    }
+    .skateflow-header-logo {
+      display: block;
+      width: min(420px, 48vw);
+      height: auto;
+      max-height: 82px;
+      object-fit: contain;
+      object-position: left center;
+    }
+    @media (max-width: 700px) {
+      .skateflow-header-logo {
+        width: min(250px, 62vw);
+        max-height: 58px;
+      }
+    }
+
 </style>
 
 <style>
@@ -1531,9 +1554,10 @@
 
 <div id="homeView">
 <div class="brand">
-<img alt="Trondheim Kortbaneklubb" src="logo.png"/>
-<div class="brand-text">
-<div class="eyebrow">Trondheim Kortbaneklubb</div>
+<a href="#" id="skateFlowHomeLink" class="skateflow-home-link" aria-label="Gå til startsiden">
+<img src="skateflow-logo.png" alt="TKK SkateFlow" class="skateflow-header-logo"/>
+</a>
+</div>
 <h1 class="brand-title">Skøyteutleie</h1>
 <div class="brand-subtitle">Velg arbeidsflate for å gå videre i appen.</div>
 </div>
@@ -9847,6 +9871,10 @@ attachSortHandlers();
     if (byId("btnExportSkatesReport")) byId("btnExportSkatesReport").addEventListener("click", exportSkatesReportCsv);
     if (byId("btnExportArchivedSkatesReport")) byId("btnExportArchivedSkatesReport").addEventListener("click", exportArchivedSkatesReportCsv);
     if (byId("btnExportMembersReport")) byId("btnExportMembersReport").addEventListener("click", exportMembersReportCsv);
+    if (byId("skateFlowHomeLink")) byId("skateFlowHomeLink").addEventListener("click", async function (event) {
+      event.preventDefault();
+      await goHome();
+    });
     if (byId("btnCloseLoanSuccess")) byId("btnCloseLoanSuccess").addEventListener("click", closeLoanSuccessModal);
     if (byId("btnStartQrLoan")) byId("btnStartQrLoan").addEventListener("click", async function () { await startLoanQrScanner(); });
     if (byId("btnStopQrLoan")) byId("btnStopQrLoan").addEventListener("click", async function () { await stopLoanQrScanner(); setQrStatus("loanQrStatus", "QR-skanning stoppet.", false); });
