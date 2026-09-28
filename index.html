@@ -1150,47 +1150,83 @@
     }
 
 
-    /* Oppmøte / instruktørregistrering */
-    .attendance-topbar {
-      display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between;
-      margin-bottom:14px;
+    /* Forenklet innlevering */
+    #returnTab .return-search-wrap {
+      max-width: 720px;
+      margin: 22px auto 0;
     }
-    .attendance-tabs { display:flex; gap:8px; flex-wrap:wrap; }
-    .attendance-tab { background:#e7edf5; color:var(--text); }
-    .attendance-tab.active { background:var(--accent); color:#fff; }
-    .attendance-panel.hidden { display:none !important; }
-    .attendance-kpi-grid {
-      display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin:14px 0;
+    #returnTab .return-search-label {
+      display: block;
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      text-align: center;
     }
-    .attendance-kpi {
-      border:1px solid var(--line); border-radius:16px; padding:14px; background:#f8fbff;
+    #returnTab #searchActiveLoans {
+      font-size: 28px;
+      font-weight: 700;
+      text-align: center;
+      padding: 18px 20px;
+      border: 2px solid var(--accent);
+      border-radius: 16px;
+      letter-spacing: 0.04em;
     }
-    .attendance-kpi-value { font-size:26px; font-weight:700; margin-top:5px; }
-    .attendance-register-card {
-      border:1px solid #bbf7d0; background:#f0fdf4; border-radius:18px; padding:18px; margin-top:12px;
+    #returnTab .return-search-actions {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
     }
-    .attendance-register-btn {
-      width:100%; padding:16px; font-size:18px; border-radius:14px; background:#166534; color:#fff;
+    #returnTab .return-result-card {
+      max-width: 720px;
+      margin: 18px auto 0;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #fff;
+      padding: 20px;
+      box-shadow: 0 10px 24px rgba(16,35,63,0.08);
     }
-    .attendance-register-btn.registered { background:#e2e8f0; color:#334155; }
-    .attendance-history-list { display:grid; gap:10px; margin-top:12px; }
-    .attendance-history-item {
-      border:1px solid var(--line); border-radius:14px; padding:12px 14px; background:#fff;
-      display:grid; grid-template-columns:1fr auto; gap:8px; align-items:center;
+    #returnTab .return-result-skate {
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
     }
-    .attendance-matrix-wrap { overflow:auto; -webkit-overflow-scrolling:touch; max-height:620px; }
-    .attendance-matrix { min-width:720px; }
-    .attendance-matrix th:first-child,
-    .attendance-matrix td:first-child {
-      position:sticky; left:0; background:#fff; z-index:2;
+    #returnTab .return-result-code {
+      font-size: 30px;
+      font-weight: 700;
+      margin-top: 4px;
     }
-    .attendance-check {
-      width:36px; height:36px; padding:0; border-radius:10px; background:#e2e8f0; color:#64748b;
+    #returnTab .return-result-name-label {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 18px;
     }
-    .attendance-check.present { background:#16a34a; color:#fff; }
-    @media (max-width: 700px) {
-      .attendance-kpi-grid { grid-template-columns:1fr; }
-      .attendance-history-item { grid-template-columns:1fr; }
+    #returnTab .return-result-name {
+      font-size: 26px;
+      font-weight: 700;
+      margin-top: 3px;
+    }
+    #returnTab .return-result-meta {
+      color: var(--muted);
+      margin-top: 6px;
+      font-size: 14px;
+    }
+    #returnTab .return-confirm-button {
+      width: 100%;
+      margin-top: 18px;
+      padding: 15px 18px;
+      font-size: 17px;
+    }
+    @media (max-width: 600px) {
+      #returnTab #searchActiveLoans {
+        font-size: 23px;
+        padding: 16px 14px;
+      }
+      #returnTab .return-result-code { font-size: 26px; }
+      #returnTab .return-result-name { font-size: 23px; }
     }
 
 </style>
@@ -1518,12 +1554,6 @@
     <span class="app-menu-icon">📊</span>
     <span class="app-menu-title">Rapporter</span>
   </button>
-
-  <button class="app-menu-card" data-target="attendanceTab" type="button">
-    <span class="app-menu-icon">✅</span>
-    <span class="app-menu-title">Oppmøte</span>
-  </button>
-
 </div>
 <div style="display:flex; justify-content:center; margin-top:12px;">
   <a href="pamelding.html" target="_blank" style="display:inline-block; padding:10px 16px; background:#1f4fff; color:#ffffff; border-radius:10px; text-decoration:none; font-weight:700; box-shadow:0 8px 18px rgba(31,79,255,0.18);">
@@ -1601,208 +1631,39 @@
 </div>
 </form>
 </div>
-
-<div class="section-card hidden" id="attendanceTab">
-  <div class="section-header">
-    <div>
-      <h2>Oppmøte instruktører og trenere</h2>
-      <div class="help" style="margin-top:6px;">
-        Registrer oppmøte, se historikk og lag lønnsgrunnlag.
-      </div>
-    </div>
-    <div class="attendance-tabs">
-      <button class="attendance-tab active" data-attendance-view="mine" type="button">Min oppmøte</button>
-      <button class="attendance-tab attendance-admin-only hidden" data-attendance-view="register" type="button">Registrering</button>
-      <button class="attendance-tab attendance-admin-only hidden" data-attendance-view="manage" type="button">Administrasjon</button>
-      <button class="attendance-tab attendance-admin-only hidden" data-attendance-view="payroll" type="button">Lønnsgrunnlag</button>
-    </div>
-  </div>
-
-  <div class="notice hidden" id="attendanceSetupNotice"></div>
-  <div class="help" id="attendanceMessage" style="margin-top:10px;"></div>
-
-  <!-- MIN OPPMØTE -->
-  <div class="attendance-panel" id="attendanceViewMine">
-    <div class="attendance-register-card">
-      <div class="help">Dagens / neste åpne økt</div>
-      <h3 id="attendanceMyNextTitle" style="margin-top:6px;">Ingen åpen økt</h3>
-      <div class="help" id="attendanceMyNextMeta" style="margin-top:6px;"></div>
-      <button class="attendance-register-btn" id="btnAttendanceSelfRegister" type="button" disabled style="margin-top:14px;">
-        Registrer meg som til stede
-      </button>
-    </div>
-
-    <div class="attendance-kpi-grid">
-      <div class="attendance-kpi">
-        <div class="help">Mine økter i valgt periode</div>
-        <div class="attendance-kpi-value" id="attendanceMySessions">0</div>
-      </div>
-      <div class="attendance-kpi">
-        <div class="help">Mine timer</div>
-        <div class="attendance-kpi-value" id="attendanceMyHours">0</div>
-      </div>
-      <div class="attendance-kpi">
-        <div class="help">Godkjente timer</div>
-        <div class="attendance-kpi-value" id="attendanceMyApprovedHours">0</div>
-      </div>
-    </div>
-
-    <div class="section-card" style="box-shadow:none; margin-top:12px;">
-      <div class="section-header">
-        <div>
-          <h3>Mine oppmøter</h3>
-          <div class="help">Historikken bruker samme data som lønnsgrunnlaget.</div>
-        </div>
-        <div class="toolbar">
-          <input id="attendanceMyFrom" type="date" style="width:auto;">
-          <input id="attendanceMyTo" type="date" style="width:auto;">
-          <button class="btn-secondary btn-small" id="btnAttendanceRefreshMine" type="button">Oppdater</button>
-        </div>
-      </div>
-      <div class="attendance-history-list" id="attendanceMyHistory"></div>
-    </div>
-  </div>
-
-  <!-- ADMIN REGISTRERING -->
-  <div class="attendance-panel hidden" id="attendanceViewRegister">
-    <div class="section-card" style="box-shadow:none;">
-      <div class="section-header">
-        <div>
-          <h3>Hurtigregistrering</h3>
-          <div class="help">Velg økt og kryss av hvem som var til stede.</div>
-        </div>
-        <select id="attendanceSessionPicker" style="max-width:340px;"></select>
-      </div>
-      <div id="attendanceQuickList" class="attendance-history-list"></div>
-    </div>
-
-    <div class="section-card" style="box-shadow:none;">
-      <div class="section-header">
-        <div>
-          <h3>Krysseliste</h3>
-          <div class="help">Personer i rader og økter i kolonner.</div>
-        </div>
-      </div>
-      <div class="attendance-matrix-wrap">
-        <table class="attendance-matrix">
-          <thead id="attendanceMatrixHead"></thead>
-          <tbody id="attendanceMatrixBody"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- ADMINISTRASJON -->
-  <div class="attendance-panel hidden" id="attendanceViewManage">
-    <div class="section-card" style="box-shadow:none;">
-      <h3>Ny instruktør / trener</h3>
-      <form class="form-grid" id="attendancePersonForm" style="margin-top:12px;">
-        <div class="col-4">
-          <label for="attendancePersonName">Navn</label>
-          <input id="attendancePersonName" required>
-        </div>
-        <div class="col-4">
-          <label for="attendancePersonEmail">E-post / innlogging</label>
-          <input id="attendancePersonEmail" type="email" placeholder="navn@epost.no">
-        </div>
-        <div class="col-4">
-          <label for="attendancePersonRole">Rolle</label>
-          <input id="attendancePersonRole" placeholder="Instruktør">
-        </div>
-        <div class="col-4">
-          <label for="attendancePersonGroupType">Område</label>
-          <select id="attendancePersonGroupType">
-            <option value="skoyteskole">Skøyteskolen</option>
-            <option value="rekrutt">Rekrutt-gruppene</option>
-          </select>
-        </div>
-        <div class="col-4">
-          <label for="attendancePersonHourlyRate">Timesats (valgfritt)</label>
-          <input id="attendancePersonHourlyRate" type="number" min="0" step="0.01">
-        </div>
-        <div class="col-4">
-          <button class="btn-primary" type="submit">Legg til person</button>
-        </div>
-      </form>
-      <div id="attendancePeopleList" style="margin-top:14px;"></div>
-    </div>
-
-    <div class="section-card" style="box-shadow:none;">
-      <h3>Ny dato / økt</h3>
-      <form class="form-grid" id="attendanceSessionForm" style="margin-top:12px;">
-        <div class="col-3">
-          <label for="attendanceSessionDate">Dato</label>
-          <input id="attendanceSessionDate" required type="date">
-        </div>
-        <div class="col-3">
-          <label for="attendanceSessionHours">Timer</label>
-          <input id="attendanceSessionHours" required type="number" step="0.25" min="0.25" value="1">
-        </div>
-        <div class="col-3">
-          <label for="attendanceSessionGroupType">Område</label>
-          <select id="attendanceSessionGroupType">
-            <option value="skoyteskole">Skøyteskolen</option>
-            <option value="rekrutt">Rekrutt-gruppene</option>
-          </select>
-        </div>
-        <div class="col-3">
-          <button class="btn-primary" type="submit">Opprett økt</button>
-        </div>
-      </form>
-      <div id="attendanceSessionsList" style="margin-top:14px;"></div>
-    </div>
-  </div>
-
-  <!-- LØNNSGRUNNLAG -->
-  <div class="attendance-panel hidden" id="attendanceViewPayroll">
-    <div class="section-card" style="box-shadow:none;">
-      <div class="section-header">
-        <div>
-          <h3>Lønnsgrunnlag</h3>
-          <div class="help">Oppsummering basert på registrerte timer.</div>
-        </div>
-        <div class="toolbar">
-          <input id="attendancePayrollFrom" type="date" style="width:auto;">
-          <input id="attendancePayrollTo" type="date" style="width:auto;">
-          <select id="attendancePayrollGroup" style="width:auto;">
-            <option value="">Alle</option>
-            <option value="skoyteskole">Skøyteskolen</option>
-            <option value="rekrutt">Rekrutt-gruppene</option>
-          </select>
-          <button class="btn-secondary btn-small" id="btnAttendancePayrollRefresh" type="button">Oppdater</button>
-          <button class="btn-primary btn-small" id="btnAttendancePayrollExport" type="button">Eksporter Excel</button>
-        </div>
-      </div>
-      <div id="attendancePayrollTable"></div>
-    </div>
-  </div>
-</div>
-
 <div class="section-card hidden" id="returnTab">
 <div class="section-header">
 <div>
 <h2>Innlevering</h2>
-<div class="help" style="margin-top:8px;">Søk på skøyte-ID eller navn. Klikk «Lever inn» når skøytene kommer tilbake.</div>
+<div class="help" style="margin-top:8px;">Skriv serienummeret på skøyten. Du får se hvem som har lånt den før du bekrefter innleveringen.</div>
 </div>
 <span class="pill" id="loanCountPill">0 aktive</span>
 </div>
-<div class="toolbar" style="margin-top: 12px;">
+
+<div class="hidden" aria-hidden="true">
 <select id="returnDepartmentFilter">
 <option value="">Alle avdelinger</option>
 </select>
 <select id="returnGroupFilter">
 <option value="">Alle grupper</option>
 </select>
-<div class="help" id="returnGroupDebug" style="margin-top:6px; min-width:260px;"></div>
-<input id="searchActiveLoans" placeholder="Søk på skøyte-ID eller navn..."/>
-<button class="btn-secondary btn-small" id="btnStartQrReturn" type="button">Skann skøyte</button>
+<div id="returnGroupDebug"></div>
+</div>
+
+<div class="return-search-wrap">
+<label class="return-search-label" for="searchActiveLoans">Serienummer / skøyte-ID</label>
+<input id="searchActiveLoans" inputmode="text" autocomplete="off" placeholder="F.eks. 124" />
+<div class="return-search-actions">
+<button class="btn-secondary btn-small" id="btnStartQrReturn" type="button">Skann QR-kode</button>
 <button class="btn-secondary btn-small hidden" id="btnStopQrReturn" type="button">Stopp skanning</button>
 </div>
-<div class="help qr-inline-help" id="returnQrStatus"></div>
+<div class="help qr-inline-help" id="returnQrStatus" style="text-align:center;"></div>
 <div class="qr-panel hidden" id="returnQrPanel">
-<div class="help">Skann skøyten for å finne aktivt utlån. Hvis det bare finnes ett treff, blir den innlevert automatisk.</div>
+<div class="help">Skann QR-koden på skøyten. Appen viser låntaker før du bekrefter innleveringen.</div>
 <div id="returnReader"></div>
 </div>
+</div>
+
 <div id="activeLoansWrap"></div>
 </div>
 
@@ -1979,7 +1840,7 @@
 <input id="departmentName" placeholder="For eksempel Kortbane" required=""/>
 </div>
 <div class="col-6">
-<label> </label>
+<label> </label>
 <button class="btn-primary" id="departmentSubmitBtn" type="submit">Legg til avdeling</button>
 <button class="btn-secondary hidden" id="departmentCancelEditBtn" type="button">Avbryt redigering</button>
 </div>
@@ -2123,7 +1984,7 @@
 <input accept=".xlsx,.xls" id="spondFile" type="file"/>
 </div>
 <div class="col-4">
-<label> </label>
+<label> </label>
 <button class="btn-primary" id="btnImportSpond" type="button">Importer fra Spond</button>
 </div>
 <div class="col-12">
@@ -2167,7 +2028,7 @@
 <datalist id="memberEditList"></datalist>
 </div>
 <div class="col-6">
-<label> </label>
+<label> </label>
 <div style="display:flex; gap:8px; flex-wrap:wrap;">
 <button class="btn-secondary" id="btnLoadMemberForEdit" type="button">Hent medlem</button>
 <button class="btn-secondary" id="memberCancelEditBtn" type="button">Avbryt redigering</button>
@@ -2266,7 +2127,7 @@
 <input accept=".xlsx,.xls" id="skateFile" type="file"/>
 </div>
 <div class="col-6">
-<label> </label>
+<label> </label>
 <button class="btn-primary" id="btnImportSkates" type="button">Importer skøyter</button>
 </div>
 <div class="col-12">
@@ -2317,7 +2178,7 @@
     <div>
       <h2>Til idrettsrådet</h2>
       <div class="help" style="margin-top:8px;">
-        Eksporterer kun skøyteskolepåmeldinger med påmeldingskode. Inneholder navn, kode og status for betalt medlemsavgift.
+        Eksporterer kun skøyteskolepåmeldinger med påmeldingskode. Inneholder navn, fødselsdato, kode og status for betalt medlemsavgift.
       </div>
     </div>
     <div class="toolbar">
@@ -2617,546 +2478,6 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
       el.textContent = message;
       el.className = isError ? "help msg-error" : "help msg-ok";
     }
-
-    // ============================================================
-    // OPPMØTE INSTRUKTØRER / TRENERE
-    // Krever Supabase-tabellene attendance_people,
-    // attendance_sessions og attendance_records.
-    // ============================================================
-    const attendanceState = {
-      people: [],
-      sessions: [],
-      records: [],
-      currentUser: null,
-      currentPerson: null,
-      isAdmin: false,
-      ready: false
-    };
-
-    function setAttendanceMessage(message, isError) {
-      const el = byId("attendanceMessage");
-      if (!el) return;
-      el.textContent = message || "";
-      el.className = isError ? "help msg-error" : "help msg-ok";
-    }
-
-    function attendanceDateLabel(value) {
-      if (!value) return "";
-      const d = new Date(value + "T12:00:00");
-      return d.toLocaleDateString("no-NO");
-    }
-
-    function attendanceGroupLabel(value) {
-      return value === "rekrutt" ? "Rekrutt-gruppene" : "Skøyteskolen";
-    }
-
-    function attendanceMonthStart() {
-      const d = new Date();
-      return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0,10);
-    }
-
-    function attendanceMonthEnd() {
-      const d = new Date();
-      return new Date(d.getFullYear(), d.getMonth()+1, 0).toISOString().slice(0,10);
-    }
-
-    function setupAttendanceDateDefaults() {
-      ["attendanceMyFrom", "attendancePayrollFrom"].forEach((id) => {
-        const el = byId(id);
-        if (el && !el.value) el.value = attendanceMonthStart();
-      });
-      ["attendanceMyTo", "attendancePayrollTo"].forEach((id) => {
-        const el = byId(id);
-        if (el && !el.value) el.value = attendanceMonthEnd();
-      });
-      const sessionDate = byId("attendanceSessionDate");
-      if (sessionDate && !sessionDate.value) sessionDate.value = new Date().toISOString().slice(0,10);
-    }
-
-    async function getAttendanceCurrentUser() {
-      if (!supabaseClient) return null;
-      const { data, error } = await supabaseClient.auth.getSession();
-      if (error) throw error;
-      return data && data.session ? data.session.user : null;
-    }
-
-    async function getAttendanceIsAdmin(user) {
-      if (!user || !user.email) return false;
-      const { data, error } = await supabaseClient
-        .from("app_user_roles")
-        .select("role,is_active")
-        .eq("email", user.email)
-        .maybeSingle();
-      if (error) return false;
-      return !!(data && data.is_active !== false && String(data.role || "").toLowerCase() === "admin");
-    }
-
-    async function loadAttendanceData() {
-      const [peopleRes, sessionsRes, recordsRes] = await Promise.all([
-        supabaseClient.from("attendance_people").select("*").order("name"),
-        supabaseClient.from("attendance_sessions").select("*").order("session_date", { ascending: false }),
-        supabaseClient.from("attendance_records").select("*")
-      ]);
-
-      const errors = [peopleRes.error, sessionsRes.error, recordsRes.error].filter(Boolean);
-      if (errors.length) {
-        const missing = errors.find((e) => /does not exist|schema cache/i.test(String(e.message || "")));
-        if (missing) {
-          const notice = byId("attendanceSetupNotice");
-          if (notice) {
-            notice.classList.remove("hidden");
-            notice.innerHTML = "<strong>Oppmøte er lagt inn i Dev-index, men databasen er ikke satt opp ennå.</strong><br>Kjør SQL-oppsettet for attendance_people, attendance_sessions og attendance_records før funksjonen kan brukes.";
-          }
-          attendanceState.ready = false;
-          return false;
-        }
-        throw errors[0];
-      }
-
-      const notice = byId("attendanceSetupNotice");
-      if (notice) notice.classList.add("hidden");
-
-      attendanceState.people = peopleRes.data || [];
-      attendanceState.sessions = sessionsRes.data || [];
-      attendanceState.records = recordsRes.data || [];
-      attendanceState.ready = true;
-      return true;
-    }
-
-    async function loadAttendanceModule() {
-      setupAttendanceDateDefaults();
-      setAttendanceMessage("Laster oppmøte ...", false);
-      try {
-        attendanceState.currentUser = await getAttendanceCurrentUser();
-        attendanceState.isAdmin = await getAttendanceIsAdmin(attendanceState.currentUser);
-
-        document.querySelectorAll(".attendance-admin-only").forEach((el) => {
-          el.classList.toggle("hidden", !attendanceState.isAdmin);
-        });
-
-        const ok = await loadAttendanceData();
-        if (!ok) {
-          setAttendanceMessage("", false);
-          renderAttendanceMine();
-          return;
-        }
-
-        const email = String((attendanceState.currentUser && attendanceState.currentUser.email) || "").trim().toLowerCase();
-        attendanceState.currentPerson = attendanceState.people.find((p) =>
-          String(p.email || "").trim().toLowerCase() === email ||
-          (p.user_id && attendanceState.currentUser && String(p.user_id) === String(attendanceState.currentUser.id))
-        ) || null;
-
-        renderAttendanceAll();
-        setAttendanceMessage("", false);
-      } catch (error) {
-        console.error("loadAttendanceModule", error);
-        setAttendanceMessage("Kunne ikke laste oppmøte. " + (error.message || error), true);
-      }
-    }
-
-    function renderAttendanceAll() {
-      renderAttendanceMine();
-      renderAttendanceSessionPicker();
-      renderAttendanceQuick();
-      renderAttendanceMatrix();
-      renderAttendancePeople();
-      renderAttendanceSessions();
-      renderAttendancePayroll();
-    }
-
-    function getAttendanceRecord(personId, sessionId) {
-      return attendanceState.records.find((r) =>
-        String(r.person_id) === String(personId) &&
-        String(r.session_id) === String(sessionId)
-      ) || null;
-    }
-
-    function renderAttendanceMine() {
-      const person = attendanceState.currentPerson;
-      const history = byId("attendanceMyHistory");
-      const btn = byId("btnAttendanceSelfRegister");
-      const title = byId("attendanceMyNextTitle");
-      const meta = byId("attendanceMyNextMeta");
-
-      if (!attendanceState.ready) {
-        if (history) history.innerHTML = '<div class="empty">Databasen for oppmøte er ikke satt opp ennå.</div>';
-        if (btn) btn.disabled = true;
-        return;
-      }
-
-      if (!person) {
-        if (title) title.textContent = "Du er ikke koblet til en instruktørprofil";
-        if (meta) meta.textContent = "En administrator må legge inn samme e-postadresse som du bruker til innlogging.";
-        if (btn) btn.disabled = true;
-        if (history) history.innerHTML = '<div class="empty">Ingen oppmøtehistorikk er koblet til denne brukeren.</div>';
-        return;
-      }
-
-      const today = new Date().toISOString().slice(0,10);
-      const relevantSessions = attendanceState.sessions
-        .filter((s) => s.active !== false && (!person.group_type || s.group_type === person.group_type))
-        .slice()
-        .sort((a,b) => String(a.session_date).localeCompare(String(b.session_date)));
-
-      let nextSession = relevantSessions.find((s) => String(s.session_date) >= today) || relevantSessions[relevantSessions.length - 1] || null;
-      if (nextSession) {
-        const rec = getAttendanceRecord(person.id, nextSession.id);
-        if (title) title.textContent = attendanceDateLabel(nextSession.session_date) + " – " + attendanceGroupLabel(nextSession.group_type);
-        if (meta) meta.textContent = (Number(nextSession.hours || 0) || 0) + " timer";
-        if (btn) {
-          btn.disabled = false;
-          btn.dataset.sessionId = nextSession.id;
-          btn.classList.toggle("registered", !!(rec && rec.present));
-          btn.textContent = rec && rec.present ? "Registrert ✓ – trykk for å angre" : "Registrer meg som til stede";
-        }
-      } else {
-        if (title) title.textContent = "Ingen åpen økt";
-        if (meta) meta.textContent = "";
-        if (btn) btn.disabled = true;
-      }
-
-      const from = byId("attendanceMyFrom") ? byId("attendanceMyFrom").value : "";
-      const to = byId("attendanceMyTo") ? byId("attendanceMyTo").value : "";
-      const rows = attendanceState.records
-        .filter((r) => String(r.person_id) === String(person.id) && r.present)
-        .map((r) => {
-          const session = attendanceState.sessions.find((s) => String(s.id) === String(r.session_id));
-          return { record:r, session };
-        })
-        .filter((x) => x.session)
-        .filter((x) => (!from || x.session.session_date >= from) && (!to || x.session.session_date <= to))
-        .sort((a,b) => String(b.session.session_date).localeCompare(String(a.session.session_date)));
-
-      const totalHours = rows.reduce((sum, x) => sum + Number(x.record.hours_worked ?? x.session.hours ?? 0), 0);
-      const approvedHours = rows.filter((x) => x.record.approved).reduce((sum, x) => sum + Number(x.record.hours_worked ?? x.session.hours ?? 0), 0);
-
-      if (byId("attendanceMySessions")) byId("attendanceMySessions").textContent = rows.length;
-      if (byId("attendanceMyHours")) byId("attendanceMyHours").textContent = totalHours.toFixed(2).replace(".", ",");
-      if (byId("attendanceMyApprovedHours")) byId("attendanceMyApprovedHours").textContent = approvedHours.toFixed(2).replace(".", ",");
-
-      if (history) {
-        history.innerHTML = rows.length ? rows.map((x) => {
-          const hours = Number(x.record.hours_worked ?? x.session.hours ?? 0);
-          const status = x.record.approved ? "Godkjent" : "Registrert";
-          return `
-            <div class="attendance-history-item">
-              <div>
-                <strong>${escapeHtml(attendanceDateLabel(x.session.session_date))}</strong>
-                <div class="help">${escapeHtml(attendanceGroupLabel(x.session.group_type))}</div>
-              </div>
-              <div style="text-align:right;">
-                <strong>${hours.toFixed(2).replace(".", ",")} t</strong>
-                <div class="help">${status}</div>
-              </div>
-            </div>`;
-        }).join("") : '<div class="empty">Ingen registrerte oppmøter i valgt periode.</div>';
-      }
-    }
-
-    async function attendanceSelfRegister() {
-      const person = attendanceState.currentPerson;
-      const btn = byId("btnAttendanceSelfRegister");
-      if (!person || !btn || !btn.dataset.sessionId) return;
-      const session = attendanceState.sessions.find((s) => String(s.id) === String(btn.dataset.sessionId));
-      if (!session) return;
-      const existing = getAttendanceRecord(person.id, session.id);
-      const newPresent = !(existing && existing.present);
-
-      try {
-        if (existing) {
-          const { error } = await supabaseClient
-            .from("attendance_records")
-            .update({
-              present: newPresent,
-              hours_worked: newPresent ? Number(existing.hours_worked ?? session.hours ?? 0) : 0,
-              registered_by: attendanceState.currentUser ? attendanceState.currentUser.id : null,
-              registered_at: new Date().toISOString()
-            })
-            .eq("id", existing.id);
-          if (error) throw error;
-        } else {
-          const { error } = await supabaseClient.from("attendance_records").insert([{
-            person_id: person.id,
-            session_id: session.id,
-            present: true,
-            hours_worked: Number(session.hours || 0),
-            registered_by: attendanceState.currentUser ? attendanceState.currentUser.id : null
-          }]);
-          if (error) throw error;
-        }
-        await loadAttendanceData();
-        renderAttendanceAll();
-      } catch (error) {
-        setAttendanceMessage("Kunne ikke registrere oppmøte. " + (error.message || error), true);
-      }
-    }
-
-    function switchAttendanceView(view) {
-      document.querySelectorAll(".attendance-panel").forEach((el) => el.classList.add("hidden"));
-      document.querySelectorAll(".attendance-tab").forEach((el) => el.classList.remove("active"));
-      const map = {
-        mine:"attendanceViewMine",
-        register:"attendanceViewRegister",
-        manage:"attendanceViewManage",
-        payroll:"attendanceViewPayroll"
-      };
-      const panel = byId(map[view] || map.mine);
-      if (panel) panel.classList.remove("hidden");
-      const btn = document.querySelector(`[data-attendance-view="${view}"]`);
-      if (btn) btn.classList.add("active");
-      if (view === "payroll") renderAttendancePayroll();
-    }
-
-    function renderAttendanceSessionPicker() {
-      const select = byId("attendanceSessionPicker");
-      if (!select) return;
-      select.innerHTML = attendanceState.sessions.length
-        ? attendanceState.sessions.map((s) => `<option value="${s.id}">${escapeHtml(attendanceDateLabel(s.session_date))} – ${escapeHtml(attendanceGroupLabel(s.group_type))} (${Number(s.hours || 0)} t)</option>`).join("")
-        : '<option value="">Ingen økter</option>';
-    }
-
-    function renderAttendanceQuick() {
-      const list = byId("attendanceQuickList");
-      const picker = byId("attendanceSessionPicker");
-      if (!list || !picker) return;
-      const session = attendanceState.sessions.find((s) => String(s.id) === String(picker.value)) || attendanceState.sessions[0];
-      if (!session) {
-        list.innerHTML = '<div class="empty">Opprett en økt først.</div>';
-        return;
-      }
-      const people = attendanceState.people.filter((p) => p.active !== false && (!p.group_type || p.group_type === session.group_type));
-      list.innerHTML = people.length ? people.map((p) => {
-        const rec = getAttendanceRecord(p.id, session.id);
-        const checked = !!(rec && rec.present);
-        return `
-          <button type="button" class="attendance-history-item attendance-quick-person" data-person-id="${p.id}" data-session-id="${session.id}" style="width:100%; text-align:left;">
-            <div>
-              <strong>${escapeHtml(p.name || "")}</strong>
-              <div class="help">${escapeHtml(p.role || "")}</div>
-            </div>
-            <span class="status ${checked ? "status-ledig" : ""}">${checked ? "Tilstede ✓" : "Ikke tilstede"}</span>
-          </button>`;
-      }).join("") : '<div class="empty">Ingen personer i dette området.</div>';
-    }
-
-    async function toggleAttendanceAdmin(personId, sessionId) {
-      if (!attendanceState.isAdmin) return;
-      const session = attendanceState.sessions.find((s) => String(s.id) === String(sessionId));
-      const existing = getAttendanceRecord(personId, sessionId);
-      const newPresent = !(existing && existing.present);
-      try {
-        if (existing) {
-          const { error } = await supabaseClient.from("attendance_records")
-            .update({ present:newPresent, hours_worked:newPresent ? Number(existing.hours_worked ?? session.hours ?? 0) : 0 })
-            .eq("id", existing.id);
-          if (error) throw error;
-        } else {
-          const { error } = await supabaseClient.from("attendance_records").insert([{
-            person_id:personId, session_id:sessionId, present:true, hours_worked:Number(session.hours || 0),
-            registered_by: attendanceState.currentUser ? attendanceState.currentUser.id : null
-          }]);
-          if (error) throw error;
-        }
-        await loadAttendanceData();
-        renderAttendanceQuick();
-        renderAttendanceMatrix();
-        renderAttendancePayroll();
-      } catch (error) {
-        setAttendanceMessage("Kunne ikke endre oppmøte. " + (error.message || error), true);
-      }
-    }
-
-    function renderAttendanceMatrix() {
-      const head = byId("attendanceMatrixHead");
-      const body = byId("attendanceMatrixBody");
-      if (!head || !body) return;
-      const sessions = attendanceState.sessions.slice().sort((a,b) => String(a.session_date).localeCompare(String(b.session_date)));
-      head.innerHTML = `<tr><th>Navn</th>${sessions.map((s) => `<th>${escapeHtml(attendanceDateLabel(s.session_date))}<br><span class="help">${Number(s.hours || 0)} t</span></th>`).join("")}</tr>`;
-      body.innerHTML = attendanceState.people.filter((p) => p.active !== false).map((p) => `
-        <tr>
-          <td><strong>${escapeHtml(p.name || "")}</strong><div class="help">${escapeHtml(p.role || "")}</div></td>
-          ${sessions.map((s) => {
-            const rec = getAttendanceRecord(p.id, s.id);
-            const present = !!(rec && rec.present);
-            return `<td><button class="attendance-check ${present ? "present" : ""}" data-att-toggle="${p.id}|${s.id}" type="button">${present ? "✓" : ""}</button></td>`;
-          }).join("")}
-        </tr>`).join("");
-    }
-
-    function renderAttendancePeople() {
-      const el = byId("attendancePeopleList");
-      if (!el) return;
-      el.innerHTML = attendanceState.people.length ? `
-        <table>
-          <thead><tr><th>Navn</th><th>E-post</th><th>Rolle</th><th>Område</th><th>Timesats</th></tr></thead>
-          <tbody>${attendanceState.people.map((p) => `<tr>
-            <td>${escapeHtml(p.name || "")}</td>
-            <td>${escapeHtml(p.email || "")}</td>
-            <td>${escapeHtml(p.role || "")}</td>
-            <td>${escapeHtml(attendanceGroupLabel(p.group_type))}</td>
-            <td>${p.hourly_rate == null ? "" : Number(p.hourly_rate).toFixed(2).replace(".", ",")}</td>
-          </tr>`).join("")}</tbody>
-        </table>` : '<div class="empty">Ingen personer registrert.</div>';
-    }
-
-    function renderAttendanceSessions() {
-      const el = byId("attendanceSessionsList");
-      if (!el) return;
-      el.innerHTML = attendanceState.sessions.length ? `
-        <table>
-          <thead><tr><th>Dato</th><th>Område</th><th>Timer</th></tr></thead>
-          <tbody>${attendanceState.sessions.map((s) => `<tr>
-            <td>${escapeHtml(attendanceDateLabel(s.session_date))}</td>
-            <td>${escapeHtml(attendanceGroupLabel(s.group_type))}</td>
-            <td>${Number(s.hours || 0)}</td>
-          </tr>`).join("")}</tbody>
-        </table>` : '<div class="empty">Ingen økter registrert.</div>';
-    }
-
-    async function createAttendancePerson(event) {
-      event.preventDefault();
-      if (!attendanceState.isAdmin) return;
-      const row = {
-        name: byId("attendancePersonName").value.trim(),
-        email: byId("attendancePersonEmail").value.trim() || null,
-        role: byId("attendancePersonRole").value.trim() || null,
-        group_type: byId("attendancePersonGroupType").value,
-        hourly_rate: byId("attendancePersonHourlyRate").value ? Number(byId("attendancePersonHourlyRate").value) : null,
-        active: true
-      };
-      try {
-        const { error } = await supabaseClient.from("attendance_people").insert([row]);
-        if (error) throw error;
-        event.target.reset();
-        await loadAttendanceData();
-        renderAttendanceAll();
-      } catch (error) {
-        setAttendanceMessage("Kunne ikke legge til person. " + (error.message || error), true);
-      }
-    }
-
-    async function createAttendanceSession(event) {
-      event.preventDefault();
-      if (!attendanceState.isAdmin) return;
-      const row = {
-        session_date: byId("attendanceSessionDate").value,
-        hours: Number(byId("attendanceSessionHours").value || 0),
-        group_type: byId("attendanceSessionGroupType").value,
-        active: true
-      };
-      try {
-        const { error } = await supabaseClient.from("attendance_sessions").insert([row]);
-        if (error) throw error;
-        await loadAttendanceData();
-        renderAttendanceAll();
-      } catch (error) {
-        setAttendanceMessage("Kunne ikke opprette økt. " + (error.message || error), true);
-      }
-    }
-
-    function getAttendancePayrollRows() {
-      const from = byId("attendancePayrollFrom") ? byId("attendancePayrollFrom").value : "";
-      const to = byId("attendancePayrollTo") ? byId("attendancePayrollTo").value : "";
-      const group = byId("attendancePayrollGroup") ? byId("attendancePayrollGroup").value : "";
-      return attendanceState.people.map((p) => {
-        const recs = attendanceState.records.filter((r) => String(r.person_id) === String(p.id) && r.present);
-        let sessionCount = 0, hours = 0, approvedHours = 0;
-        recs.forEach((r) => {
-          const s = attendanceState.sessions.find((x) => String(x.id) === String(r.session_id));
-          if (!s) return;
-          if (from && s.session_date < from) return;
-          if (to && s.session_date > to) return;
-          if (group && s.group_type !== group) return;
-          const h = Number(r.hours_worked ?? s.hours ?? 0);
-          sessionCount += 1;
-          hours += h;
-          if (r.approved) approvedHours += h;
-        });
-        const rate = Number(p.hourly_rate || 0);
-        return {
-          name:p.name || "", role:p.role || "", sessions:sessionCount,
-          hours, approvedHours, rate, amount:hours * rate
-        };
-      }).filter((r) => r.sessions > 0);
-    }
-
-    function renderAttendancePayroll() {
-      const el = byId("attendancePayrollTable");
-      if (!el) return;
-      const rows = getAttendancePayrollRows();
-      el.innerHTML = rows.length ? `
-        <table>
-          <thead><tr><th>Navn</th><th>Rolle</th><th>Økter</th><th>Timer</th><th>Godkjent</th><th>Timesats</th><th>Beløp</th></tr></thead>
-          <tbody>${rows.map((r) => `<tr>
-            <td>${escapeHtml(r.name)}</td><td>${escapeHtml(r.role)}</td><td>${r.sessions}</td>
-            <td>${r.hours.toFixed(2).replace(".", ",")}</td>
-            <td>${r.approvedHours.toFixed(2).replace(".", ",")}</td>
-            <td>${r.rate ? r.rate.toFixed(2).replace(".", ",") : ""}</td>
-            <td>${r.rate ? r.amount.toFixed(2).replace(".", ",") : ""}</td>
-          </tr>`).join("")}</tbody>
-        </table>` : '<div class="empty">Ingen oppmøter i valgt periode.</div>';
-    }
-
-    function exportAttendancePayrollXlsx() {
-      const rows = getAttendancePayrollRows();
-      if (!rows.length) {
-        setAttendanceMessage("Ingen lønnsdata å eksportere i valgt periode.", true);
-        return;
-      }
-      if (!window.XLSX) {
-        setAttendanceMessage("Excel-biblioteket er ikke lastet.", true);
-        return;
-      }
-      const data = rows.map((r) => ({
-        Navn:r.name,
-        Rolle:r.role,
-        "Antall økter":r.sessions,
-        Timer:r.hours,
-        "Godkjente timer":r.approvedHours,
-        Timesats:r.rate || "",
-        Beløp:r.rate ? r.amount : ""
-      }));
-      const wb = XLSX.utils.book_new();
-      const ws = XLSX.utils.json_to_sheet(data);
-      XLSX.utils.book_append_sheet(wb, ws, "Lønnsgrunnlag");
-      XLSX.writeFile(wb, "TKK_lønnsgrunnlag_" + new Date().toISOString().slice(0,10) + ".xlsx");
-    }
-
-    function setupAttendanceEvents() {
-      document.querySelectorAll(".attendance-tab").forEach((btn) => {
-        btn.addEventListener("click", () => switchAttendanceView(btn.dataset.attendanceView || "mine"));
-      });
-      const selfBtn = byId("btnAttendanceSelfRegister");
-      if (selfBtn) selfBtn.addEventListener("click", attendanceSelfRegister);
-      const refreshMine = byId("btnAttendanceRefreshMine");
-      if (refreshMine) refreshMine.addEventListener("click", renderAttendanceMine);
-      const picker = byId("attendanceSessionPicker");
-      if (picker) picker.addEventListener("change", renderAttendanceQuick);
-      const personForm = byId("attendancePersonForm");
-      if (personForm) personForm.addEventListener("submit", createAttendancePerson);
-      const sessionForm = byId("attendanceSessionForm");
-      if (sessionForm) sessionForm.addEventListener("submit", createAttendanceSession);
-      const payrollRefresh = byId("btnAttendancePayrollRefresh");
-      if (payrollRefresh) payrollRefresh.addEventListener("click", renderAttendancePayroll);
-      const payrollExport = byId("btnAttendancePayrollExport");
-      if (payrollExport) payrollExport.addEventListener("click", exportAttendancePayrollXlsx);
-
-      document.addEventListener("click", (event) => {
-        const quick = event.target.closest(".attendance-quick-person");
-        if (quick) {
-          toggleAttendanceAdmin(quick.dataset.personId, quick.dataset.sessionId);
-          return;
-        }
-        const matrix = event.target.closest("[data-att-toggle]");
-        if (matrix) {
-          const parts = String(matrix.dataset.attToggle || "").split("|");
-          if (parts.length === 2) toggleAttendanceAdmin(parts[0], parts[1]);
-        }
-      });
-    }
-
-
     function setImportStatus(message, isError) {
       const el = byId("importStatus");
       if (!el) return;
@@ -3190,14 +2511,22 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
       byId("homeView").classList.add("hidden");
       byId("workspace").classList.add("active");
       byId("backRow").classList.add("visible");
-      ["loanTab", "returnTab", "adminTab", "reportsTab", "skatingSchoolTab", "attendanceTab"].forEach((id) => {
+      ["loanTab", "returnTab", "adminTab", "reportsTab", "skatingSchoolTab"].forEach((id) => {
         const el = byId(id);
         if (el) el.classList.add("hidden");
       });
       const target = byId(sectionId);
       if (target) target.classList.remove("hidden");
-      if (sectionId === "attendanceTab" && typeof loadAttendanceModule === "function") {
-        await loadAttendanceModule();
+
+      if (sectionId === "returnTab") {
+        const search = byId("searchActiveLoans");
+        if (search) {
+          search.value = "";
+          renderActiveLoans();
+          setTimeout(function () {
+            try { search.focus(); } catch (_) {}
+          }, 50);
+        }
       }
     }
 
@@ -3207,7 +2536,7 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
       byId("homeView").classList.remove("hidden");
       byId("workspace").classList.remove("active");
       byId("backRow").classList.remove("visible");
-      ["loanTab", "returnTab", "adminTab", "reportsTab", "skatingSchoolTab", "attendanceTab"].forEach((id) => {
+      ["loanTab", "returnTab", "adminTab", "reportsTab", "skatingSchoolTab"].forEach((id) => {
         const el = byId(id);
         if (el) el.classList.add("hidden");
       });
@@ -5429,101 +4758,154 @@ function renderMembers() {
 
     function renderActiveLoans() {
       const wrap = byId("activeLoansWrap");
-      const search = byId("searchActiveLoans").value.trim().toLowerCase();
-      const departmentFilter = byId("returnDepartmentFilter") ? byId("returnDepartmentFilter").value : "";
-      const selectedGroupId = byId("returnGroupFilter") ? String(byId("returnGroupFilter").value || "") : "";
-      let rows = state.loans.filter((loan) => !loan.returned_at);
+      const searchEl = byId("searchActiveLoans");
+      const search = String((searchEl && searchEl.value) || "").trim().toLowerCase();
 
-      if (departmentFilter) {
-        rows = rows.filter((loan) => String(loan.department_id || "") === String(departmentFilter));
+      if (!wrap) return;
+
+      if (!search) {
+        wrap.innerHTML =
+          '<div class="empty" style="max-width:720px;margin:18px auto 0;text-align:center;">' +
+          'Skriv inn serienummeret på skøyten for å finne aktivt utlån.' +
+          '</div>';
+        return;
       }
 
-      if (selectedGroupId) {
-        rows = rows.filter((loan) => {
-          const memberId = loan.member_id;
-          const memberGroupIds = state.memberGroups
-            .filter((mg) => sameId(mg.member_id, memberId))
-            .map((mg) => mg.group_id);
-          return memberGroupIds.some((groupId) => sameId(groupId, selectedGroupId));
+      const rows = (state.loans || [])
+        .filter((loan) => !loan.returned_at)
+        .filter((loan) => {
+          const skateCode = String((loan.skates && loan.skates.skate_code) || "")
+            .trim()
+            .toLowerCase();
+          return skateCode.includes(search);
+        })
+        .sort((a, b) => {
+          const aCode = String((a.skates && a.skates.skate_code) || "");
+          const bCode = String((b.skates && b.skates.skate_code) || "");
+          return aCode.localeCompare(bCode, "no", { numeric: true });
         });
-      }
-
-      if (search) {
-        rows = rows.filter((loan) => {
-          const skateCode = String((loan.skates && loan.skates.skate_code) || "").toLowerCase();
-          const memberName = String((loan.members && loan.members.name) || "").toLowerCase();
-          return skateCode.includes(search) || memberName.includes(search);
-        });
-      }
 
       if (!rows.length) {
-        wrap.innerHTML = '<div class="empty">' + (search ? "Ingen aktive utlån matcher søket." : "Ingen aktive utlån akkurat nå.") + '</div>';
+        wrap.innerHTML =
+          '<div class="empty" style="max-width:720px;margin:18px auto 0;text-align:center;">' +
+          'Fant ingen aktivt utlånt skøyte med serienummer <strong>' +
+          escapeHtml(searchEl ? searchEl.value.trim() : search) +
+          '</strong>.' +
+          '</div>';
         return;
       }
 
-      const isMobileLayout = window.innerWidth <= 700;
+      // Prioriter eksakt serienummer dersom det finnes.
+      const exactRows = rows.filter((loan) =>
+        String((loan.skates && loan.skates.skate_code) || "")
+          .trim()
+          .toLowerCase() === search
+      );
 
-      if (isMobileLayout) {
-        const list = document.createElement("div");
-        list.className = "loan-card-list";
+      const selectedRows = exactRows.length === 1 ? exactRows : rows;
 
-        for (const loan of rows) {
-          const card = document.createElement("div");
-          card.className = "loan-card";
+      if (selectedRows.length === 1) {
+        const loan = selectedRows[0];
+        const skateCode = safeText(loan.skates && loan.skates.skate_code);
+        const size = loan.skates && loan.skates.size ? String(loan.skates.size) : "";
+        const memberName = safeText(loan.members && loan.members.name);
+        const loanedAt = loan.loaned_at ? formatDate(loan.loaned_at) : "";
 
-          let skateLabel = safeText(loan.skates && loan.skates.skate_code);
-          if (loan.skates && loan.skates.size) skateLabel += " (str " + loan.skates.size + ")";
+        const card = document.createElement("div");
+        card.className = "return-result-card";
+        card.innerHTML =
+          '<div class="return-result-skate">Skøyte</div>' +
+          '<div class="return-result-code"></div>' +
+          '<div class="return-result-name-label">Lånt av</div>' +
+          '<div class="return-result-name"></div>' +
+          '<div class="return-result-meta"></div>';
 
-          const memberName = safeText(loan.members && loan.members.name);
-          card.innerHTML = "<div class='loan-card-title'></div><div class='loan-card-actions'></div>";
-          card.querySelector(".loan-card-title").textContent = memberName + " - " + skateLabel;
+        card.querySelector(".return-result-code").textContent =
+          skateCode + (size ? " · str. " + size : "");
+        card.querySelector(".return-result-name").textContent = memberName;
+        card.querySelector(".return-result-meta").textContent =
+          loanedAt ? "Utlånt " + loanedAt : "";
 
-          const actions = card.querySelector(".loan-card-actions");
-          const btn = document.createElement("button");
-          btn.className = "btn-primary btn-small";
-          btn.textContent = "Lever inn";
-          btn.addEventListener("click", async function () {
-            const ok = confirm("Registrere innlevering av skøyte " + safeText(loan.skates && loan.skates.skate_code) + " for " + safeText(loan.members && loan.members.name) + "?");
-            if (!ok) return;
-            await returnLoan(loan.id);
-          });
-          actions.appendChild(btn);
-          list.appendChild(card);
-        }
-
-        wrap.innerHTML = "";
-        wrap.appendChild(list);
-        return;
-      }
-
-      const table = document.createElement("table");
-      table.innerHTML = "<thead><tr><th>Avdeling</th><th>Skøyte</th><th>Medlem</th><th>Kontakt</th><th>Utlånt</th><th>Handling</th></tr></thead>";
-      const tbody = document.createElement("tbody");
-      for (const loan of rows) {
-        const tr = document.createElement("tr");
-        tr.innerHTML = "<td data-label='Avdeling'></td><td data-label='Skøyte'></td><td data-label='Medlem'></td><td data-label='Kontakt'></td><td data-label='Utlånt'></td><td data-label='Handling'></td>";
-        let skateLabel = safeText(loan.skates && loan.skates.skate_code);
-        if (loan.skates && loan.skates.size) skateLabel += " (str " + loan.skates.size + ")";
-        tr.children[0].textContent = safeText(loan.departments && loan.departments.name);
-        tr.children[1].textContent = skateLabel;
-        tr.children[2].textContent = safeText(loan.members && loan.members.name);
-        tr.children[3].textContent = safeText((loan.members && (loan.members.phone || loan.members.email)) || "");
-        tr.children[4].textContent = formatDate(loan.loaned_at);
-
-        const btn = document.createElement("button");
-        btn.className = "btn-primary btn-small";
-        btn.textContent = "Lever inn";
-        btn.addEventListener("click", async function () {
-          const ok = confirm("Registrere innlevering av skøyte " + safeText(loan.skates && loan.skates.skate_code) + " for " + safeText(loan.members && loan.members.name) + "?");
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "btn-primary return-confirm-button";
+        button.textContent = "Bekreft innlevering";
+        button.addEventListener("click", async function () {
+          const ok = window.confirm(
+            "Bekrefte innlevering?\n\n" +
+            "Skøyte: " + skateCode + "\n" +
+            "Lånt av: " + memberName
+          );
           if (!ok) return;
-          await returnLoan(loan.id);
+
+          button.disabled = true;
+          button.textContent = "Registrerer ...";
+
+          try {
+            await returnLoan(loan.id);
+            if (searchEl) {
+              searchEl.value = "";
+              searchEl.focus();
+            }
+            setQrStatus(
+              "returnQrStatus",
+              "Innlevering registrert for " + skateCode + " (" + memberName + ").",
+              false
+            );
+            renderActiveLoans();
+          } catch (error) {
+            console.error(error);
+            button.disabled = false;
+            button.textContent = "Bekreft innlevering";
+          }
         });
-        tr.children[5].appendChild(btn);
-        tbody.appendChild(tr);
+
+        card.appendChild(button);
+        wrap.innerHTML = "";
+        wrap.appendChild(card);
+        return;
       }
-      table.appendChild(tbody);
+
+      const container = document.createElement("div");
+      container.className = "return-result-card";
+
+      const help = document.createElement("div");
+      help.className = "help";
+      help.textContent =
+        "Flere serienumre matcher. Skriv flere tegn eller velg riktig skøyte.";
+      container.appendChild(help);
+
+      const list = document.createElement("div");
+      list.className = "loan-card-list";
+
+      selectedRows.forEach((loan) => {
+        const skateCode = safeText(loan.skates && loan.skates.skate_code);
+        const memberName = safeText(loan.members && loan.members.name);
+
+        const row = document.createElement("button");
+        row.type = "button";
+        row.className = "loan-card";
+        row.style.width = "100%";
+        row.style.textAlign = "left";
+        row.innerHTML =
+          '<div class="loan-card-title"></div>' +
+          '<div class="help" style="margin-top:4px;"></div>';
+        row.querySelector(".loan-card-title").textContent = skateCode;
+        row.querySelector(".help").textContent = "Lånt av " + memberName;
+
+        row.addEventListener("click", function () {
+          if (searchEl) {
+            searchEl.value = skateCode;
+            renderActiveLoans();
+          }
+        });
+
+        list.appendChild(row);
+      });
+
+      container.appendChild(list);
       wrap.innerHTML = "";
-      wrap.appendChild(table);
+      wrap.appendChild(container);
     }
 
     function renderHistory() {
@@ -9114,8 +8496,33 @@ function populateMemberEditList() {
           return;
         }
 
+        function getCouncilBirthDate(row) {
+          if (row && row.birth_date) {
+            return formatBirthDate(row.birth_date);
+          }
+
+          const rowName = String((row && row.name) || "").trim().toLowerCase();
+          const rowCode = String((row && row.code) || "").trim().toLowerCase();
+
+          const matches = (state.schoolSignups || []).filter((signup) => {
+            const signupName = String(signup.child_name || "").trim().toLowerCase();
+            const signupCode = String(signup.access_code || "").trim().toLowerCase();
+
+            if (rowCode && rowCode !== "kodepåmelding" && signupCode) {
+              return signupName === rowName && signupCode === rowCode;
+            }
+
+            return signupName === rowName;
+          });
+
+          return matches.length === 1
+            ? formatBirthDate(matches[0].birth_date)
+            : "";
+        }
+
         const rows = reportRows.map((row) => [
           row.name || "",
+          getCouncilBirthDate(row),
           row.code || "",
           row.membership_fee_paid === true
             ? "Betalt"
@@ -9127,9 +8534,9 @@ function populateMemberEditList() {
         exportRowsToXlsx(
           "Til-idrettsradet.xlsx",
           "Til idrettsrådet",
-          ["Navn", "Kode", "Betalt medlemsavgift"],
+          ["Navn", "Fødselsdato", "Kode", "Betalt medlemsavgift"],
           rows,
-          [32, 22, 24]
+          [32, 16, 22, 24]
         );
       } catch (error) {
         console.error(error);
@@ -9810,26 +9217,43 @@ async function loadAll() {
       const normalized = normalizeQrText(decodedText);
       if (!normalized || normalized === returnQrLastText) return;
       returnQrLastText = normalized;
+
       const skate = findSkateByQrText(normalized, false);
+
       if (!skate) {
-        setQrStatus("returnQrStatus", "Fant ingen skøyte med kode " + normalized + ".", true);
+        setQrStatus(
+          "returnQrStatus",
+          "Fant ingen skøyte med kode " + normalized + ".",
+          true
+        );
         setTimeout(function () { returnQrLastText = ""; }, 1500);
         return;
       }
-      const loan = state.loans.find((item) => item.skate_id === skate.id && !item.returned_at);
-      if (!loan) {
-        byId("searchActiveLoans").value = String(skate.skate_code || "");
-        renderActiveLoans();
-        setQrStatus("returnQrStatus", "Skøyte " + skate.skate_code + " er ikke registrert som utlånt.", true);
-        await stopReturnQrScanner();
-        return;
-      }
-      setQrStatus("returnQrStatus", "Fant aktivt utlån på " + skate.skate_code + ". Registrerer innlevering ...", false);
-      await stopReturnQrScanner();
-      await returnLoan(loan.id);
+
+      const loan = state.loans.find(
+        (item) => item.skate_id === skate.id && !item.returned_at
+      );
+
       byId("searchActiveLoans").value = String(skate.skate_code || "");
       renderActiveLoans();
-      setQrStatus("returnQrStatus", "Innlevering registrert for " + skate.skate_code + ".", false);
+      await stopReturnQrScanner();
+
+      if (!loan) {
+        setQrStatus(
+          "returnQrStatus",
+          "Skøyte " + skate.skate_code + " er ikke registrert som utlånt.",
+          true
+        );
+        return;
+      }
+
+      const memberName = safeText(loan.members && loan.members.name);
+      setQrStatus(
+        "returnQrStatus",
+        "Fant " + skate.skate_code + " – lånt av " + memberName +
+        ". Kontroller navnet og bekreft innleveringen under.",
+        false
+      );
     }
 
     async function startReturnQrScanner() {
@@ -10299,7 +9723,6 @@ if (byId("btnMoveSelectedSchoolSignups")) byId("btnMoveSelectedSchoolSignups").a
     if (byId("memberCardModal")) byId("memberCardModal").addEventListener("click", function (e) {
       if (e.target === this) closeMemberCard();
     });
-    setupAttendanceEvents();
     document.querySelectorAll(".landing-card, .app-menu-card").forEach((card) => {
       card.addEventListener("click", function () { showSection(this.dataset.target); });
     });
