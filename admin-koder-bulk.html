@@ -54,7 +54,8 @@
   border-radius:12px;
   background:#f8fbff;
 }
-.bulk-expiry-bar input[type="date"]{
+.bulk-expiry-bar input[type="date"],
+.bulk-expiry-bar select{
   width:auto;
   min-width:150px;
 }
@@ -128,9 +129,15 @@
     <h2>Eksisterende koder</h2>
 
     <div class="bulk-expiry-bar">
-      <label for="bulkExpiryDate"><strong>Ny utløpsdato for valgte</strong></label>
+      <label for="bulkExpiryDate"><strong>Ny utløpsdato</strong></label>
       <input id="bulkExpiryDate" type="date">
-      <button class="primary" id="bulkExpiryUpdateBtn" type="button">Oppdater valgte</button>
+
+      <label for="bulkBatchSelect"><strong>Nytt semester</strong></label>
+      <select id="bulkBatchSelect">
+        <option value="">Ikke endre semester</option>
+      </select>
+
+      <button class="primary" id="bulkUpdateBtn" type="button">Oppdater valgte</button>
       <button class="secondary" id="selectVisibleBtn" type="button">Marker synlige</button>
       <button class="secondary" id="clearSelectionBtn" type="button">Fjern markering</button>
       <span class="small muted" id="selectionCount">0 valgt</span>
@@ -162,7 +169,8 @@ const filterText=document.getElementById("filterText");
 const filterStatus=document.getElementById("filterStatus");
 const filterUsage=document.getElementById("filterUsage");
 const bulkExpiryDate=document.getElementById("bulkExpiryDate");
-const bulkExpiryUpdateBtn=document.getElementById("bulkExpiryUpdateBtn");
+const bulkBatchSelect=document.getElementById("bulkBatchSelect");
+const bulkUpdateBtn=document.getElementById("bulkUpdateBtn");
 const selectVisibleBtn=document.getElementById("selectVisibleBtn");
 const clearSelectionBtn=document.getElementById("clearSelectionBtn");
 const selectAllCodes=document.getElementById("selectAllCodes");
@@ -249,7 +257,17 @@ function renderTable(){
 
 async function loadLookups(){try{const response=await fetch("/.netlify/functions/list-school-code-lookups");const data=await response.json();if(!response.ok)throw new Error(data.error||"Kunne ikke hente oppslagsdata.");
 (data.departments||[]).forEach(item=>{const o=document.createElement("option");o.value=item.id;o.textContent=item.name;departmentSelect.appendChild(o);});
-(data.batches||[]).forEach(item=>{const o=document.createElement("option");o.value=item.id;o.textContent=item.name;batchSelect.appendChild(o);});
+(data.batches||[]).forEach(item=>{
+  const o=document.createElement("option");
+  o.value=item.id;
+  o.textContent=item.name;
+  batchSelect.appendChild(o);
+
+  const bulkOption=document.createElement("option");
+  bulkOption.value=item.id;
+  bulkOption.textContent=item.name;
+  bulkBatchSelect.appendChild(bulkOption);
+});
 }catch(error){showMessage(listMessage,error.message||"Kunne ikke hente oppslagsdata.","error");}}
 async function loadCodes(){clearMessage(listMessage);codesTableBody.innerHTML='<tr><td colspan="9" class="muted">Laster koder…</td></tr>';try{const response=await fetch("/.netlify/functions/list-school-access-codes");const data=await response.json();if(!response.ok)throw new Error(data.error||"Kunne ikke hente koder.");allCodes=Array.isArray(data.codes)?data.codes:[];renderTable();}catch(error){codesTableBody.innerHTML='<tr><td colspan="9" class="muted">Kunne ikke laste koder.</td></tr>';showMessage(listMessage,error.message||"Kunne ikke hente koder.","error");}}
 
@@ -288,7 +306,7 @@ async function updateCodeExpiry(id){
 }
 
 
-async function bulkUpdateExpiry(){
+async function bulkUpdateSelected(){
   clearMessage(listMessage);
 
   if(!selectedCodeIds.size){
@@ -296,16 +314,34 @@ async function bulkUpdateExpiry(){
     return;
   }
 
-  if(!bulkExpiryDate || !bulkExpiryDate.value){
-    showMessage(listMessage,"Velg ny utløpsdato.","error");
+  const changeExpiry=!!(bulkExpiryDate && bulkExpiryDate.value);
+  const changeBatch=!!(bulkBatchSelect && bulkBatchSelect.value);
+
+  if(!changeExpiry && !changeBatch){
+    showMessage(
+      listMessage,
+      "Velg ny utløpsdato og/eller nytt semester.",
+      "error"
+    );
     return;
   }
 
-  const expires_at=new Date(bulkExpiryDate.value+"T23:59:59").toISOString();
+  const updates={};
+
+  if(changeExpiry){
+    updates.expires_at=new Date(
+      bulkExpiryDate.value+"T23:59:59"
+    ).toISOString();
+  }
+
+  if(changeBatch){
+    updates.batch_id=bulkBatchSelect.value;
+  }
+
   const ids=Array.from(selectedCodeIds);
 
-  bulkExpiryUpdateBtn.disabled=true;
-  bulkExpiryUpdateBtn.textContent="Oppdaterer…";
+  bulkUpdateBtn.disabled=true;
+  bulkUpdateBtn.textContent="Oppdaterer…";
 
   let successCount=0;
   let failCount=0;
@@ -313,21 +349,29 @@ async function bulkUpdateExpiry(){
   try{
     for(const id of ids){
       try{
-        const response=await fetch("/.netlify/functions/update-school-access-code",{
-          method:"POST",
-          headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({id,expires_at})
-        });
+        const response=await fetch(
+          "/.netlify/functions/update-school-access-code",
+          {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({
+              id,
+              ...updates
+            })
+          }
+        );
 
         const data=await response.json();
 
         if(!response.ok){
-          throw new Error(data.error||"Kunne ikke oppdatere kode.");
+          throw new Error(
+            data.error||"Kunne ikke oppdatere kode."
+          );
         }
 
         successCount+=1;
       }catch(error){
-        console.error("Bulk update expiry:",id,error);
+        console.error("Bulk update:",id,error);
         failCount+=1;
       }
     }
@@ -339,18 +383,23 @@ async function bulkUpdateExpiry(){
         "error"
       );
     }else{
+      const changed=[];
+      if(changeExpiry)changed.push("utløpsdato");
+      if(changeBatch)changed.push("semester");
+
       showMessage(
         listMessage,
-        `${successCount} kode(r) fikk ny utløpsdato.`,
+        `${successCount} kode(r) oppdatert: ${changed.join(" og ")}.`,
         "success"
       );
+
       selectedCodeIds.clear();
     }
 
     await loadCodes();
   }finally{
-    bulkExpiryUpdateBtn.disabled=false;
-    bulkExpiryUpdateBtn.textContent="Oppdater valgte";
+    bulkUpdateBtn.disabled=false;
+    bulkUpdateBtn.textContent="Oppdater valgte";
     updateSelectionCount();
   }
 }
@@ -367,7 +416,7 @@ filterText.addEventListener("input",renderTable);
 filterStatus.addEventListener("change",renderTable);
 filterUsage.addEventListener("change",renderTable);
 reloadBtn.addEventListener("click",loadCodes);
-bulkExpiryUpdateBtn.addEventListener("click",bulkUpdateExpiry);
+bulkUpdateBtn.addEventListener("click",bulkUpdateSelected);
 selectVisibleBtn.addEventListener("click",selectVisibleCodes);
 clearSelectionBtn.addEventListener("click",clearCodeSelection);
 selectAllCodes.addEventListener("change",function(){
