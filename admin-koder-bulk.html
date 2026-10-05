@@ -41,6 +41,29 @@
 }
 </style>
 
+
+<style>
+.bulk-expiry-bar{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+  margin:0 0 14px;
+  padding:12px;
+  border:1px solid #d9e3f0;
+  border-radius:12px;
+  background:#f8fbff;
+}
+.bulk-expiry-bar input[type="date"]{
+  width:auto;
+  min-width:150px;
+}
+.code-select{
+  width:18px;
+  height:18px;
+}
+</style>
+
 </head>
 <body>
 <div class="wrap">
@@ -103,6 +126,16 @@
 
   <div class="card">
     <h2>Eksisterende koder</h2>
+
+    <div class="bulk-expiry-bar">
+      <label for="bulkExpiryDate"><strong>Ny utløpsdato for valgte</strong></label>
+      <input id="bulkExpiryDate" type="date">
+      <button class="primary" id="bulkExpiryUpdateBtn" type="button">Oppdater valgte</button>
+      <button class="secondary" id="selectVisibleBtn" type="button">Marker synlige</button>
+      <button class="secondary" id="clearSelectionBtn" type="button">Fjern markering</button>
+      <span class="small muted" id="selectionCount">0 valgt</span>
+    </div>
+
     <div class="filters">
       <div><label for="filterText">Søk</label><input id="filterText" type="text" placeholder="Kode eller beskrivelse"></div>
       <div><label for="filterStatus">Status</label><select id="filterStatus"><option value="all">Alle</option><option value="active">Aktive</option><option value="inactive">Inaktive</option></select></div>
@@ -112,8 +145,8 @@
     <div id="listMessage" class="msg"></div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Kode</th><th>Beskrivelse</th><th>Avdeling / parti</th><th>Status</th><th>Bruk</th><th>Utløper</th><th>Opprettet</th><th>Handlinger</th></tr></thead>
-        <tbody id="codesTableBody"><tr><td colspan="8" class="muted">Laster koder…</td></tr></tbody>
+        <thead><tr><th style="width:42px"><input id="selectAllCodes" type="checkbox" aria-label="Marker alle synlige"></th><th>Kode</th><th>Beskrivelse</th><th>Avdeling / parti</th><th>Status</th><th>Bruk</th><th>Utløper</th><th>Opprettet</th><th>Handlinger</th></tr></thead>
+        <tbody id="codesTableBody"><tr><td colspan="9" class="muted">Laster koder…</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -128,6 +161,13 @@ const reloadBtn=document.getElementById("reloadBtn");
 const filterText=document.getElementById("filterText");
 const filterStatus=document.getElementById("filterStatus");
 const filterUsage=document.getElementById("filterUsage");
+const bulkExpiryDate=document.getElementById("bulkExpiryDate");
+const bulkExpiryUpdateBtn=document.getElementById("bulkExpiryUpdateBtn");
+const selectVisibleBtn=document.getElementById("selectVisibleBtn");
+const clearSelectionBtn=document.getElementById("clearSelectionBtn");
+const selectAllCodes=document.getElementById("selectAllCodes");
+const selectionCount=document.getElementById("selectionCount");
+const selectedCodeIds=new Set();
 const departmentSelect=document.getElementById("department_id");
 const batchSelect=document.getElementById("batch_id");
 let allCodes=[];
@@ -138,8 +178,54 @@ function formatDate(v){if(!v)return "—";const d=new Date(v);return Number.isNa
 function esc(v){return String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#39;");}
 function updateSummary(codes){document.getElementById("statTotal").textContent=codes.length;document.getElementById("statActive").textContent=codes.filter(c=>c.is_active).length;document.getElementById("statInactive").textContent=codes.filter(c=>!c.is_active).length;document.getElementById("statUsed").textContent=codes.filter(c=>Number(c.used_count||0)>0).length;}
 function applyFilters(codes){const text=filterText.value.trim().toLowerCase();const status=filterStatus.value;const usage=filterUsage.value;return codes.filter(code=>{const hay=(code.code+" "+(code.description||"")).toLowerCase();if(text&&!hay.includes(text))return false;if(status==="active"&&!code.is_active)return false;if(status==="inactive"&&code.is_active)return false;const used=Number(code.used_count||0);if(usage==="used"&&used<1)return false;if(usage==="unused"&&used>0)return false;return true;});}
-function renderTable(){const filtered=applyFilters(allCodes);updateSummary(allCodes);if(!filtered.length){codesTableBody.innerHTML='<tr><td colspan="8" class="muted">Ingen koder funnet.</td></tr>';return;}
-codesTableBody.innerHTML=filtered.map(code=>{const used=Number(code.used_count||0);return `<tr>
+function updateSelectionCount(){
+  if(selectionCount){
+    selectionCount.textContent=`${selectedCodeIds.size} valgt`;
+  }
+
+  if(selectAllCodes){
+    const visible=applyFilters(allCodes);
+    const visibleIds=visible.map(code=>String(code.id));
+    const selectedVisible=visibleIds.filter(id=>selectedCodeIds.has(id)).length;
+
+    selectAllCodes.checked=visibleIds.length>0 && selectedVisible===visibleIds.length;
+    selectAllCodes.indeterminate=selectedVisible>0 && selectedVisible<visibleIds.length;
+  }
+}
+
+function toggleCodeSelection(id,checked){
+  id=String(id);
+  if(checked)selectedCodeIds.add(id);
+  else selectedCodeIds.delete(id);
+  updateSelectionCount();
+}
+
+function selectVisibleCodes(){
+  applyFilters(allCodes).forEach(code=>selectedCodeIds.add(String(code.id)));
+  renderTable();
+}
+
+function clearCodeSelection(){
+  selectedCodeIds.clear();
+  renderTable();
+}
+
+function renderTable(){
+  const filtered=applyFilters(allCodes);
+  updateSummary(allCodes);
+
+  if(!filtered.length){
+    codesTableBody.innerHTML='<tr><td colspan="9" class="muted">Ingen koder funnet.</td></tr>';
+    updateSelectionCount();
+    return;
+  }
+
+  codesTableBody.innerHTML=filtered.map(code=>{
+    const used=Number(code.used_count||0);
+    const selected=selectedCodeIds.has(String(code.id));
+
+    return `<tr>
+<td><input class="code-select" type="checkbox" ${selected?'checked':''} onchange="toggleCodeSelection('${code.id}',this.checked)" aria-label="Marker ${esc(code.code)}"></td>
 <td><strong>${esc(code.code)}</strong></td>
 <td>${esc(code.description||"—")}</td>
 <td class="small">${esc(code.department_name||"Alle avdelinger")}<br>${esc(code.batch_name||"Alle partier")}</td>
@@ -155,12 +241,17 @@ codesTableBody.innerHTML=filtered.map(code=>{const used=Number(code.used_count||
 <td><div class="inline">
 <button type="button" class="secondary" onclick="copyCode('${esc(code.code)}')">Kopier</button>
 <button type="button" class="${code.is_active?'danger':'primary'}" onclick="toggleCodeStatus('${code.id}', ${code.is_active?'false':'true'})">${code.is_active?'Deaktiver':'Aktiver'}</button>
-</div></td></tr>`;}).join("");}
+</div></td></tr>`;
+  }).join("");
+
+  updateSelectionCount();
+}
+
 async function loadLookups(){try{const response=await fetch("/.netlify/functions/list-school-code-lookups");const data=await response.json();if(!response.ok)throw new Error(data.error||"Kunne ikke hente oppslagsdata.");
 (data.departments||[]).forEach(item=>{const o=document.createElement("option");o.value=item.id;o.textContent=item.name;departmentSelect.appendChild(o);});
 (data.batches||[]).forEach(item=>{const o=document.createElement("option");o.value=item.id;o.textContent=item.name;batchSelect.appendChild(o);});
 }catch(error){showMessage(listMessage,error.message||"Kunne ikke hente oppslagsdata.","error");}}
-async function loadCodes(){clearMessage(listMessage);codesTableBody.innerHTML='<tr><td colspan="8" class="muted">Laster koder…</td></tr>';try{const response=await fetch("/.netlify/functions/list-school-access-codes");const data=await response.json();if(!response.ok)throw new Error(data.error||"Kunne ikke hente koder.");allCodes=Array.isArray(data.codes)?data.codes:[];renderTable();}catch(error){codesTableBody.innerHTML='<tr><td colspan="8" class="muted">Kunne ikke laste koder.</td></tr>';showMessage(listMessage,error.message||"Kunne ikke hente koder.","error");}}
+async function loadCodes(){clearMessage(listMessage);codesTableBody.innerHTML='<tr><td colspan="9" class="muted">Laster koder…</td></tr>';try{const response=await fetch("/.netlify/functions/list-school-access-codes");const data=await response.json();if(!response.ok)throw new Error(data.error||"Kunne ikke hente koder.");allCodes=Array.isArray(data.codes)?data.codes:[];renderTable();}catch(error){codesTableBody.innerHTML='<tr><td colspan="9" class="muted">Kunne ikke laste koder.</td></tr>';showMessage(listMessage,error.message||"Kunne ikke hente koder.","error");}}
 
 function toDateInputValue(value){
   if(!value)return "";
@@ -196,15 +287,98 @@ async function updateCodeExpiry(id){
   }
 }
 
+
+async function bulkUpdateExpiry(){
+  clearMessage(listMessage);
+
+  if(!selectedCodeIds.size){
+    showMessage(listMessage,"Marker minst én kode først.","error");
+    return;
+  }
+
+  if(!bulkExpiryDate || !bulkExpiryDate.value){
+    showMessage(listMessage,"Velg ny utløpsdato.","error");
+    return;
+  }
+
+  const expires_at=new Date(bulkExpiryDate.value+"T23:59:59").toISOString();
+  const ids=Array.from(selectedCodeIds);
+
+  bulkExpiryUpdateBtn.disabled=true;
+  bulkExpiryUpdateBtn.textContent="Oppdaterer…";
+
+  let successCount=0;
+  let failCount=0;
+
+  try{
+    for(const id of ids){
+      try{
+        const response=await fetch("/.netlify/functions/update-school-access-code",{
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({id,expires_at})
+        });
+
+        const data=await response.json();
+
+        if(!response.ok){
+          throw new Error(data.error||"Kunne ikke oppdatere kode.");
+        }
+
+        successCount+=1;
+      }catch(error){
+        console.error("Bulk update expiry:",id,error);
+        failCount+=1;
+      }
+    }
+
+    if(failCount){
+      showMessage(
+        listMessage,
+        `${successCount} kode(r) oppdatert. ${failCount} kode(r) feilet.`,
+        "error"
+      );
+    }else{
+      showMessage(
+        listMessage,
+        `${successCount} kode(r) fikk ny utløpsdato.`,
+        "success"
+      );
+      selectedCodeIds.clear();
+    }
+
+    await loadCodes();
+  }finally{
+    bulkExpiryUpdateBtn.disabled=false;
+    bulkExpiryUpdateBtn.textContent="Oppdater valgte";
+    updateSelectionCount();
+  }
+}
+
 async function toggleCodeStatus(id,is_active){clearMessage(listMessage);try{const response=await fetch("/.netlify/functions/update-school-access-code",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id,is_active})});const data=await response.json();if(!response.ok)throw new Error(data.error||"Kunne ikke oppdatere koden.");showMessage(listMessage,is_active?"Koden ble aktivert.":"Koden ble deaktivert.","success");await loadCodes();}catch(error){showMessage(listMessage,error.message||"Kunne ikke oppdatere koden.","error");}}
 async function copyCode(code){try{await navigator.clipboard.writeText(code);showMessage(listMessage,`Kopierte kode: ${code}`,"success");}catch{showMessage(listMessage,"Kunne ikke kopiere koden automatisk.","error");}}
-window.toggleCodeStatus=toggleCodeStatus;window.copyCode=copyCode;
+window.toggleCodeSelection=toggleCodeSelection;window.toggleCodeStatus=toggleCodeStatus;window.copyCode=copyCode;
 createCodeForm.addEventListener("submit",async(event)=>{event.preventDefault();clearMessage(createMessage);
 const quantity=Number(document.getElementById("quantity").value||0);
 if(!Number.isInteger(quantity)||quantity<1){showMessage(createMessage,"Antall koder må være minst 1.","error");return;}
 const payload={description:document.getElementById("description").value.trim()||null,quantity,department_id:departmentSelect.value||null,batch_id:batchSelect.value||null,expires_at:document.getElementById("expires_at").value?new Date(document.getElementById("expires_at").value).toISOString():null,is_active:document.getElementById("is_active").checked};
 try{const response=await fetch("/.netlify/functions/create-school-access-code",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});const data=await response.json();if(!response.ok)throw new Error(data.error||"Kunne ikke opprette koder.");createCodeForm.reset();document.getElementById("quantity").value="1";document.getElementById("is_active").checked=true;showMessage(createMessage,`${data.codes?.length||quantity} koder ble opprettet.`,"success");await loadCodes();}catch(error){showMessage(createMessage,error.message||"Kunne ikke opprette koder.","error");}});
-filterText.addEventListener("input",renderTable);filterStatus.addEventListener("change",renderTable);filterUsage.addEventListener("change",renderTable);reloadBtn.addEventListener("click",loadCodes);
+filterText.addEventListener("input",renderTable);
+filterStatus.addEventListener("change",renderTable);
+filterUsage.addEventListener("change",renderTable);
+reloadBtn.addEventListener("click",loadCodes);
+bulkExpiryUpdateBtn.addEventListener("click",bulkUpdateExpiry);
+selectVisibleBtn.addEventListener("click",selectVisibleCodes);
+clearSelectionBtn.addEventListener("click",clearCodeSelection);
+selectAllCodes.addEventListener("change",function(){
+  const visible=applyFilters(allCodes);
+  if(this.checked){
+    visible.forEach(code=>selectedCodeIds.add(String(code.id)));
+  }else{
+    visible.forEach(code=>selectedCodeIds.delete(String(code.id)));
+  }
+  renderTable();
+});
 loadLookups();loadCodes();
 </script>
 </body></html>
