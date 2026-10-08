@@ -2024,6 +2024,7 @@ body.auth-locked > .container {
 <div class="qr-panel hidden" id="loanMemberQrPanel">
 <div class="help">Skann QR-koden til medlemmet. Appen velger riktig medlem automatisk.</div>
 <div id="memberReader"></div>
+<button class="btn-secondary btn-small hidden" id="btnToggleMemberQrTorch" type="button">Lys på</button>
 </div>
 </div>
 </form>
@@ -9493,7 +9494,33 @@ async function loadAll() {
       if (stopBtn) stopBtn.classList.add("hidden");
     }
 
+    let memberQrTorchOn=false;
+    function memberQrCameraTrack(){
+      const video=byId("memberReader")?.querySelector("video");
+      return video?.srcObject?.getVideoTracks?.()?.[0]||null;
+    }
+    async function setMemberQrTorch(on){
+      const track=memberQrCameraTrack();
+      if(!track||track.readyState!=="live")return false;
+      try{
+        await track.applyConstraints({advanced:[{torch:!!on}]});
+        memberQrTorchOn=!!on;
+        const button=byId("btnToggleMemberQrTorch");
+        if(button)button.textContent=on?"Lys av":"Lys på";
+        return true;
+      }catch(e){console.warn("QR-lys ikke tilgjengelig",e);return false;}
+    }
+    async function toggleMemberQrTorch(){await setMemberQrTorch(!memberQrTorchOn);}
+    function scrollToMemberQrCamera(){
+      const panel=byId("loanMemberQrPanel");
+      if(!panel||panel.classList.contains("hidden"))return;
+      const top=panel.getBoundingClientRect().top+window.scrollY-8;
+      window.scrollTo({top:Math.max(0,top),behavior:"smooth"});
+    }
     async function stopLoanMemberQrScanner() {
+      if(memberQrTorchOn)await setMemberQrTorch(false);
+      memberQrTorchOn=false;
+      byId("btnToggleMemberQrTorch")?.classList.add("hidden");
       const panel = byId("loanMemberQrPanel");
       const startBtn = byId("btnStartQrMember");
       const stopBtn = byId("btnStopQrMember");
@@ -9658,7 +9685,7 @@ async function loadAll() {
       const stopBtn = byId("btnStopQrMember");
       if (panel) {
         panel.classList.remove("hidden");
-        setTimeout(function () { try { panel.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (e) {} }, 50);
+        requestAnimationFrame(scrollToMemberQrCamera);
       }
       if (startBtn) startBtn.classList.add("hidden");
       if (stopBtn) stopBtn.classList.remove("hidden");
@@ -9673,6 +9700,14 @@ async function loadAll() {
           async function (decodedText) { await handleLoanMemberQrScan(decodedText); },
           function () {}
         );
+        requestAnimationFrame(()=>requestAnimationFrame(scrollToMemberQrCamera));
+        const track=memberQrCameraTrack();
+        let supported=false;
+        try{supported=!!track?.getCapabilities?.().torch;}catch(e){}
+        if(supported){
+          byId("btnToggleMemberQrTorch")?.classList.remove("hidden");
+          await setMemberQrTorch(true);
+        }
         setQrStatus("loanMemberQrStatus", "Kamera er klart. Hold medlems-QR-koden rolig foran kameraet.", false);
       } catch (error) {
         console.error(error);
@@ -10438,6 +10473,7 @@ if (byId("skateFlowHomeLink")) byId("skateFlowHomeLink").addEventListener("click
     byId("btnCaptureOcrName")?.addEventListener("click",captureLoanNameOcr);
     byId("btnStopOcrName")?.addEventListener("click",stopLoanNameOcr);
     byId("btnToggleOcrTorch")?.addEventListener("click",toggleLoanOcrTorch);
+    byId("btnToggleMemberQrTorch")?.addEventListener("click",toggleMemberQrTorch);
     if (byId("btnStartQrMember")) byId("btnStartQrMember").addEventListener("click", async function () { await startLoanMemberQrScanner(); });
     if (byId("btnStopQrMember")) byId("btnStopQrMember").addEventListener("click", async function () { await stopLoanMemberQrScanner(); setQrStatus("loanMemberQrStatus", "Medlemsskanning stoppet.", false); });
     if (byId("btnGenerateQrLabels")) byId("btnGenerateQrLabels").addEventListener("click", generateQrLabels);
