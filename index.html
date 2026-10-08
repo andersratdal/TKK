@@ -2091,20 +2091,12 @@ body.auth-locked > .container {
     <div id="schoolParticipantsWrap"></div>
   </div>
 
-  <div class="section-card">
-    <div class="section-header">
-      <div>
-        <h2>Påmeldte barn</h2>
-        <div class="help" style="margin-top:8px;">Viser innkomne påmeldinger før barna eventuelt opprettes som medlemmer og legges inn som deltakere.</div>
-      </div>
-      <div class="toolbar">
-        <input id="schoolSignupSearch" placeholder="Søk på navn, telefon eller e-post..." />
-        
-        
-        <button class="btn-primary btn-small" id="btnMoveSelectedSchoolSignups" type="button">Flytt valgte til deltakere</button>
-      </div>
-    </div>
-    <div class="help" id="schoolSignupMessage" style="margin-top:10px;"></div>
+  <!-- Påmeldte barn-panelet er fjernet fra grensesnittet.
+       Skjulte elementer beholdes for kompatibilitet med eksisterende JavaScript. -->
+  <div hidden aria-hidden="true">
+    <input id="schoolSignupSearch" />
+    <button id="btnMoveSelectedSchoolSignups" type="button"></button>
+    <div id="schoolSignupMessage"></div>
     <div id="schoolSignupsWrap"></div>
   </div>
   </div>
