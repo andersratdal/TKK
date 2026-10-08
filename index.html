@@ -1973,7 +1973,7 @@ body.auth-locked > .container {
 </div>
 <div class="col-12"><details class="loan-extra"><summary>Flere valg (avdeling, semester, gruppe og dato)</summary><div class="form-grid" style="margin-top:12px"><div class="col-3">
 <label for="loanDepartment">Avdeling</label>
-<select id="loanDepartment" required="">
+<select id="loanDepartment">
 <option value="">Velg avdeling</option>
 </select>
 </div>
@@ -1992,7 +1992,7 @@ body.auth-locked > .container {
 </div>
 <div class="col-4">
 <label for="loanDate">Dato og tid</label>
-<input id="loanDate" required="" type="datetime-local"/>
+<input id="loanDate" type="datetime-local"/>
 </div>
 </div></details></div>
 <div class="col-12">
@@ -9874,7 +9874,13 @@ async function loadAll() {
       syncLoanMemberSelection();
       syncLoanSkateSelection();
 
-      const department_id = byId("loanDepartment").value;
+      const departmentSelect = byId("loanDepartment");
+      if (!departmentSelect.value) {
+        const choices = Array.from(departmentSelect.options).filter(o => o.value);
+        if (choices.length === 1) departmentSelect.value = choices[0].value;
+      }
+      if (!byId("loanDate").value) byId("loanDate").value = nowLocalInputValue();
+      const department_id = departmentSelect.value;
       const member_id = byId("loanMember").value;
       const skate_id = byId("loanSkate").value;
       const loaned_at = byId("loanDate").value;
@@ -9885,7 +9891,7 @@ async function loadAll() {
       const savedGroupFilter = byId("loanGroupFilter").value || "";
 
       if (!department_id || !member_id || !skate_id || !loaned_at) {
-        alert("Du må velge avdeling, medlem, skøyte og tidspunkt.");
+        alert("Velg navn og skøytenummer fra forslagene. Hvis avdeling mangler, velg den under Flere valg.");
         return;
       }
 
