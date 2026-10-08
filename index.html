@@ -2091,7 +2091,7 @@ body.auth-locked > .container {
     <div class="toolbar" style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
       <label for="schoolBarcodeGroup">Strekkodeliste:</label>
       <select id="schoolBarcodeGroup"><option value="all">Alle grupper</option></select>
-      <button class="btn-secondary" id="btnPrintSchoolBarcodes" type="button">Skriv ut deltakerliste med strekkoder</button>
+      <button class="btn-secondary" id="btnPrintSchoolBarcodes" type="button">Skriv ut deltakerliste med QR-koder</button>
     </div>
     <div class="help" id="schoolBarcodeMessage" role="status"></div>
     <div class="help" id="schoolParticipantMessage" style="margin-top:10px;"></div>
@@ -5901,7 +5901,7 @@ function printSchoolBarcodes() {
   const message = byId("schoolBarcodeMessage");
   const batchId = byId("schoolBatchPicker")?.value || "";
   if (!batchId) { message.textContent = "Velg semester først."; return; }
-  if (typeof JsBarcode !== "function") { message.textContent = "Strekkodebiblioteket kunne ikke lastes. Kontroller nettforbindelsen."; return; }
+  if (typeof QRCode !== "function") { message.textContent = "QR-biblioteket kunne ikke lastes. Kontroller nettforbindelsen."; return; }
   const filter = byId("schoolBarcodeGroup").value;
   const groups = getSchoolGroupsForBatch(batchId);
   const rows = getSchoolEnrollmentsForBatch(batchId).filter(row => {
@@ -5912,23 +5912,30 @@ function printSchoolBarcodes() {
   if (!rows.length) { message.textContent = "Ingen deltakere i valgt gruppe."; return; }
   const batch = (state.schoolBatches || []).find(b => String(b.id) === batchId);
   const groupName = filter === "all" ? "Alle grupper" : filter === "unassigned" ? "Ikke fordelt" : (groups.find(g => String(g.id) === filter)?.name || "Gruppe");
-  const win = window.open("", "_blank");
-  if (!win) { message.textContent = "Tillat popup-vinduer for å skrive ut rapporten."; return; }
   const safe = value => String(value ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const body = rows.map(row => {
+  const data = rows.map(row => {
     const member = (state.members || []).find(m => String(m.id) === String(row.member_id));
     const name = row.members?.name || member?.name || "Ukjent deltaker";
     const group = groups.find(g => String(g.id) === String(row.school_group_id || ""));
-    return `<tr><td>${safe(name)}</td><td>${safe(group?.name || "Ikke fordelt")}</td><td><svg class="barcode" data-code="${safe('MEM-' + row.member_id)}"></svg></td></tr>`;
-  }).join("");
-  win.document.write(`<!doctype html><html lang="no"><head><meta charset="utf-8"><title>Deltakerliste med strekkoder</title><style>body{font-family:Arial,sans-serif;margin:20mm 12mm;color:#111}h1{font-size:20px;margin-bottom:6px}p{margin:4px 0 16px}table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid #ddd;padding:8px;text-align:left}tr{break-inside:avoid}svg.barcode{width:220px;height:55px}@page{size:A4;margin:12mm}</style></head><body><h1>Deltakere – ${safe(batch?.name || "Skøyteskole")}</h1><p>${safe(groupName)} · ${rows.length} deltakere</p><table><thead><tr><th>Navn</th><th>Gruppe</th><th>Strekkode</th></tr></thead><tbody>${body}</tbody></table></body></html>`);
+    return {name, group:group?.name || "Ikke fordelt", code:"MEM-" + row.member_id};
+  }).sort((a,b) => a.name.localeCompare(b.name, "no"));
+  // Generate the QR images in the current page, where the QR library is already loaded.
+  const prepared = data.map(item => {
+    const holder = document.createElement("div");
+    new QRCode(holder, {text:item.code,width:144,height:144,correctLevel:QRCode.CorrectLevel.M});
+    const canvas = holder.querySelector("canvas");
+    const image = holder.querySelector("img");
+    return {...item, qr:canvas ? canvas.toDataURL("image/png") : image?.src || ""};
+  });
+  if (prepared.some(item => !item.qr)) { message.textContent = "Kunne ikke lage QR-kodene."; return; }
+  const win = window.open("", "_blank");
+  if (!win) { message.textContent = "Tillat popup-vinduer for å skrive ut rapporten."; return; }
+  const body = prepared.map(item => `<tr><td class="name">${safe(item.name)}</td><td>${safe(item.group)}</td><td class="qr"><img src="${item.qr}" alt="QR-kode for ${safe(item.name)}"></td></tr>`).join("");
+  win.document.write(`<!doctype html><html lang="no"><head><meta charset="utf-8"><title>Deltakerliste med QR-koder</title><style>body{font-family:Arial,sans-serif;color:#111;margin:0}h1{font-size:20px;margin:0 0 5px}p{margin:0 0 12px}table{width:100%;border-collapse:collapse;table-layout:fixed}th,td{border-bottom:1px solid #ccc;padding:4px 10px;text-align:left;vertical-align:middle}th:nth-child(1){width:44%}th:nth-child(2){width:32%}th:nth-child(3){width:24%}.name{font-weight:bold}.qr{text-align:center}.qr img{width:100px;height:100px;display:block;margin:auto;image-rendering:pixelated}tr{break-inside:avoid;page-break-inside:avoid}@page{size:A4;margin:12mm}@media print{thead{display:table-header-group}}</style></head><body><h1>Deltakere – ${safe(batch?.name || "Skøyteskole")}</h1><p>${safe(groupName)} · ${prepared.length} deltakere</p><table><thead><tr><th>Navn</th><th>Gruppe</th><th>QR-kode</th></tr></thead><tbody>${body}</tbody></table></body></html>`);
   win.document.close();
-  try {
-    win.document.querySelectorAll("svg.barcode").forEach(svg => JsBarcode(svg, svg.dataset.code, {format:"CODE128",width:1.5,height:35,displayValue:false,margin:2}));
-    win.focus();
-    setTimeout(() => win.print(), 350);
-    message.textContent = "Rapporten er åpnet for utskrift.";
-  } catch (error) { message.textContent = "Kunne ikke generere strekkoder: " + error.message; win.close(); }
+  win.focus();
+  setTimeout(() => win.print(), 500);
+  message.textContent = "Deltakerlisten med QR-koder er åpnet for utskrift.";
 }
 
 function renderSchoolParticipants() {
