@@ -1999,10 +1999,10 @@ body.auth-locked > .container {
 </div></details></div>
 <div class="col-12">
 <div class="scan-row">
-<button class="btn-secondary btn-small" id="btnStartQrMember" type="button">Skann medlem</button>
-<button class="btn-secondary btn-small" id="btnStartOcrName" type="button">Skann navn</button>
+<button class="btn-secondary btn-small" id="btnStartQrMember" type="button">Skann navn - QR</button>
+<button class="btn-secondary btn-small" id="btnStartOcrName" type="button">Skann navn - tekst</button>
 <button class="btn-secondary btn-small hidden" id="btnStopQrMember" type="button">Stopp medlemsskann</button>
-<button class="btn-secondary btn-small" id="btnStartQrLoan" type="button">Skann skøyte</button>
+<button class="btn-secondary btn-small" id="btnStartQrLoan" type="button" style="display:none !important;" aria-hidden="true" tabindex="-1">Skann skøyte</button>
 <button class="btn-secondary btn-small hidden" id="btnStopQrLoan" type="button">Stopp skanning</button>
 <button class="btn-secondary btn-small" id="btnStartNfcLoan" type="button">NFC-skann</button>
 </div>
@@ -9542,9 +9542,19 @@ async function loadAll() {
       try{
         await stopLoanNameOcr();
         byId("loanOcrPanel").classList.remove("hidden");
+        // Move the opened camera panel to the top of the visible screen on mobile.
+        // Run after layout has updated; repeat after the camera starts below.
+        const scrollToOcrPanel=()=>{
+          const panel=byId("loanOcrPanel");
+          if(!panel||panel.classList.contains("hidden"))return;
+          const top=panel.getBoundingClientRect().top+window.scrollY-8;
+          window.scrollTo({top:Math.max(0,top),behavior:"smooth"});
+        };
+        requestAnimationFrame(scrollToOcrPanel);
         status.textContent="Starter kamera …";
         loanOcrStream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}}});
         const video=byId("loanOcrVideo");video.srcObject=loanOcrStream;await video.play();
+        requestAnimationFrame(()=>requestAnimationFrame(scrollToOcrPanel));
         const track=loanOcrTorchTrack();
         const torchBtn=byId("btnToggleOcrTorch");
         let torchSupported=false;
