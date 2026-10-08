@@ -8,6 +8,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -1660,6 +1662,15 @@ body.auth-locked > .container {
 </style>
 
 <script src="env-config.js"></script>
+<style>
+#loanTab #loanForm > .col-3 {grid-column:span 6}
+#loanTab .loan-extra {border:1px solid #d8e1eb;border-radius:12px;padding:12px}
+#loanTab .loan-extra summary {cursor:pointer;font-weight:600}
+#loanTab .loan-name-suggestions {position:relative;z-index:10;max-height:240px;overflow:auto;background:white;border:1px solid #cbd5e1;border-radius:10px;box-shadow:0 6px 20px #0002}
+#loanTab .loan-name-choice {display:block;width:100%;padding:12px;text-align:left;background:white;color:#172b4d;border-bottom:1px solid #edf0f4;border-radius:0}
+#loanTab .loan-name-choice:hover,#loanTab .loan-name-choice:focus {background:#eaf2ff}
+@media(max-width:650px){#loanTab #loanForm > .col-3{grid-column:span 12}}
+</style>
 </head>
 <body class="auth-locked">
 <div class="container">
@@ -1938,25 +1949,33 @@ body.auth-locked > .container {
 <div id="backRow" class="hidden"></div>
 <div class="section-card hidden" id="loanTab">
 <h2>Registrer utlån</h2>
-<div class="help" style="margin-top:8px;">Velg gruppe, medlem og ledig skøyte.</div>
 <form class="form-grid" id="loanForm" style="margin-top: 14px;">
-<div class="col-12">
-<div class="scan-row">
-<button class="btn-secondary btn-small" id="btnStartQrMember" type="button">Skann medlem</button>
-<button class="btn-secondary btn-small hidden" id="btnStopQrMember" type="button">Stopp medlemsskann</button>
-<button class="btn-secondary btn-small" id="btnStartQrLoan" type="button">Skann skøyte</button>
-<button class="btn-secondary btn-small hidden" id="btnStopQrLoan" type="button">Stopp skanning</button>
-<button class="btn-secondary btn-small" id="btnStartNfcLoan" type="button">NFC-skann</button>
-</div>
-<div class="help qr-inline-help" id="loanMemberQrStatus"></div>
-<div class="qr-panel hidden" id="loanMemberQrPanel">
-<div class="help">Skann QR-koden til medlemmet. Appen velger riktig medlem automatisk.</div>
-<div id="memberReader"></div>
-</div>
+<div class="col-3">
+<label for="loanMemberSearch">Navn</label>
+<input autocomplete="off" id="loanMemberSearch" placeholder="Søk etter fornavn eller etternavn" required=""/>
+<div id="loanNameSuggestions" class="loan-name-suggestions" hidden></div><datalist id="loanMemberList"></datalist>
+<input id="loanMember" type="hidden"/>
 </div>
 <div class="col-3">
+<label for="loanSkateSearch">Skøytenummer</label>
+<input autocomplete="off" id="loanSkateSearch" placeholder="Skriv skøytenummer" inputmode="numeric"/>
+<div id="loanSkateSuggestions" class="loan-name-suggestions" hidden></div>
+<div class="scan-row">
+</div>
+<div class="help qr-inline-help" id="loanQrStatus"></div>
+<div class="qr-panel hidden" id="loanQrPanel">
+<div class="help">Hold kameraet over QR-koden på skøyten. Appen fyller inn skøyten automatisk.</div>
+<div id="reader"></div>
+</div>
+<datalist id="loanSkateList"></datalist>
+<input id="loanSkate" type="hidden"/>
+</div>
+<div class="col-12">
+<button class="btn-primary" type="submit">Registrer utlån</button>
+</div>
+<div class="col-12"><details class="loan-extra"><summary>Flere valg (avdeling, semester, gruppe og dato)</summary><div class="form-grid" style="margin-top:12px"><div class="col-3">
 <label for="loanDepartment">Avdeling</label>
-<select id="loanDepartment" required="">
+<select id="loanDepartment">
 <option value="">Velg avdeling</option>
 </select>
 </div>
@@ -1973,32 +1992,40 @@ body.auth-locked > .container {
 </select>
 <div class="help" id="loanGroupDebug" style="margin-top:6px;"></div>
 </div>
-<div class="col-3">
-<label for="loanMemberSearch">Medlem</label>
-<input autocomplete="off" id="loanMemberSearch" list="loanMemberList" placeholder="Skriv medlem eller skann QR..." required=""/>
-<datalist id="loanMemberList"></datalist>
-<input id="loanMember" type="hidden"/>
-</div>
-<div class="col-3">
-<label for="loanSkateSearch">Skøyte</label>
-<input autocomplete="off" id="loanSkateSearch" list="loanSkateList" placeholder="Skriv skøyte-ID eller skann QR..."/>
-<div class="scan-row">
-
-</div>
-<div class="help qr-inline-help" id="loanQrStatus"></div>
-<div class="qr-panel hidden" id="loanQrPanel">
-<div class="help">Hold kameraet over QR-koden på skøyten. Appen fyller inn skøyten automatisk.</div>
-<div id="reader"></div>
-</div>
-<datalist id="loanSkateList"></datalist>
-<input id="loanSkate" type="hidden"/>
-</div>
 <div class="col-4">
 <label for="loanDate">Dato og tid</label>
-<input id="loanDate" required="" type="datetime-local"/>
+<input id="loanDate" type="datetime-local"/>
 </div>
+</div></details></div>
 <div class="col-12">
-<button class="btn-primary" type="submit">Registrer utlån</button>
+<div class="scan-row">
+<button class="btn-secondary btn-small" id="btnStartQrMember" type="button">Skann navn - QR</button>
+<button class="btn-secondary btn-small" id="btnStartOcrName" type="button">Skann navn - tekst</button>
+<button class="btn-secondary btn-small hidden" id="btnStopQrMember" type="button">Stopp medlemsskann</button>
+<button class="btn-secondary btn-small" id="btnStartQrLoan" type="button" style="display:none !important;" aria-hidden="true" tabindex="-1">Skann skøyte</button>
+<button class="btn-secondary btn-small hidden" id="btnStopQrLoan" type="button">Stopp skanning</button>
+<button class="btn-secondary btn-small" id="btnStartNfcLoan" type="button">NFC-skann</button>
+</div>
+<div id="loanOcrPanel" class="qr-panel hidden" style="margin-top:12px;">
+<div class="help">Plasser ett navn i den smale rammen og trykk «Les navn».</div>
+<div id="loanOcrView" style="position:relative;width:100%;max-width:420px;margin:10px 0;overflow:hidden;border-radius:8px;background:#111;">
+<video id="loanOcrVideo" autoplay playsinline muted style="display:block;width:100%;"></video>
+<div style="position:absolute;left:5%;right:5%;top:43%;height:14%;border:2px solid #42f5a1;box-shadow:0 0 0 100vmax rgba(0,0,0,.38);pointer-events:none;box-sizing:border-box;"></div>
+</div>
+<div class="scan-row">
+<button class="btn-secondary btn-small" type="button" id="btnCaptureOcrName">Les navn</button>
+<button class="btn-secondary btn-small hidden" type="button" id="btnToggleOcrTorch">Lys av</button>
+<button class="btn-secondary btn-small" type="button" id="btnStopOcrName">Lukk</button>
+</div>
+<div class="help" id="loanOcrStatus" role="status" aria-live="polite"></div>
+
+</div>
+<div class="help qr-inline-help" id="loanMemberQrStatus"></div>
+<div class="qr-panel hidden" id="loanMemberQrPanel">
+<div class="help">Skann QR-koden til medlemmet. Appen velger riktig medlem automatisk.</div>
+<div id="memberReader"></div>
+<button class="btn-secondary btn-small hidden" id="btnToggleMemberQrTorch" type="button">Lys på</button>
+</div>
 </div>
 </form>
 </div>
@@ -2078,24 +2105,22 @@ body.auth-locked > .container {
         <button class="btn-primary" id="btnAddSchoolParticipant" type="button">Legg til deltaker</button>
       </div>
     </div>
+    <div class="toolbar" style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+      <label for="schoolBarcodeGroup">Strekkodeliste:</label>
+      <select id="schoolBarcodeGroup"><option value="all">Alle grupper</option></select>
+      <button class="btn-secondary" id="btnPrintSchoolBarcodes" type="button">Skriv ut deltakerliste med QR-koder</button>
+    </div>
+    <div class="help" id="schoolBarcodeMessage" role="status"></div>
     <div class="help" id="schoolParticipantMessage" style="margin-top:10px;"></div>
     <div id="schoolParticipantsWrap"></div>
   </div>
 
-  <div class="section-card">
-    <div class="section-header">
-      <div>
-        <h2>Påmeldte barn</h2>
-        <div class="help" style="margin-top:8px;">Viser innkomne påmeldinger før barna eventuelt opprettes som medlemmer og legges inn som deltakere.</div>
-      </div>
-      <div class="toolbar">
-        <input id="schoolSignupSearch" placeholder="Søk på navn, telefon eller e-post..." />
-        
-        
-        <button class="btn-primary btn-small" id="btnMoveSelectedSchoolSignups" type="button">Flytt valgte til deltakere</button>
-      </div>
-    </div>
-    <div class="help" id="schoolSignupMessage" style="margin-top:10px;"></div>
+  <!-- Påmeldte barn-panelet er fjernet fra grensesnittet.
+       Skjulte elementer beholdes for kompatibilitet med eksisterende JavaScript. -->
+  <div hidden aria-hidden="true">
+    <input id="schoolSignupSearch" />
+    <button id="btnMoveSelectedSchoolSignups" type="button"></button>
+    <div id="schoolSignupMessage"></div>
     <div id="schoolSignupsWrap"></div>
   </div>
   </div>
@@ -3700,35 +3725,10 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
         selectedGroupId
       );
 
-      if (loanMemberListEl) {
-        loanMemberListEl.innerHTML = "";
-        members
-          .slice()
-          .sort((a, b) => compareBatchNames(a.name, b.name))
-          .forEach((member) => {
-            const opt = document.createElement("option");
-            let label = String(member.name || "");
-            const details = [];
-            if (member.phone) details.push(member.phone);
-            if (member.email) details.push(member.email);
-            if (details.length) label += " - " + details.join(" - ");
-            opt.value = label;
-            loanMemberListEl.appendChild(opt);
-          });
-      }
-
-      const selectedMember = members.find((m) => String(m.id) === String(currentMemberId));
-      if (selectedMember) {
-        let label = String(selectedMember.name || "");
-        const details = [];
-        if (selectedMember.phone) details.push(selectedMember.phone);
-        if (selectedMember.email) details.push(selectedMember.email);
-        if (details.length) label += " - " + details.join(" - ");
-        loanMemberSearchEl.value = label;
-        loanMemberEl.value = selectedMember.id;
-      } else {
-        if (!currentMemberSearch) loanMemberEl.value = "";
-      }
+      // Navneforslag håndteres av eget søk, uavhengig av avdelingsfilter.
+      const selectedMember = (state.members || []).find(m => String(m.id) === String(currentMemberId));
+      if (selectedMember && !currentMemberSearch) loanMemberSearchEl.value = String(selectedMember.name || "");
+      renderLoanNameSuggestions();
 
       const availableSkates = state.skates
         .filter((skate) => skate.is_active !== false)
@@ -3741,30 +3741,15 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
         });
 
       loanSkateListEl.innerHTML = "";
-      availableSkates.forEach((skate) => {
-        const opt = document.createElement("option");
-        let label = String(skate.skate_code);
-        const details = [];
-        if (skate.size) details.push("str " + skate.size);
-        if (skate.type) details.push(skate.type);
-        if (details.length) label += " - " + details.join(" - ");
-        opt.value = label;
-        loanSkateListEl.appendChild(opt);
-      });
-
-      const selectedSkate = availableSkates.find((s) => s.id === currentSkateId);
+      const selectedSkate = availableSkates.find(s => String(s.id) === String(currentSkateId));
       if (selectedSkate) {
-        let label = String(selectedSkate.skate_code);
-        const details = [];
-        if (selectedSkate.size) details.push("str " + selectedSkate.size);
-        if (selectedSkate.type) details.push(selectedSkate.type);
-        if (details.length) label += " - " + details.join(" - ");
-        loanSkateSearchEl.value = label;
+        loanSkateSearchEl.value = String(selectedSkate.skate_code);
         loanSkateEl.value = selectedSkate.id;
       } else {
         loanSkateSearchEl.value = currentSkateSearch || "";
         if (!currentSkateSearch) loanSkateEl.value = "";
       }
+      renderLoanSkateSuggestions();
 
       loanDepartmentEl.value = currentDepartmentId;
       if (loanSemesterFilterEl) loanSemesterFilterEl.value = currentSemesterFilter;
@@ -3808,71 +3793,62 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
     }
 
 
-    function syncLoanMemberSelection() {
-      const searchEl = byId("loanMemberSearch");
-      const hiddenEl = byId("loanMember");
-      if (!searchEl || !hiddenEl) return;
-
-      const value = searchEl.value.trim();
-      if (!value) {
-        hiddenEl.value = "";
-        return;
+    function renderLoanNameSuggestions(){
+      const input=byId("loanMemberSearch"), box=byId("loanNameSuggestions");
+      if(!input||!box)return;
+      const query=input.value.trim().toLocaleLowerCase("no");
+      box.replaceChildren();
+      if(!query || document.activeElement!==input){box.hidden=true;return;}
+      const matches=(state.members||[]).filter(m=>String(m.name||"").toLocaleLowerCase("no").includes(query)).sort((a,b)=>String(a.name).localeCompare(String(b.name),"no")).slice(0,35);
+      for(const member of matches){
+        const btn=document.createElement("button");btn.type="button";btn.className="loan-name-choice";
+        btn.textContent=String(member.name||"");
+        btn.addEventListener("mousedown",e=>e.preventDefault());
+        btn.addEventListener("click",()=>{input.value=String(member.name||"");byId("loanMember").value=String(member.id);box.hidden=true;byId("loanSkateSearch").focus();});
+        box.appendChild(btn);
       }
-
-      const departmentId = byId("loanDepartment")
-        ? byId("loanDepartment").value
-        : "";
-      const groupId = byId("loanGroupFilter")
-        ? byId("loanGroupFilter").value
-        : "";
-
-      const semesterId = byId("loanSemesterFilter")
-        ? byId("loanSemesterFilter").value
-        : "";
-      const members = getLoanMembersForFilters(departmentId, semesterId, groupId);
-      const found = members.find((member) => {
-        let label = String(member.name || "");
-        const details = [];
-        if (member.phone) details.push(member.phone);
-        if (member.email) details.push(member.email);
-        if (details.length) label += " - " + details.join(" - ");
-        return label === value;
-      });
-
-      hiddenEl.value = found ? String(found.id) : "";
+      box.hidden=!matches.length;
+    }
+    function syncLoanMemberSelection(){
+      const input=byId("loanMemberSearch"), hidden=byId("loanMember");
+      const selected=(state.members||[]).find(m=>String(m.id)===String(hidden.value));
+      if(!selected || String(selected.name||"")!==input.value.trim()) hidden.value="";
+      renderLoanNameSuggestions();
     }
 
-    function syncLoanSkateSelection() {
-      const loanSkateSearchEl = byId("loanSkateSearch");
-      const loanSkateEl = byId("loanSkate");
-      const value = loanSkateSearchEl.value.trim();
-
-      const availableSkates = state.skates
-        .filter((skate) => skate.is_active !== false)
-        .filter((skate) => !getActiveLoanForSkate(skate.id))
-        .sort((a, b) => {
-          const aNum = parseInt(a.skate_code, 10);
-          const bNum = parseInt(b.skate_code, 10);
-          if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
-          return String(a.skate_code).localeCompare(String(b.skate_code), 'no');
+    function getAvailableLoanSkates(){
+      return (state.skates||[]).filter(s=>s.is_active!==false && !getActiveLoanForSkate(s.id))
+        .sort((a,b)=>String(a.skate_code||"").localeCompare(String(b.skate_code||""),"no",{numeric:true}));
+    }
+    function renderLoanSkateSuggestions(){
+      const input=byId("loanSkateSearch"), box=byId("loanSkateSuggestions");
+      if(!input||!box)return;
+      const query=input.value.trim().toLocaleLowerCase("no");
+      box.replaceChildren();
+      if(!query || document.activeElement!==input){box.hidden=true;return;}
+      const matches=getAvailableLoanSkates().filter(s=>String(s.skate_code||"").toLocaleLowerCase("no").includes(query)).slice(0,35);
+      for(const skate of matches){
+        const btn=document.createElement("button");btn.type="button";btn.className="loan-name-choice";
+        btn.textContent=String(skate.skate_code||"");
+        btn.addEventListener("mousedown",e=>e.preventDefault());
+        btn.addEventListener("click",()=>{
+          input.value=String(skate.skate_code||"");
+          byId("loanSkate").value=String(skate.id);
+          box.hidden=true;
         });
-
-      let match = availableSkates.find((s) => {
-        const exactCode = String(s.skate_code).trim() === value;
-        let label = String(s.skate_code);
-        const details = [];
-        if (s.size) details.push("str " + s.size);
-        if (s.type) details.push(s.type);
-        if (details.length) label += " - " + details.join(" - ");
-        return exactCode || label === value;
-      });
-
-      if (!match && value) {
-        const starts = availableSkates.filter((s) => String(s.skate_code).startsWith(value));
-        if (starts.length === 1) match = starts[0];
+        box.appendChild(btn);
       }
-
-      loanSkateEl.value = match ? match.id : "";
+      box.hidden=!matches.length;
+    }
+    function syncLoanSkateSelection(){
+      const input=byId("loanSkateSearch"), hidden=byId("loanSkate");
+      const value=input.value.trim();
+      const selected=getAvailableLoanSkates().find(s=>String(s.id)===String(hidden.value));
+      if(!selected || String(selected.skate_code||"").trim()!==value){
+        const exact=getAvailableLoanSkates().filter(s=>String(s.skate_code||"").trim()===value);
+        hidden.value=exact.length===1?String(exact[0].id):"";
+      }
+      renderLoanSkateSuggestions();
     }
 
     
@@ -5925,7 +5901,69 @@ async function moveSchoolEnrollmentToRecruit1(enrollment) {
   return target.group;
 }
 
+function refreshSchoolBarcodeGroups() {
+  const select = byId("schoolBarcodeGroup");
+  if (!select) return;
+  const batchId = byId("schoolBatchPicker")?.value || "";
+  const previous = select.value;
+  select.replaceChildren(new Option("Alle grupper", "all"));
+  if (batchId) {
+    getSchoolGroupsForBatch(batchId).forEach(group => select.add(new Option(group.name || "Uten navn", String(group.id))));
+    select.add(new Option("Ikke fordelt", "unassigned"));
+  }
+  select.value = Array.from(select.options).some(option => option.value === previous) ? previous : "all";
+}
+
+function printSchoolBarcodes() {
+  const message = byId("schoolBarcodeMessage");
+  const batchId = byId("schoolBatchPicker")?.value || "";
+  if (!batchId) { message.textContent = "Velg semester først."; return; }
+  if (typeof QRCode !== "function") { message.textContent = "QR-biblioteket kunne ikke lastes. Kontroller nettforbindelsen."; return; }
+  const filter = byId("schoolBarcodeGroup").value;
+  const groups = getSchoolGroupsForBatch(batchId);
+  const rows = getSchoolEnrollmentsForBatch(batchId).filter(row => {
+    if (filter === "all") return true;
+    if (filter === "unassigned") return !row.school_group_id;
+    return String(row.school_group_id || "") === filter;
+  });
+  if (!rows.length) { message.textContent = "Ingen deltakere i valgt gruppe."; return; }
+  const batch = (state.schoolBatches || []).find(b => String(b.id) === batchId);
+  const groupName = filter === "all" ? "Alle grupper" : filter === "unassigned" ? "Ikke fordelt" : (groups.find(g => String(g.id) === filter)?.name || "Gruppe");
+  const safe = value => String(value ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const data = rows.map(row => {
+    const member = (state.members || []).find(m => String(m.id) === String(row.member_id));
+    const name = row.members?.name || member?.name || "Ukjent deltaker";
+    const group = groups.find(g => String(g.id) === String(row.school_group_id || ""));
+    return {name, group:group?.name || "Ikke fordelt", code:"MEM-" + row.member_id};
+  }).sort((a,b) => a.name.localeCompare(b.name, "no"));
+  // Generate the QR images in the current page, where the QR library is already loaded.
+  const prepared = data.map(item => {
+    const holder = document.createElement("div");
+    new QRCode(holder, {text:item.code,width:144,height:144,correctLevel:QRCode.CorrectLevel.M});
+    const canvas = holder.querySelector("canvas");
+    const image = holder.querySelector("img");
+    return {...item, qr:canvas ? canvas.toDataURL("image/png") : image?.src || ""};
+  });
+  if (prepared.some(item => !item.qr)) { message.textContent = "Kunne ikke lage QR-kodene."; return; }
+  const win = window.open("", "_blank");
+  if (!win) { message.textContent = "Tillat popup-vinduer for å skrive ut rapporten."; return; }
+  const body = prepared.map(item => `<div class="participant"><div class="participant-info"><div class="name">${safe(item.name)}</div><div class="group">${safe(item.group)}</div></div><img class="qr" src="${item.qr}" alt="QR-kode for ${safe(item.name)}"></div>`).join("");
+  win.document.write(`<!doctype html><html lang="no"><head><meta charset="utf-8"><title>Deltakerliste med QR-koder</title><style>
+*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#111;margin:0}h1{font-size:19px;margin:0 0 5px}p{margin:0 0 12px;font-size:12px}
+.participants{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 8mm;align-items:start}
+.participant{display:flex;align-items:center;justify-content:space-between;gap:7px;min-width:0;min-height:23mm;padding:3mm 2mm;border-bottom:1px solid #ccc;break-inside:avoid;page-break-inside:avoid}
+.participant-info{min-width:0;flex:1}.name{font-weight:bold;font-size:12px;overflow-wrap:anywhere}.group{font-size:10px;color:#444;margin-top:3px}
+.qr{width:64px;height:64px;flex:none;display:block;image-rendering:pixelated}
+@page{size:A4 portrait;margin:12mm}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+</style></head><body><h1>Deltakere – ${safe(batch?.name || "Skøyteskole")}</h1><p>${safe(groupName)} · ${prepared.length} deltakere</p><div class="participants">${body}</div></body></html>`);
+  win.document.close();
+  win.focus();
+  setTimeout(() => win.print(), 500);
+  message.textContent = "Deltakerlisten med QR-koder er åpnet for utskrift.";
+}
+
 function renderSchoolParticipants() {
+  refreshSchoolBarcodeGroups();
   const wrap = byId("schoolParticipantsWrap");
   if (!wrap) return;
 
@@ -9456,7 +9494,33 @@ async function loadAll() {
       if (stopBtn) stopBtn.classList.add("hidden");
     }
 
+    let memberQrTorchOn=false;
+    function memberQrCameraTrack(){
+      const video=byId("memberReader")?.querySelector("video");
+      return video?.srcObject?.getVideoTracks?.()?.[0]||null;
+    }
+    async function setMemberQrTorch(on){
+      const track=memberQrCameraTrack();
+      if(!track||track.readyState!=="live")return false;
+      try{
+        await track.applyConstraints({advanced:[{torch:!!on}]});
+        memberQrTorchOn=!!on;
+        const button=byId("btnToggleMemberQrTorch");
+        if(button)button.textContent=on?"Lys av":"Lys på";
+        return true;
+      }catch(e){console.warn("QR-lys ikke tilgjengelig",e);return false;}
+    }
+    async function toggleMemberQrTorch(){await setMemberQrTorch(!memberQrTorchOn);}
+    function scrollToMemberQrCamera(){
+      const panel=byId("loanMemberQrPanel");
+      if(!panel||panel.classList.contains("hidden"))return;
+      const top=panel.getBoundingClientRect().top+window.scrollY-8;
+      window.scrollTo({top:Math.max(0,top),behavior:"smooth"});
+    }
     async function stopLoanMemberQrScanner() {
+      if(memberQrTorchOn)await setMemberQrTorch(false);
+      memberQrTorchOn=false;
+      byId("btnToggleMemberQrTorch")?.classList.add("hidden");
       const panel = byId("loanMemberQrPanel");
       const startBtn = byId("btnStartQrMember");
       const stopBtn = byId("btnStopQrMember");
@@ -9472,6 +9536,125 @@ async function loadAll() {
       if (stopBtn) stopBtn.classList.add("hidden");
     }
 
+    let loanOcrStream=null;
+    let loanOcrBusy=false;
+    let loanOcrTorchOn=false;
+    function loanOcrTorchTrack(){return loanOcrStream?.getVideoTracks()?.[0]||null;}
+    async function setLoanOcrTorch(on){
+      const track=loanOcrTorchTrack();
+      if(!track||track.readyState!=="live")return false;
+      try{
+        await track.applyConstraints({advanced:[{torch:!!on}]});
+        loanOcrTorchOn=!!on;
+        const btn=byId("btnToggleOcrTorch");
+        if(btn)btn.textContent=loanOcrTorchOn?"Lys av":"Lys på";
+        return true;
+      }catch(e){console.info("Kameralys ikke tilgjengelig:",e);return false;}
+    }
+    async function toggleLoanOcrTorch(){
+      const ok=await setLoanOcrTorch(!loanOcrTorchOn);
+      if(!ok)byId("loanOcrStatus").textContent="Telefonen/nettleseren tillater ikke styring av kameralyset.";
+    }
+    async function stopLoanNameOcr(){
+      if(loanOcrTorchOn)await setLoanOcrTorch(false);
+      loanOcrTorchOn=false;
+      byId("btnToggleOcrTorch")?.classList.add("hidden");
+      if(loanOcrStream){loanOcrStream.getTracks().forEach(track=>track.stop());loanOcrStream=null;}
+      const video=byId("loanOcrVideo");if(video)video.srcObject=null;
+      byId("loanOcrPanel").classList.add("hidden");
+    }
+    async function startLoanNameOcr(){
+      const status=byId("loanOcrStatus");
+      if(!navigator.mediaDevices?.getUserMedia){alert("Kamera krever HTTPS og en nettleser med kamerastøtte.");return;}
+      try{
+        await stopLoanNameOcr();
+        byId("loanOcrPanel").classList.remove("hidden");
+        // Move the opened camera panel to the top of the visible screen on mobile.
+        // Run after layout has updated; repeat after the camera starts below.
+        const scrollToOcrPanel=()=>{
+          const panel=byId("loanOcrPanel");
+          if(!panel||panel.classList.contains("hidden"))return;
+          const top=panel.getBoundingClientRect().top+window.scrollY-8;
+          window.scrollTo({top:Math.max(0,top),behavior:"smooth"});
+        };
+        requestAnimationFrame(scrollToOcrPanel);
+        status.textContent="Starter kamera …";
+        loanOcrStream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}}});
+        const video=byId("loanOcrVideo");video.srcObject=loanOcrStream;await video.play();
+        requestAnimationFrame(()=>requestAnimationFrame(scrollToOcrPanel));
+        const track=loanOcrTorchTrack();
+        const torchBtn=byId("btnToggleOcrTorch");
+        let torchSupported=false;
+        try{torchSupported=!!track?.getCapabilities?.().torch;}catch(e){}
+        if(torchSupported){
+          torchBtn.classList.remove("hidden");
+          torchBtn.textContent="Lys på";
+          await setLoanOcrTorch(true);
+        }
+        status.textContent="Plasser ett navn i den grønne rammen og trykk «Les navn».";
+      }catch(error){status.textContent="Kunne ikke åpne kamera: "+error.message;await stopLoanNameOcr();byId("loanOcrPanel").classList.remove("hidden");}
+    }
+    async function captureLoanNameOcr(){
+      if(loanOcrBusy)return;
+      const video=byId("loanOcrVideo"),status=byId("loanOcrStatus");
+      if(!loanOcrStream||!video.videoWidth)return;
+      if(!window.Tesseract){status.textContent="OCR-biblioteket ble ikke lastet. Kontroller internettforbindelsen.";return;}
+      loanOcrBusy=true;byId("btnCaptureOcrName").disabled=true;
+      status.textContent="Leser navnet …";
+      try{
+        // Crop the actual camera frame to match the visible horizontal targeting band.
+        const canvas=document.createElement("canvas");
+        const sourceX=Math.round(video.videoWidth*.05);
+        const sourceY=Math.round(video.videoHeight*.43);
+        const sourceW=Math.round(video.videoWidth*.90);
+        const sourceH=Math.round(video.videoHeight*.14);
+        canvas.width=sourceW*2;canvas.height=sourceH*2;
+        const ctx=canvas.getContext("2d");
+        ctx.imageSmoothingEnabled=true;
+        ctx.drawImage(video,sourceX,sourceY,sourceW,sourceH,0,0,canvas.width,canvas.height);
+        const result=await Tesseract.recognize(canvas,"nor+eng");
+        const raw=String(result.data?.text||"").trim();
+        const normalized=value=>String(value||"").toLocaleLowerCase("no").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zæøå\s-]/g," ").replace(/\s+/g," ").trim();
+        const text=normalized(raw);
+        if(!text){status.textContent="Fant ikke noe navn. Prøv igjen med navnet midt i rammen.";return;}
+        const distance=(a,b)=>{
+          const prev=Array.from({length:b.length+1},(_,i)=>i);
+          for(let i=1;i<=a.length;i++){
+            let before=prev[0];prev[0]=i;
+            for(let j=1;j<=b.length;j++){
+              const old=prev[j];
+              prev[j]=Math.min(prev[j]+1,prev[j-1]+1,before+(a[i-1]===b[j-1]?0:1));
+              before=old;
+            }
+          }
+          return prev[b.length];
+        };
+        const candidates=(state.members||[]).map(member=>{
+          const name=normalized(member.name);
+          if(!name)return null;
+          const nameWords=name.split(" ").filter(Boolean);
+          const scanWords=text.split(" ").filter(Boolean);
+          const exact=text===name;
+          const contained=text.includes(name);
+          const editScore=1-distance(text,name)/Math.max(text.length,name.length,1);
+          const wordScore=nameWords.length?nameWords.reduce((sum,w)=>sum+(scanWords.includes(w)?1:0),0)/nameWords.length:0;
+          const score=exact?1:contained?.97:Math.max(editScore,wordScore*.88);
+          return {member,score};
+        }).filter(Boolean).sort((a,b)=>b.score-a.score);
+        const best=candidates[0],second=candidates[1];
+        // Never guess from a weak or ambiguous OCR match.
+        if(!best||best.score<.78||(second&&best.score-second.score<.08)){
+          status.textContent="Fant ikke et sikkert, entydig navnetreff. Prøv igjen eller bruk navnesøket.";
+          return;
+        }
+        byId("loanMember").value=String(best.member.id);
+        byId("loanMemberSearch").value=String(best.member.name||"");
+        await stopLoanNameOcr();
+        byId("loanSkateSearch")?.focus();
+            }catch(error){console.error("OCR-feil",error);status.textContent="Kunne ikke lese navnet. Prøv igjen: "+error.message;}
+      finally{loanOcrBusy=false;byId("btnCaptureOcrName").disabled=false;}
+    }
+
     async function handleLoanMemberQrScan(decodedText) {
       const memberId = extractMemberIdFromQrText(decodedText);
       if (!memberId || memberId === loanMemberQrLastText) return;
@@ -9483,6 +9666,7 @@ async function loadAll() {
         return;
       }
       byId("loanMember").value = String(member.id);
+      if (byId("loanMemberSearch")) byId("loanMemberSearch").value = String(member.name || "");
       setQrStatus("loanMemberQrStatus", "Skannet medlem " + (member.name || ("ID " + member.id)) + ".", false);
       await stopLoanMemberQrScanner();
     }
@@ -9501,7 +9685,7 @@ async function loadAll() {
       const stopBtn = byId("btnStopQrMember");
       if (panel) {
         panel.classList.remove("hidden");
-        setTimeout(function () { try { panel.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (e) {} }, 50);
+        requestAnimationFrame(scrollToMemberQrCamera);
       }
       if (startBtn) startBtn.classList.add("hidden");
       if (stopBtn) stopBtn.classList.remove("hidden");
@@ -9516,6 +9700,14 @@ async function loadAll() {
           async function (decodedText) { await handleLoanMemberQrScan(decodedText); },
           function () {}
         );
+        requestAnimationFrame(()=>requestAnimationFrame(scrollToMemberQrCamera));
+        const track=memberQrCameraTrack();
+        let supported=false;
+        try{supported=!!track?.getCapabilities?.().torch;}catch(e){}
+        if(supported){
+          byId("btnToggleMemberQrTorch")?.classList.remove("hidden");
+          await setMemberQrTorch(true);
+        }
         setQrStatus("loanMemberQrStatus", "Kamera er klart. Hold medlems-QR-koden rolig foran kameraet.", false);
       } catch (error) {
         console.error(error);
@@ -9914,18 +10106,35 @@ async function loadAll() {
       syncLoanMemberSelection();
       syncLoanSkateSelection();
 
-      const department_id = byId("loanDepartment").value;
+      const departmentSelect = byId("loanDepartment");
+      if (!byId("loanDate").value) byId("loanDate").value = nowLocalInputValue();
       const member_id = byId("loanMember").value;
       const skate_id = byId("loanSkate").value;
       const loaned_at = byId("loanDate").value;
+
+      // Avdeling er ikke et obligatorisk valg ved utlån. Bruk valgt avdeling
+      // hvis den finnes, ellers utled den fra medlemmets gruppetilhørighet.
+      let department_id = departmentSelect.value || null;
+      if (!department_id && member_id) {
+        const memberDepartments = Array.from(getMemberRegularDepartmentIds(member_id));
+        if (memberDepartments.length) department_id = memberDepartments[0];
+      }
+      if (!department_id && member_id) {
+        const enrollment = (state.schoolEnrollments || []).find(item => sameId(item.member_id, member_id));
+        const batch = enrollment && (state.schoolBatches || []).find(item => sameId(item.id, enrollment.batch_id));
+        if (batch && batch.department_id) department_id = batch.department_id;
+      }
+      if (!department_id && (state.departments || []).length === 1) {
+        department_id = state.departments[0].id;
+      }
 
       const memberLabel = byId("loanMemberSearch") ? byId("loanMemberSearch").value : "";
       const skateLabel = byId("loanSkateSearch") ? byId("loanSkateSearch").value : "";
       const savedDepartmentId = byId("loanDepartment").value || "";
       const savedGroupFilter = byId("loanGroupFilter").value || "";
 
-      if (!department_id || !member_id || !skate_id || !loaned_at) {
-        alert("Du må velge avdeling, medlem, skøyte og tidspunkt.");
+      if (!member_id || !skate_id) {
+        alert("Velg navn og skøytenummer fra forslagene.");
         return;
       }
 
@@ -10053,6 +10262,7 @@ async function loadAll() {
       renderSchoolParticipants();
     });
 
+    if (byId("btnPrintSchoolBarcodes")) byId("btnPrintSchoolBarcodes").addEventListener("click", printSchoolBarcodes);
     if (byId("schoolBatchPicker")) byId("schoolBatchPicker").addEventListener("change", function () {
       setUiPref("schoolBatchPicker", byId("schoolBatchPicker").value || "");
       renderSchoolBatchOverview();
@@ -10162,8 +10372,12 @@ attachSortHandlers();
     });
     byId("loanMemberSearch").addEventListener("input", syncLoanMemberSelection);
     byId("loanMemberSearch").addEventListener("change", syncLoanMemberSelection);
+    byId("loanMemberSearch").addEventListener("focus", renderLoanNameSuggestions);
+    byId("loanMemberSearch").addEventListener("blur", () => setTimeout(() => { const el=byId("loanNameSuggestions"); if(el)el.hidden=true; },180));
     byId("loanSkateSearch").addEventListener("input", syncLoanSkateSelection);
     byId("loanSkateSearch").addEventListener("change", syncLoanSkateSelection);
+    byId("loanSkateSearch").addEventListener("focus", renderLoanSkateSuggestions);
+    byId("loanSkateSearch").addEventListener("blur", () => setTimeout(() => { const el=byId("loanSkateSuggestions"); if(el)el.hidden=true; },180));
 
     byId("loanDepartment").addEventListener("change", function () {
       setUiPref("loanDepartment", this.value || "");
@@ -10255,6 +10469,11 @@ if (byId("skateFlowHomeLink")) byId("skateFlowHomeLink").addEventListener("click
     if (byId("btnStopQrLoan")) byId("btnStopQrLoan").addEventListener("click", async function () { await stopLoanQrScanner(); setQrStatus("loanQrStatus", "QR-skanning stoppet.", false); });
     if (byId("btnStartQrReturn")) byId("btnStartQrReturn").addEventListener("click", async function () { await startReturnQrScanner(); });
     if (byId("btnStopQrReturn")) byId("btnStopQrReturn").addEventListener("click", async function () { await stopReturnQrScanner(); setQrStatus("returnQrStatus", "QR-skanning stoppet.", false); });
+    byId("btnStartOcrName")?.addEventListener("click",startLoanNameOcr);
+    byId("btnCaptureOcrName")?.addEventListener("click",captureLoanNameOcr);
+    byId("btnStopOcrName")?.addEventListener("click",stopLoanNameOcr);
+    byId("btnToggleOcrTorch")?.addEventListener("click",toggleLoanOcrTorch);
+    byId("btnToggleMemberQrTorch")?.addEventListener("click",toggleMemberQrTorch);
     if (byId("btnStartQrMember")) byId("btnStartQrMember").addEventListener("click", async function () { await startLoanMemberQrScanner(); });
     if (byId("btnStopQrMember")) byId("btnStopQrMember").addEventListener("click", async function () { await stopLoanMemberQrScanner(); setQrStatus("loanMemberQrStatus", "Medlemsskanning stoppet.", false); });
     if (byId("btnGenerateQrLabels")) byId("btnGenerateQrLabels").addEventListener("click", generateQrLabels);
