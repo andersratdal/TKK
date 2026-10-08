@@ -2007,14 +2007,17 @@ body.auth-locked > .container {
 <button class="btn-secondary btn-small" id="btnStartNfcLoan" type="button">NFC-skann</button>
 </div>
 <div id="loanOcrPanel" class="qr-panel hidden" style="margin-top:12px;">
-<div class="help">Hold navnet innenfor kamerabildet og trykk «Les navn». Velg deretter riktig person fra forslagene.</div>
-<video id="loanOcrVideo" autoplay playsinline muted style="display:block;width:100%;max-width:420px;border-radius:8px;margin:10px 0;"></video>
+<div class="help">Plasser ett navn i den smale rammen og trykk «Les navn».</div>
+<div id="loanOcrView" style="position:relative;width:100%;max-width:420px;margin:10px 0;overflow:hidden;border-radius:8px;background:#111;">
+<video id="loanOcrVideo" autoplay playsinline muted style="display:block;width:100%;"></video>
+<div style="position:absolute;left:5%;right:5%;top:43%;height:14%;border:2px solid #42f5a1;box-shadow:0 0 0 100vmax rgba(0,0,0,.38);pointer-events:none;box-sizing:border-box;"></div>
+</div>
 <div class="scan-row">
 <button class="btn-secondary btn-small" type="button" id="btnCaptureOcrName">Les navn</button>
 <button class="btn-secondary btn-small" type="button" id="btnStopOcrName">Lukk</button>
 </div>
 <div class="help" id="loanOcrStatus" role="status" aria-live="polite"></div>
-<div id="loanOcrMatches" style="display:grid;gap:6px;margin-top:8px;"></div>
+
 </div>
 <div class="help qr-inline-help" id="loanMemberQrStatus"></div>
 <div class="qr-panel hidden" id="loanMemberQrPanel">
@@ -9518,47 +9521,70 @@ async function loadAll() {
       try{
         await stopLoanNameOcr();
         byId("loanOcrPanel").classList.remove("hidden");
-        byId("loanOcrMatches").replaceChildren();
         status.textContent="Starter kamera …";
         loanOcrStream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}}});
         const video=byId("loanOcrVideo");video.srcObject=loanOcrStream;await video.play();
-        status.textContent="Rett kameraet mot ett navn og trykk «Les navn».";
+        status.textContent="Plasser ett navn i den grønne rammen og trykk «Les navn».";
       }catch(error){status.textContent="Kunne ikke åpne kamera: "+error.message;await stopLoanNameOcr();byId("loanOcrPanel").classList.remove("hidden");}
     }
     async function captureLoanNameOcr(){
       if(loanOcrBusy)return;
-      const video=byId("loanOcrVideo"),status=byId("loanOcrStatus"),matchesBox=byId("loanOcrMatches");
+      const video=byId("loanOcrVideo"),status=byId("loanOcrStatus");
       if(!loanOcrStream||!video.videoWidth)return;
       if(!window.Tesseract){status.textContent="OCR-biblioteket ble ikke lastet. Kontroller internettforbindelsen.";return;}
       loanOcrBusy=true;byId("btnCaptureOcrName").disabled=true;
-      matchesBox.replaceChildren();status.textContent="Leser teksten …";
+      status.textContent="Leser navnet …";
       try{
-        const canvas=document.createElement("canvas");canvas.width=video.videoWidth;canvas.height=video.videoHeight;
-        canvas.getContext("2d").drawImage(video,0,0);
+        // Crop the actual camera frame to match the visible horizontal targeting band.
+        const canvas=document.createElement("canvas");
+        const sourceX=Math.round(video.videoWidth*.05);
+        const sourceY=Math.round(video.videoHeight*.43);
+        const sourceW=Math.round(video.videoWidth*.90);
+        const sourceH=Math.round(video.videoHeight*.14);
+        canvas.width=sourceW*2;canvas.height=sourceH*2;
+        const ctx=canvas.getContext("2d");
+        ctx.imageSmoothingEnabled=true;
+        ctx.drawImage(video,sourceX,sourceY,sourceW,sourceH,0,0,canvas.width,canvas.height);
         const result=await Tesseract.recognize(canvas,"nor+eng");
         const raw=String(result.data?.text||"").trim();
         const normalized=value=>String(value||"").toLocaleLowerCase("no").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zæøå\s-]/g," ").replace(/\s+/g," ").trim();
-        const lines=raw.split(/\n/).map(normalized).filter(Boolean);
-        const full=normalized(raw);
-        const found=(state.members||[]).map(member=>{
-          const name=normalized(member.name);if(!name)return null;
-          const parts=name.split(" ").filter(x=>x.length>1);
-          let score=lines.some(line=>line===name)?100:lines.some(line=>line.includes(name))?85:full.includes(name)?70:0;
-          if(!score && parts.length>=2)score=Math.max(...lines.map(line=>parts.reduce((sum,part)=>sum+(line.includes(part)?1:0),0)))*15;
-          return score>=30?{member,score}:null;
-        }).filter(Boolean).sort((a,b)=>b.score-a.score||String(a.member.name).localeCompare(String(b.member.name),"no")).slice(0,8);
-        if(!found.length){status.textContent="Fant ingen sikre navnetreff. Prøv igjen med navnet nærmere kameraet, eller bruk navnesøket.";return;}
-        status.textContent="Velg riktig navn (ingen velges automatisk):";
-        for(const item of found){
-          const btn=document.createElement("button");btn.type="button";btn.className="btn-secondary btn-small";
-          btn.textContent=String(item.member.name||"");
-          btn.addEventListener("click",async()=>{
-            byId("loanMember").value=String(item.member.id);
-            byId("loanMemberSearch").value=String(item.member.name||"");
-            await stopLoanNameOcr();byId("loanSkateSearch")?.focus();
-          });matchesBox.appendChild(btn);
+        const text=normalized(raw);
+        if(!text){status.textContent="Fant ikke noe navn. Prøv igjen med navnet midt i rammen.";return;}
+        const distance=(a,b)=>{
+          const prev=Array.from({length:b.length+1},(_,i)=>i);
+          for(let i=1;i<=a.length;i++){
+            let before=prev[0];prev[0]=i;
+            for(let j=1;j<=b.length;j++){
+              const old=prev[j];
+              prev[j]=Math.min(prev[j]+1,prev[j-1]+1,before+(a[i-1]===b[j-1]?0:1));
+              before=old;
+            }
+          }
+          return prev[b.length];
+        };
+        const candidates=(state.members||[]).map(member=>{
+          const name=normalized(member.name);
+          if(!name)return null;
+          const nameWords=name.split(" ").filter(Boolean);
+          const scanWords=text.split(" ").filter(Boolean);
+          const exact=text===name;
+          const contained=text.includes(name);
+          const editScore=1-distance(text,name)/Math.max(text.length,name.length,1);
+          const wordScore=nameWords.length?nameWords.reduce((sum,w)=>sum+(scanWords.includes(w)?1:0),0)/nameWords.length:0;
+          const score=exact?1:contained?.97:Math.max(editScore,wordScore*.88);
+          return {member,score};
+        }).filter(Boolean).sort((a,b)=>b.score-a.score);
+        const best=candidates[0],second=candidates[1];
+        // Never guess from a weak or ambiguous OCR match.
+        if(!best||best.score<.78||(second&&best.score-second.score<.08)){
+          status.textContent="Fant ikke et sikkert, entydig navnetreff. Prøv igjen eller bruk navnesøket.";
+          return;
         }
-      }catch(error){console.error("OCR-feil",error);status.textContent="Kunne ikke lese navnet. Prøv igjen: "+error.message;}
+        byId("loanMember").value=String(best.member.id);
+        byId("loanMemberSearch").value=String(best.member.name||"");
+        await stopLoanNameOcr();
+        byId("loanSkateSearch")?.focus();
+            }catch(error){console.error("OCR-feil",error);status.textContent="Kunne ikke lese navnet. Prøv igjen: "+error.message;}
       finally{loanOcrBusy=false;byId("btnCaptureOcrName").disabled=false;}
     }
 
