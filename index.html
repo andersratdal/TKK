@@ -1947,7 +1947,6 @@ body.auth-locked > .container {
 <div id="backRow" class="hidden"></div>
 <div class="section-card hidden" id="loanTab">
 <h2>Registrer utlån</h2>
-<div class="help" style="margin-top:8px;">Søk etter navn, skriv skøytenummer og registrer utlånet.</div>
 <form class="form-grid" id="loanForm" style="margin-top: 14px;">
 <div class="col-3">
 <label for="loanMemberSearch">Navn</label>
@@ -1957,10 +1956,9 @@ body.auth-locked > .container {
 </div>
 <div class="col-3">
 <label for="loanSkateSearch">Skøytenummer</label>
-<input autocomplete="off" id="loanSkateSearch" list="loanSkateList" placeholder="Skriv skøytenummer" inputmode="numeric"/>
+<input autocomplete="off" id="loanSkateSearch" placeholder="Skriv skøytenummer" inputmode="numeric"/>
+<div id="loanSkateSuggestions" class="loan-name-suggestions" hidden></div>
 <div class="scan-row">
-
-</div>
 <div class="help qr-inline-help" id="loanQrStatus"></div>
 <div class="qr-panel hidden" id="loanQrPanel">
 <div class="help">Hold kameraet over QR-koden på skøyten. Appen fyller inn skøyten automatisk.</div>
@@ -3726,30 +3724,15 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
         });
 
       loanSkateListEl.innerHTML = "";
-      availableSkates.forEach((skate) => {
-        const opt = document.createElement("option");
-        let label = String(skate.skate_code);
-        const details = [];
-        if (skate.size) details.push("str " + skate.size);
-        if (skate.type) details.push(skate.type);
-        if (details.length) label += " - " + details.join(" - ");
-        opt.value = label;
-        loanSkateListEl.appendChild(opt);
-      });
-
-      const selectedSkate = availableSkates.find((s) => s.id === currentSkateId);
+      const selectedSkate = availableSkates.find(s => String(s.id) === String(currentSkateId));
       if (selectedSkate) {
-        let label = String(selectedSkate.skate_code);
-        const details = [];
-        if (selectedSkate.size) details.push("str " + selectedSkate.size);
-        if (selectedSkate.type) details.push(selectedSkate.type);
-        if (details.length) label += " - " + details.join(" - ");
-        loanSkateSearchEl.value = label;
+        loanSkateSearchEl.value = String(selectedSkate.skate_code);
         loanSkateEl.value = selectedSkate.id;
       } else {
         loanSkateSearchEl.value = currentSkateSearch || "";
         if (!currentSkateSearch) loanSkateEl.value = "";
       }
+      renderLoanSkateSuggestions();
 
       loanDepartmentEl.value = currentDepartmentId;
       if (loanSemesterFilterEl) loanSemesterFilterEl.value = currentSemesterFilter;
@@ -3816,37 +3799,39 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
       renderLoanNameSuggestions();
     }
 
-    function syncLoanSkateSelection() {
-      const loanSkateSearchEl = byId("loanSkateSearch");
-      const loanSkateEl = byId("loanSkate");
-      const value = loanSkateSearchEl.value.trim();
-
-      const availableSkates = state.skates
-        .filter((skate) => skate.is_active !== false)
-        .filter((skate) => !getActiveLoanForSkate(skate.id))
-        .sort((a, b) => {
-          const aNum = parseInt(a.skate_code, 10);
-          const bNum = parseInt(b.skate_code, 10);
-          if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
-          return String(a.skate_code).localeCompare(String(b.skate_code), 'no');
+    function getAvailableLoanSkates(){
+      return (state.skates||[]).filter(s=>s.is_active!==false && !getActiveLoanForSkate(s.id))
+        .sort((a,b)=>String(a.skate_code||"").localeCompare(String(b.skate_code||""),"no",{numeric:true}));
+    }
+    function renderLoanSkateSuggestions(){
+      const input=byId("loanSkateSearch"), box=byId("loanSkateSuggestions");
+      if(!input||!box)return;
+      const query=input.value.trim().toLocaleLowerCase("no");
+      box.replaceChildren();
+      if(!query || document.activeElement!==input){box.hidden=true;return;}
+      const matches=getAvailableLoanSkates().filter(s=>String(s.skate_code||"").toLocaleLowerCase("no").includes(query)).slice(0,35);
+      for(const skate of matches){
+        const btn=document.createElement("button");btn.type="button";btn.className="loan-name-choice";
+        btn.textContent=String(skate.skate_code||"");
+        btn.addEventListener("mousedown",e=>e.preventDefault());
+        btn.addEventListener("click",()=>{
+          input.value=String(skate.skate_code||"");
+          byId("loanSkate").value=String(skate.id);
+          box.hidden=true;
         });
-
-      let match = availableSkates.find((s) => {
-        const exactCode = String(s.skate_code).trim() === value;
-        let label = String(s.skate_code);
-        const details = [];
-        if (s.size) details.push("str " + s.size);
-        if (s.type) details.push(s.type);
-        if (details.length) label += " - " + details.join(" - ");
-        return exactCode || label === value;
-      });
-
-      if (!match && value) {
-        const starts = availableSkates.filter((s) => String(s.skate_code).startsWith(value));
-        if (starts.length === 1) match = starts[0];
+        box.appendChild(btn);
       }
-
-      loanSkateEl.value = match ? match.id : "";
+      box.hidden=!matches.length;
+    }
+    function syncLoanSkateSelection(){
+      const input=byId("loanSkateSearch"), hidden=byId("loanSkate");
+      const value=input.value.trim();
+      const selected=getAvailableLoanSkates().find(s=>String(s.id)===String(hidden.value));
+      if(!selected || String(selected.skate_code||"").trim()!==value){
+        const exact=getAvailableLoanSkates().filter(s=>String(s.skate_code||"").trim()===value);
+        hidden.value=exact.length===1?String(exact[0].id):"";
+      }
+      renderLoanSkateSuggestions();
     }
 
     
@@ -10140,6 +10125,8 @@ attachSortHandlers();
     byId("loanMemberSearch").addEventListener("blur", () => setTimeout(() => { const el=byId("loanNameSuggestions"); if(el)el.hidden=true; },180));
     byId("loanSkateSearch").addEventListener("input", syncLoanSkateSelection);
     byId("loanSkateSearch").addEventListener("change", syncLoanSkateSelection);
+    byId("loanSkateSearch").addEventListener("focus", renderLoanSkateSuggestions);
+    byId("loanSkateSearch").addEventListener("blur", () => setTimeout(() => { const el=byId("loanSkateSuggestions"); if(el)el.hidden=true; },180));
 
     byId("loanDepartment").addEventListener("change", function () {
       setUiPref("loanDepartment", this.value || "");
