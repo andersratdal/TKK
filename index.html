@@ -1660,6 +1660,15 @@ body.auth-locked > .container {
 </style>
 
 <script src="env-config.js"></script>
+<style>
+#loanTab #loanForm > .col-3 {grid-column:span 6}
+#loanTab .loan-extra {border:1px solid #d8e1eb;border-radius:12px;padding:12px}
+#loanTab .loan-extra summary {cursor:pointer;font-weight:600}
+#loanTab .loan-name-suggestions {position:relative;z-index:10;max-height:240px;overflow:auto;background:white;border:1px solid #cbd5e1;border-radius:10px;box-shadow:0 6px 20px #0002}
+#loanTab .loan-name-choice {display:block;width:100%;padding:12px;text-align:left;background:white;color:#172b4d;border-bottom:1px solid #edf0f4;border-radius:0}
+#loanTab .loan-name-choice:hover,#loanTab .loan-name-choice:focus {background:#eaf2ff}
+@media(max-width:650px){#loanTab #loanForm > .col-3{grid-column:span 12}}
+</style>
 </head>
 <body class="auth-locked">
 <div class="container">
@@ -1938,23 +1947,32 @@ body.auth-locked > .container {
 <div id="backRow" class="hidden"></div>
 <div class="section-card hidden" id="loanTab">
 <h2>Registrer utlån</h2>
-<div class="help" style="margin-top:8px;">Velg gruppe, medlem og ledig skøyte.</div>
+<div class="help" style="margin-top:8px;">Søk etter navn, skriv skøytenummer og registrer utlånet.</div>
 <form class="form-grid" id="loanForm" style="margin-top: 14px;">
-<div class="col-12">
-<div class="scan-row">
-<button class="btn-secondary btn-small" id="btnStartQrMember" type="button">Skann medlem</button>
-<button class="btn-secondary btn-small hidden" id="btnStopQrMember" type="button">Stopp medlemsskann</button>
-<button class="btn-secondary btn-small" id="btnStartQrLoan" type="button">Skann skøyte</button>
-<button class="btn-secondary btn-small hidden" id="btnStopQrLoan" type="button">Stopp skanning</button>
-<button class="btn-secondary btn-small" id="btnStartNfcLoan" type="button">NFC-skann</button>
-</div>
-<div class="help qr-inline-help" id="loanMemberQrStatus"></div>
-<div class="qr-panel hidden" id="loanMemberQrPanel">
-<div class="help">Skann QR-koden til medlemmet. Appen velger riktig medlem automatisk.</div>
-<div id="memberReader"></div>
-</div>
+<div class="col-3">
+<label for="loanMemberSearch">Navn</label>
+<input autocomplete="off" id="loanMemberSearch" placeholder="Søk etter fornavn eller etternavn" required=""/>
+<div id="loanNameSuggestions" class="loan-name-suggestions" hidden></div><datalist id="loanMemberList"></datalist>
+<input id="loanMember" type="hidden"/>
 </div>
 <div class="col-3">
+<label for="loanSkateSearch">Skøytenummer</label>
+<input autocomplete="off" id="loanSkateSearch" list="loanSkateList" placeholder="Skriv skøytenummer" inputmode="numeric"/>
+<div class="scan-row">
+
+</div>
+<div class="help qr-inline-help" id="loanQrStatus"></div>
+<div class="qr-panel hidden" id="loanQrPanel">
+<div class="help">Hold kameraet over QR-koden på skøyten. Appen fyller inn skøyten automatisk.</div>
+<div id="reader"></div>
+</div>
+<datalist id="loanSkateList"></datalist>
+<input id="loanSkate" type="hidden"/>
+</div>
+<div class="col-12">
+<button class="btn-primary" type="submit">Registrer utlån</button>
+</div>
+<div class="col-12"><details class="loan-extra"><summary>Flere valg (avdeling, semester, gruppe og dato)</summary><div class="form-grid" style="margin-top:12px"><div class="col-3">
 <label for="loanDepartment">Avdeling</label>
 <select id="loanDepartment" required="">
 <option value="">Velg avdeling</option>
@@ -1973,32 +1991,24 @@ body.auth-locked > .container {
 </select>
 <div class="help" id="loanGroupDebug" style="margin-top:6px;"></div>
 </div>
-<div class="col-3">
-<label for="loanMemberSearch">Medlem</label>
-<input autocomplete="off" id="loanMemberSearch" list="loanMemberList" placeholder="Skriv medlem eller skann QR..." required=""/>
-<datalist id="loanMemberList"></datalist>
-<input id="loanMember" type="hidden"/>
-</div>
-<div class="col-3">
-<label for="loanSkateSearch">Skøyte</label>
-<input autocomplete="off" id="loanSkateSearch" list="loanSkateList" placeholder="Skriv skøyte-ID eller skann QR..."/>
-<div class="scan-row">
-
-</div>
-<div class="help qr-inline-help" id="loanQrStatus"></div>
-<div class="qr-panel hidden" id="loanQrPanel">
-<div class="help">Hold kameraet over QR-koden på skøyten. Appen fyller inn skøyten automatisk.</div>
-<div id="reader"></div>
-</div>
-<datalist id="loanSkateList"></datalist>
-<input id="loanSkate" type="hidden"/>
-</div>
 <div class="col-4">
 <label for="loanDate">Dato og tid</label>
 <input id="loanDate" required="" type="datetime-local"/>
 </div>
+</div></details></div>
 <div class="col-12">
-<button class="btn-primary" type="submit">Registrer utlån</button>
+<div class="scan-row">
+<button class="btn-secondary btn-small" id="btnStartQrMember" type="button">Skann medlem</button>
+<button class="btn-secondary btn-small hidden" id="btnStopQrMember" type="button">Stopp medlemsskann</button>
+<button class="btn-secondary btn-small" id="btnStartQrLoan" type="button">Skann skøyte</button>
+<button class="btn-secondary btn-small hidden" id="btnStopQrLoan" type="button">Stopp skanning</button>
+<button class="btn-secondary btn-small" id="btnStartNfcLoan" type="button">NFC-skann</button>
+</div>
+<div class="help qr-inline-help" id="loanMemberQrStatus"></div>
+<div class="qr-panel hidden" id="loanMemberQrPanel">
+<div class="help">Skann QR-koden til medlemmet. Appen velger riktig medlem automatisk.</div>
+<div id="memberReader"></div>
+</div>
 </div>
 </form>
 </div>
@@ -3700,35 +3710,10 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
         selectedGroupId
       );
 
-      if (loanMemberListEl) {
-        loanMemberListEl.innerHTML = "";
-        members
-          .slice()
-          .sort((a, b) => compareBatchNames(a.name, b.name))
-          .forEach((member) => {
-            const opt = document.createElement("option");
-            let label = String(member.name || "");
-            const details = [];
-            if (member.phone) details.push(member.phone);
-            if (member.email) details.push(member.email);
-            if (details.length) label += " - " + details.join(" - ");
-            opt.value = label;
-            loanMemberListEl.appendChild(opt);
-          });
-      }
-
-      const selectedMember = members.find((m) => String(m.id) === String(currentMemberId));
-      if (selectedMember) {
-        let label = String(selectedMember.name || "");
-        const details = [];
-        if (selectedMember.phone) details.push(selectedMember.phone);
-        if (selectedMember.email) details.push(selectedMember.email);
-        if (details.length) label += " - " + details.join(" - ");
-        loanMemberSearchEl.value = label;
-        loanMemberEl.value = selectedMember.id;
-      } else {
-        if (!currentMemberSearch) loanMemberEl.value = "";
-      }
+      // Navneforslag håndteres av eget søk, uavhengig av avdelingsfilter.
+      const selectedMember = (state.members || []).find(m => String(m.id) === String(currentMemberId));
+      if (selectedMember && !currentMemberSearch) loanMemberSearchEl.value = String(selectedMember.name || "");
+      renderLoanNameSuggestions();
 
       const availableSkates = state.skates
         .filter((skate) => skate.is_active !== false)
@@ -3808,38 +3793,27 @@ let state = { members: [], skates: [], loans: [], groups: [], memberGroups: [], 
     }
 
 
-    function syncLoanMemberSelection() {
-      const searchEl = byId("loanMemberSearch");
-      const hiddenEl = byId("loanMember");
-      if (!searchEl || !hiddenEl) return;
-
-      const value = searchEl.value.trim();
-      if (!value) {
-        hiddenEl.value = "";
-        return;
+    function renderLoanNameSuggestions(){
+      const input=byId("loanMemberSearch"), box=byId("loanNameSuggestions");
+      if(!input||!box)return;
+      const query=input.value.trim().toLocaleLowerCase("no");
+      box.replaceChildren();
+      if(!query || document.activeElement!==input){box.hidden=true;return;}
+      const matches=(state.members||[]).filter(m=>String(m.name||"").toLocaleLowerCase("no").includes(query)).sort((a,b)=>String(a.name).localeCompare(String(b.name),"no")).slice(0,35);
+      for(const member of matches){
+        const btn=document.createElement("button");btn.type="button";btn.className="loan-name-choice";
+        btn.textContent=String(member.name||"");
+        btn.addEventListener("mousedown",e=>e.preventDefault());
+        btn.addEventListener("click",()=>{input.value=String(member.name||"");byId("loanMember").value=String(member.id);box.hidden=true;byId("loanSkateSearch").focus();});
+        box.appendChild(btn);
       }
-
-      const departmentId = byId("loanDepartment")
-        ? byId("loanDepartment").value
-        : "";
-      const groupId = byId("loanGroupFilter")
-        ? byId("loanGroupFilter").value
-        : "";
-
-      const semesterId = byId("loanSemesterFilter")
-        ? byId("loanSemesterFilter").value
-        : "";
-      const members = getLoanMembersForFilters(departmentId, semesterId, groupId);
-      const found = members.find((member) => {
-        let label = String(member.name || "");
-        const details = [];
-        if (member.phone) details.push(member.phone);
-        if (member.email) details.push(member.email);
-        if (details.length) label += " - " + details.join(" - ");
-        return label === value;
-      });
-
-      hiddenEl.value = found ? String(found.id) : "";
+      box.hidden=!matches.length;
+    }
+    function syncLoanMemberSelection(){
+      const input=byId("loanMemberSearch"), hidden=byId("loanMember");
+      const selected=(state.members||[]).find(m=>String(m.id)===String(hidden.value));
+      if(!selected || String(selected.name||"")!==input.value.trim()) hidden.value="";
+      renderLoanNameSuggestions();
     }
 
     function syncLoanSkateSelection() {
@@ -10162,6 +10136,8 @@ attachSortHandlers();
     });
     byId("loanMemberSearch").addEventListener("input", syncLoanMemberSelection);
     byId("loanMemberSearch").addEventListener("change", syncLoanMemberSelection);
+    byId("loanMemberSearch").addEventListener("focus", renderLoanNameSuggestions);
+    byId("loanMemberSearch").addEventListener("blur", () => setTimeout(() => { const el=byId("loanNameSuggestions"); if(el)el.hidden=true; },180));
     byId("loanSkateSearch").addEventListener("input", syncLoanSkateSelection);
     byId("loanSkateSearch").addEventListener("change", syncLoanSkateSelection);
 
