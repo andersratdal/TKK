@@ -5930,8 +5930,15 @@ function printSchoolBarcodes() {
   if (prepared.some(item => !item.qr)) { message.textContent = "Kunne ikke lage QR-kodene."; return; }
   const win = window.open("", "_blank");
   if (!win) { message.textContent = "Tillat popup-vinduer for å skrive ut rapporten."; return; }
-  const body = prepared.map(item => `<tr><td class="name">${safe(item.name)}</td><td>${safe(item.group)}</td><td class="qr"><img src="${item.qr}" alt="QR-kode for ${safe(item.name)}"></td></tr>`).join("");
-  win.document.write(`<!doctype html><html lang="no"><head><meta charset="utf-8"><title>Deltakerliste med QR-koder</title><style>body{font-family:Arial,sans-serif;color:#111;margin:0}h1{font-size:20px;margin:0 0 5px}p{margin:0 0 12px}table{width:100%;border-collapse:collapse;table-layout:fixed}th,td{border-bottom:1px solid #ccc;padding:4px 10px;text-align:left;vertical-align:middle}th:nth-child(1){width:44%}th:nth-child(2){width:32%}th:nth-child(3){width:24%}.name{font-weight:bold}.qr{text-align:center}.qr img{width:100px;height:100px;display:block;margin:auto;image-rendering:pixelated}tr{break-inside:avoid;page-break-inside:avoid}@page{size:A4;margin:12mm}@media print{thead{display:table-header-group}}</style></head><body><h1>Deltakere – ${safe(batch?.name || "Skøyteskole")}</h1><p>${safe(groupName)} · ${prepared.length} deltakere</p><table><thead><tr><th>Navn</th><th>Gruppe</th><th>QR-kode</th></tr></thead><tbody>${body}</tbody></table></body></html>`);
+  const body = prepared.map(item => `<div class="participant"><div class="participant-info"><div class="name">${safe(item.name)}</div><div class="group">${safe(item.group)}</div></div><img class="qr" src="${item.qr}" alt="QR-kode for ${safe(item.name)}"></div>`).join("");
+  win.document.write(`<!doctype html><html lang="no"><head><meta charset="utf-8"><title>Deltakerliste med QR-koder</title><style>
+*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#111;margin:0}h1{font-size:19px;margin:0 0 5px}p{margin:0 0 12px;font-size:12px}
+.participants{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 8mm;align-items:start}
+.participant{display:flex;align-items:center;justify-content:space-between;gap:7px;min-width:0;min-height:23mm;padding:3mm 2mm;border-bottom:1px solid #ccc;break-inside:avoid;page-break-inside:avoid}
+.participant-info{min-width:0;flex:1}.name{font-weight:bold;font-size:12px;overflow-wrap:anywhere}.group{font-size:10px;color:#444;margin-top:3px}
+.qr{width:64px;height:64px;flex:none;display:block;image-rendering:pixelated}
+@page{size:A4 portrait;margin:12mm}@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+</style></head><body><h1>Deltakere – ${safe(batch?.name || "Skøyteskole")}</h1><p>${safe(groupName)} · ${prepared.length} deltakere</p><div class="participants">${body}</div></body></html>`);
   win.document.close();
   win.focus();
   setTimeout(() => win.print(), 500);
