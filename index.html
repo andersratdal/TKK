@@ -8,6 +8,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -2087,6 +2088,12 @@ body.auth-locked > .container {
         <button class="btn-primary" id="btnAddSchoolParticipant" type="button">Legg til deltaker</button>
       </div>
     </div>
+    <div class="toolbar" style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+      <label for="schoolBarcodeGroup">Strekkodeliste:</label>
+      <select id="schoolBarcodeGroup"><option value="all">Alle grupper</option></select>
+      <button class="btn-secondary" id="btnPrintSchoolBarcodes" type="button">Skriv ut deltakerliste med strekkoder</button>
+    </div>
+    <div class="help" id="schoolBarcodeMessage" role="status"></div>
     <div class="help" id="schoolParticipantMessage" style="margin-top:10px;"></div>
     <div id="schoolParticipantsWrap"></div>
   </div>
@@ -5877,7 +5884,55 @@ async function moveSchoolEnrollmentToRecruit1(enrollment) {
   return target.group;
 }
 
+function refreshSchoolBarcodeGroups() {
+  const select = byId("schoolBarcodeGroup");
+  if (!select) return;
+  const batchId = byId("schoolBatchPicker")?.value || "";
+  const previous = select.value;
+  select.replaceChildren(new Option("Alle grupper", "all"));
+  if (batchId) {
+    getSchoolGroupsForBatch(batchId).forEach(group => select.add(new Option(group.name || "Uten navn", String(group.id))));
+    select.add(new Option("Ikke fordelt", "unassigned"));
+  }
+  select.value = Array.from(select.options).some(option => option.value === previous) ? previous : "all";
+}
+
+function printSchoolBarcodes() {
+  const message = byId("schoolBarcodeMessage");
+  const batchId = byId("schoolBatchPicker")?.value || "";
+  if (!batchId) { message.textContent = "Velg semester først."; return; }
+  if (typeof JsBarcode !== "function") { message.textContent = "Strekkodebiblioteket kunne ikke lastes. Kontroller nettforbindelsen."; return; }
+  const filter = byId("schoolBarcodeGroup").value;
+  const groups = getSchoolGroupsForBatch(batchId);
+  const rows = getSchoolEnrollmentsForBatch(batchId).filter(row => {
+    if (filter === "all") return true;
+    if (filter === "unassigned") return !row.school_group_id;
+    return String(row.school_group_id || "") === filter;
+  });
+  if (!rows.length) { message.textContent = "Ingen deltakere i valgt gruppe."; return; }
+  const batch = (state.schoolBatches || []).find(b => String(b.id) === batchId);
+  const groupName = filter === "all" ? "Alle grupper" : filter === "unassigned" ? "Ikke fordelt" : (groups.find(g => String(g.id) === filter)?.name || "Gruppe");
+  const win = window.open("", "_blank");
+  if (!win) { message.textContent = "Tillat popup-vinduer for å skrive ut rapporten."; return; }
+  const safe = value => String(value ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const body = rows.map(row => {
+    const member = (state.members || []).find(m => String(m.id) === String(row.member_id));
+    const name = row.members?.name || member?.name || "Ukjent deltaker";
+    const group = groups.find(g => String(g.id) === String(row.school_group_id || ""));
+    return `<tr><td>${safe(name)}</td><td>${safe(group?.name || "Ikke fordelt")}</td><td><svg class="barcode" data-code="${safe('MEM-' + row.member_id)}"></svg></td></tr>`;
+  }).join("");
+  win.document.write(`<!doctype html><html lang="no"><head><meta charset="utf-8"><title>Deltakerliste med strekkoder</title><style>body{font-family:Arial,sans-serif;margin:20mm 12mm;color:#111}h1{font-size:20px;margin-bottom:6px}p{margin:4px 0 16px}table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid #ddd;padding:8px;text-align:left}tr{break-inside:avoid}svg.barcode{width:220px;height:55px}@page{size:A4;margin:12mm}</style></head><body><h1>Deltakere – ${safe(batch?.name || "Skøyteskole")}</h1><p>${safe(groupName)} · ${rows.length} deltakere</p><table><thead><tr><th>Navn</th><th>Gruppe</th><th>Strekkode</th></tr></thead><tbody>${body}</tbody></table></body></html>`);
+  win.document.close();
+  try {
+    win.document.querySelectorAll("svg.barcode").forEach(svg => JsBarcode(svg, svg.dataset.code, {format:"CODE128",width:1.5,height:35,displayValue:false,margin:2}));
+    win.focus();
+    setTimeout(() => win.print(), 350);
+    message.textContent = "Rapporten er åpnet for utskrift.";
+  } catch (error) { message.textContent = "Kunne ikke generere strekkoder: " + error.message; win.close(); }
+}
+
 function renderSchoolParticipants() {
+  refreshSchoolBarcodeGroups();
   const wrap = byId("schoolParticipantsWrap");
   if (!wrap) return;
 
@@ -9435,6 +9490,7 @@ async function loadAll() {
         return;
       }
       byId("loanMember").value = String(member.id);
+      if (byId("loanMemberSearch")) byId("loanMemberSearch").value = String(member.name || "");
       setQrStatus("loanMemberQrStatus", "Skannet medlem " + (member.name || ("ID " + member.id)) + ".", false);
       await stopLoanMemberQrScanner();
     }
@@ -10022,6 +10078,7 @@ async function loadAll() {
       renderSchoolParticipants();
     });
 
+    if (byId("btnPrintSchoolBarcodes")) byId("btnPrintSchoolBarcodes").addEventListener("click", printSchoolBarcodes);
     if (byId("schoolBatchPicker")) byId("schoolBatchPicker").addEventListener("change", function () {
       setUiPref("schoolBatchPicker", byId("schoolBatchPicker").value || "");
       renderSchoolBatchOverview();
