@@ -1663,10 +1663,13 @@ body.auth-locked > .container {
 
 <script src="env-config.js"></script>
 <style>
-#loanTab #loanForm > .col-3 {grid-column:span 6}
+#loanTab #loanForm > .col-3 {grid-column:span 6;align-self:start}
 #loanTab .loan-extra {border:1px solid #d8e1eb;border-radius:12px;padding:12px}
 #loanTab .loan-extra summary {cursor:pointer;font-weight:600}
-#loanTab .loan-name-suggestions {position:relative;z-index:10;max-height:240px;overflow:auto;background:white;border:1px solid #cbd5e1;border-radius:10px;box-shadow:0 6px 20px #0002}
+#loanTab .loan-search-anchor {position:relative;min-width:0}
+#loanTab #loanForm > .col-3:focus-within {z-index:30}
+#loanTab .loan-name-suggestions {position:absolute;top:100%;left:0;right:0;z-index:40;max-height:240px;overflow:auto;background:white;border:1px solid #cbd5e1;border-radius:10px;box-shadow:0 6px 20px #0002}
+#loanTab .loan-name-suggestions[hidden] {display:none !important}
 #loanTab .loan-name-choice {display:block;width:100%;padding:12px;text-align:left;background:white;color:#172b4d;border-bottom:1px solid #edf0f4;border-radius:0}
 #loanTab .loan-name-choice:hover,#loanTab .loan-name-choice:focus {background:#eaf2ff}
 @media(max-width:650px){#loanTab #loanForm > .col-3{grid-column:span 12}}
@@ -1952,14 +1955,14 @@ body.auth-locked > .container {
 <form class="form-grid" id="loanForm" style="margin-top: 14px;">
 <div class="col-3">
 <label for="loanMemberSearch">Navn</label>
-<input autocomplete="off" id="loanMemberSearch" placeholder="Søk etter fornavn eller etternavn" required=""/>
-<div id="loanNameSuggestions" class="loan-name-suggestions" hidden></div><datalist id="loanMemberList"></datalist>
+<div class="loan-search-anchor"><input autocomplete="off" id="loanMemberSearch" placeholder="Søk etter fornavn eller etternavn" required=""/>
+<div id="loanNameSuggestions" class="loan-name-suggestions" hidden></div></div><datalist id="loanMemberList"></datalist>
 <input id="loanMember" type="hidden"/>
 </div>
 <div class="col-3">
 <label for="loanSkateSearch">Skøytenummer</label>
-<input autocomplete="off" id="loanSkateSearch" placeholder="Skriv skøytenummer" inputmode="numeric"/>
-<div id="loanSkateSuggestions" class="loan-name-suggestions" hidden></div>
+<div class="loan-search-anchor"><input autocomplete="off" id="loanSkateSearch" placeholder="Skriv skøytenummer" inputmode="numeric"/>
+<div id="loanSkateSuggestions" class="loan-name-suggestions" hidden></div></div>
 <div class="scan-row">
 </div>
 <div class="help qr-inline-help" id="loanQrStatus"></div>
