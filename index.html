@@ -9875,23 +9875,34 @@ async function loadAll() {
       syncLoanSkateSelection();
 
       const departmentSelect = byId("loanDepartment");
-      if (!departmentSelect.value) {
-        const choices = Array.from(departmentSelect.options).filter(o => o.value);
-        if (choices.length === 1) departmentSelect.value = choices[0].value;
-      }
       if (!byId("loanDate").value) byId("loanDate").value = nowLocalInputValue();
-      const department_id = departmentSelect.value;
       const member_id = byId("loanMember").value;
       const skate_id = byId("loanSkate").value;
       const loaned_at = byId("loanDate").value;
+
+      // Avdeling er ikke et obligatorisk valg ved utlån. Bruk valgt avdeling
+      // hvis den finnes, ellers utled den fra medlemmets gruppetilhørighet.
+      let department_id = departmentSelect.value || null;
+      if (!department_id && member_id) {
+        const memberDepartments = Array.from(getMemberRegularDepartmentIds(member_id));
+        if (memberDepartments.length) department_id = memberDepartments[0];
+      }
+      if (!department_id && member_id) {
+        const enrollment = (state.schoolEnrollments || []).find(item => sameId(item.member_id, member_id));
+        const batch = enrollment && (state.schoolBatches || []).find(item => sameId(item.id, enrollment.batch_id));
+        if (batch && batch.department_id) department_id = batch.department_id;
+      }
+      if (!department_id && (state.departments || []).length === 1) {
+        department_id = state.departments[0].id;
+      }
 
       const memberLabel = byId("loanMemberSearch") ? byId("loanMemberSearch").value : "";
       const skateLabel = byId("loanSkateSearch") ? byId("loanSkateSearch").value : "";
       const savedDepartmentId = byId("loanDepartment").value || "";
       const savedGroupFilter = byId("loanGroupFilter").value || "";
 
-      if (!department_id || !member_id || !skate_id || !loaned_at) {
-        alert("Velg navn og skøytenummer fra forslagene. Hvis avdeling mangler, velg den under Flere valg.");
+      if (!member_id || !skate_id) {
+        alert("Velg navn og skøytenummer fra forslagene.");
         return;
       }
 
