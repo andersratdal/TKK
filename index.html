@@ -8,6 +8,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <script src="https://unpkg.com/html5-qrcode"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -1999,10 +2000,21 @@ body.auth-locked > .container {
 <div class="col-12">
 <div class="scan-row">
 <button class="btn-secondary btn-small" id="btnStartQrMember" type="button">Skann medlem</button>
+<button class="btn-secondary btn-small" id="btnStartOcrName" type="button">Skann navn</button>
 <button class="btn-secondary btn-small hidden" id="btnStopQrMember" type="button">Stopp medlemsskann</button>
 <button class="btn-secondary btn-small" id="btnStartQrLoan" type="button">Skann skøyte</button>
 <button class="btn-secondary btn-small hidden" id="btnStopQrLoan" type="button">Stopp skanning</button>
 <button class="btn-secondary btn-small" id="btnStartNfcLoan" type="button">NFC-skann</button>
+</div>
+<div id="loanOcrPanel" class="qr-panel hidden" style="margin-top:12px;">
+<div class="help">Hold navnet innenfor kamerabildet og trykk «Les navn». Velg deretter riktig person fra forslagene.</div>
+<video id="loanOcrVideo" autoplay playsinline muted style="display:block;width:100%;max-width:420px;border-radius:8px;margin:10px 0;"></video>
+<div class="scan-row">
+<button class="btn-secondary btn-small" type="button" id="btnCaptureOcrName">Les navn</button>
+<button class="btn-secondary btn-small" type="button" id="btnStopOcrName">Lukk</button>
+</div>
+<div class="help" id="loanOcrStatus" role="status" aria-live="polite"></div>
+<div id="loanOcrMatches" style="display:grid;gap:6px;margin-top:8px;"></div>
 </div>
 <div class="help qr-inline-help" id="loanMemberQrStatus"></div>
 <div class="qr-panel hidden" id="loanMemberQrPanel">
@@ -9493,6 +9505,63 @@ async function loadAll() {
       if (stopBtn) stopBtn.classList.add("hidden");
     }
 
+    let loanOcrStream=null;
+    let loanOcrBusy=false;
+    async function stopLoanNameOcr(){
+      if(loanOcrStream){loanOcrStream.getTracks().forEach(track=>track.stop());loanOcrStream=null;}
+      const video=byId("loanOcrVideo");if(video)video.srcObject=null;
+      byId("loanOcrPanel").classList.add("hidden");
+    }
+    async function startLoanNameOcr(){
+      const status=byId("loanOcrStatus");
+      if(!navigator.mediaDevices?.getUserMedia){alert("Kamera krever HTTPS og en nettleser med kamerastøtte.");return;}
+      try{
+        await stopLoanNameOcr();
+        byId("loanOcrPanel").classList.remove("hidden");
+        byId("loanOcrMatches").replaceChildren();
+        status.textContent="Starter kamera …";
+        loanOcrStream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:"environment"},width:{ideal:1280},height:{ideal:720}}});
+        const video=byId("loanOcrVideo");video.srcObject=loanOcrStream;await video.play();
+        status.textContent="Rett kameraet mot ett navn og trykk «Les navn».";
+      }catch(error){status.textContent="Kunne ikke åpne kamera: "+error.message;await stopLoanNameOcr();byId("loanOcrPanel").classList.remove("hidden");}
+    }
+    async function captureLoanNameOcr(){
+      if(loanOcrBusy)return;
+      const video=byId("loanOcrVideo"),status=byId("loanOcrStatus"),matchesBox=byId("loanOcrMatches");
+      if(!loanOcrStream||!video.videoWidth)return;
+      if(!window.Tesseract){status.textContent="OCR-biblioteket ble ikke lastet. Kontroller internettforbindelsen.";return;}
+      loanOcrBusy=true;byId("btnCaptureOcrName").disabled=true;
+      matchesBox.replaceChildren();status.textContent="Leser teksten …";
+      try{
+        const canvas=document.createElement("canvas");canvas.width=video.videoWidth;canvas.height=video.videoHeight;
+        canvas.getContext("2d").drawImage(video,0,0);
+        const result=await Tesseract.recognize(canvas,"nor+eng");
+        const raw=String(result.data?.text||"").trim();
+        const normalized=value=>String(value||"").toLocaleLowerCase("no").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zæøå\s-]/g," ").replace(/\s+/g," ").trim();
+        const lines=raw.split(/\n/).map(normalized).filter(Boolean);
+        const full=normalized(raw);
+        const found=(state.members||[]).map(member=>{
+          const name=normalized(member.name);if(!name)return null;
+          const parts=name.split(" ").filter(x=>x.length>1);
+          let score=lines.some(line=>line===name)?100:lines.some(line=>line.includes(name))?85:full.includes(name)?70:0;
+          if(!score && parts.length>=2)score=Math.max(...lines.map(line=>parts.reduce((sum,part)=>sum+(line.includes(part)?1:0),0)))*15;
+          return score>=30?{member,score}:null;
+        }).filter(Boolean).sort((a,b)=>b.score-a.score||String(a.member.name).localeCompare(String(b.member.name),"no")).slice(0,8);
+        if(!found.length){status.textContent="Fant ingen sikre navnetreff. Prøv igjen med navnet nærmere kameraet, eller bruk navnesøket.";return;}
+        status.textContent="Velg riktig navn (ingen velges automatisk):";
+        for(const item of found){
+          const btn=document.createElement("button");btn.type="button";btn.className="btn-secondary btn-small";
+          btn.textContent=String(item.member.name||"");
+          btn.addEventListener("click",async()=>{
+            byId("loanMember").value=String(item.member.id);
+            byId("loanMemberSearch").value=String(item.member.name||"");
+            await stopLoanNameOcr();byId("loanSkateSearch")?.focus();
+          });matchesBox.appendChild(btn);
+        }
+      }catch(error){console.error("OCR-feil",error);status.textContent="Kunne ikke lese navnet. Prøv igjen: "+error.message;}
+      finally{loanOcrBusy=false;byId("btnCaptureOcrName").disabled=false;}
+    }
+
     async function handleLoanMemberQrScan(decodedText) {
       const memberId = extractMemberIdFromQrText(decodedText);
       if (!memberId || memberId === loanMemberQrLastText) return;
@@ -10299,6 +10368,9 @@ if (byId("skateFlowHomeLink")) byId("skateFlowHomeLink").addEventListener("click
     if (byId("btnStopQrLoan")) byId("btnStopQrLoan").addEventListener("click", async function () { await stopLoanQrScanner(); setQrStatus("loanQrStatus", "QR-skanning stoppet.", false); });
     if (byId("btnStartQrReturn")) byId("btnStartQrReturn").addEventListener("click", async function () { await startReturnQrScanner(); });
     if (byId("btnStopQrReturn")) byId("btnStopQrReturn").addEventListener("click", async function () { await stopReturnQrScanner(); setQrStatus("returnQrStatus", "QR-skanning stoppet.", false); });
+    byId("btnStartOcrName")?.addEventListener("click",startLoanNameOcr);
+    byId("btnCaptureOcrName")?.addEventListener("click",captureLoanNameOcr);
+    byId("btnStopOcrName")?.addEventListener("click",stopLoanNameOcr);
     if (byId("btnStartQrMember")) byId("btnStartQrMember").addEventListener("click", async function () { await startLoanMemberQrScanner(); });
     if (byId("btnStopQrMember")) byId("btnStopQrMember").addEventListener("click", async function () { await stopLoanMemberQrScanner(); setQrStatus("loanMemberQrStatus", "Medlemsskanning stoppet.", false); });
     if (byId("btnGenerateQrLabels")) byId("btnGenerateQrLabels").addEventListener("click", generateQrLabels);
