@@ -38,9 +38,7 @@ exports.handler = async (event) => {
       }
     );
 
-    // Hent eksplisitt alle påmeldinger som er registrert via kode.
-    // Vi bruker tre kjennetegn for å være kompatible med eldre rader:
-    // access_code_id, access_code og source=signup_page_code.
+    // Hent påmeldinger registrert via kode.
     const { data: signups, error: signupError } = await supabase
       .from("skating_school_signups")
       .select(`
@@ -50,7 +48,8 @@ exports.handler = async (event) => {
         access_code_id,
         access_code,
         source,
-        created_at
+        created_at,
+        batch_name
       `)
       .or(
         "access_code_id.not.is.null,access_code.not.is.null,source.eq.signup_page_code"
@@ -73,7 +72,7 @@ exports.handler = async (event) => {
       });
     }
 
-    // Hent alle eksplisitt koblede medlemmer først.
+    // Hent medlemmer som er koblet direkte til påmeldingene.
     const memberIds = Array.from(
       new Set(
         signupRows
@@ -107,8 +106,8 @@ exports.handler = async (event) => {
       ])
     );
 
-    // For eldre påmeldinger uten existing_member_id bruker vi kun
-    // entydig navnematch, samme prinsipp som ellers i appen.
+    // For eldre påmeldinger uten medlems-ID:
+    // Bruk bare entydige navnetreff.
     const unresolvedNames = Array.from(
       new Set(
         signupRows
@@ -139,6 +138,7 @@ exports.handler = async (event) => {
 
     nameMembers.forEach((member) => {
       const key = normalize(member.name).toLowerCase();
+
       if (!key) return;
 
       if (!byNormalizedName.has(key)) {
@@ -148,16 +148,22 @@ exports.handler = async (event) => {
       byNormalizedName.get(key).push(member);
     });
 
+    // Bygg rapportdata.
     const rows = signupRows.map((signup) => {
       let member = null;
 
       if (signup.existing_member_id) {
-        member = linkedById.get(String(signup.existing_member_id)) || null;
+        member =
+          linkedById.get(String(signup.existing_member_id)) ||
+          null;
       }
 
       if (!member) {
         const key = normalize(signup.child_name).toLowerCase();
-        const matches = key ? (byNormalizedName.get(key) || []) : [];
+
+        const matches = key
+          ? (byNormalizedName.get(key) || [])
+          : [];
 
         if (matches.length === 1) {
           member = matches[0];
@@ -166,11 +172,18 @@ exports.handler = async (event) => {
 
       return {
         name: signup.child_name || "",
+
         created_at: signup.created_at || null,
+
+        // NYTT: Semester
+        semester: signup.batch_name || "",
+
         code:
           signup.access_code ||
           (signup.access_code_id ? "Kodepåmelding" : ""),
+
         member_found: !!member,
+
         membership_fee_paid: !!(
           member &&
           member.membership_fee_paid === true
@@ -190,6 +203,7 @@ exports.handler = async (event) => {
       count: rows.length,
       rows,
     });
+
   } catch (error) {
     console.error("Unhandled report-idrettsrad error:", error);
 
