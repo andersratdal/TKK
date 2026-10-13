@@ -9005,6 +9005,7 @@ function populateMemberEditList() {
           getCouncilBirthDate(row),
           row.code || "",
           formatCouncilSignupTime(row.created_at),
+          row.semester || "",
           row.membership_fee_paid === true
             ? "Betalt"
             : row.member_found === false
@@ -9015,9 +9016,9 @@ function populateMemberEditList() {
         exportRowsToXlsx(
           "Til-idrettsradet.xlsx",
           "Til idrettsrådet",
-          ["Navn", "Fødselsdato", "Kode", "Påmeldt tidspunkt", "Betalt medlemsavgift"],
+          ["Navn", "Fødselsdato", "Kode", "Påmeldt tidspunkt", "Semester", "Betalt medlemsavgift"],
           rows,
-          [32, 16, 22, 23, 24]
+          [32, 16, 22, 23, 22, 24]
         );
       } catch (error) {
         console.error(error);
