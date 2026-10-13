@@ -12,9 +12,7 @@ function json(statusCode, body) {
 }
 
 function normalize(value) {
-  return String(value || "")
-    .trim()
-    .toLowerCase();
+  return String(value || "").trim();
 }
 
 exports.handler = async (event) => {
@@ -23,12 +21,9 @@ exports.handler = async (event) => {
   }
 
   try {
-    if (
-      !process.env.SUPABASE_URL ||
-      !process.env.SUPABASE_SERVICE_ROLE_KEY
-    ) {
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
       return json(500, {
-        error: "Supabase-miljøvariabler mangler.",
+        error: "Supabase-miljøvariabler mangler på serveren.",
       });
     }
 
@@ -43,58 +38,15 @@ exports.handler = async (event) => {
       }
     );
 
-    /*
-     * 1. Hent aktive semester.
-     */
-    const {
-      data: activeBatches,
-      error: batchError,
-    } = await supabase
-      .from("skating_school_batches")
-      .select(`
-        id,
-        name,
-        department_id,
-        status
-      `)
-      .eq("status", "Aktiv");
-
-    if (batchError) {
-      console.error(
-        "Aktive semester:",
-        batchError
-      );
-
-      return json(500, {
-        error: "Kunne ikke hente aktive semester.",
-      });
-    }
-
-    if (
-      !activeBatches ||
-      activeBatches.length === 0
-    ) {
-      return json(200, {
-        success: true,
-        rows: [],
-        message: "Ingen aktive semester.",
-      });
-    }
-
-    /*
-     * 2. Hent alle kodepåmeldinger.
-     */
-    const {
-      data: signups,
-      error: signupError,
-    } = await supabase
+    // Hent eksplisitt alle påmeldinger som er registrert via kode.
+    // Vi bruker tre kjennetegn for å være kompatible med eldre rader:
+    // access_code_id, access_code og source=signup_page_code.
+    const { data: signups, error: signupError } = await supabase
       .from("skating_school_signups")
       .select(`
         id,
         child_name,
         existing_member_id,
-        batch_id,
-        batch_name,
         access_code_id,
         access_code,
         source,
@@ -103,66 +55,29 @@ exports.handler = async (event) => {
       .or(
         "access_code_id.not.is.null,access_code.not.is.null,source.eq.signup_page_code"
       )
-      .order(
-        "created_at",
-        { ascending: false }
-      );
+      .order("created_at", { ascending: false });
 
     if (signupError) {
-      console.error(
-        "Kodepåmeldinger:",
-        signupError
-      );
-
+      console.error("report-idrettsrad signups:", signupError);
       return json(500, {
         error: "Kunne ikke hente kodepåmeldinger.",
       });
     }
 
-    const codeSignups =
-      signups || [];
+    const signupRows = signups || [];
 
-    /*
-     * 3. Finn kodepåmeldinger som tilhører
-     *    et aktivt semester.
-     *
-     * Match først på batch_id.
-     * Match også på batch_name som fallback.
-     */
-    const signupRows =
-      codeSignups.filter((signup) =>
-        activeBatches.some((batch) => {
-          if (
-            signup.batch_id &&
-            String(signup.batch_id) ===
-              String(batch.id)
-          ) {
-            return true;
-          }
+    if (!signupRows.length) {
+      return json(200, {
+        success: true,
+        rows: [],
+      });
+    }
 
-          if (
-            signup.batch_name &&
-            normalize(signup.batch_name) ===
-              normalize(batch.name)
-          ) {
-            return true;
-          }
-
-          return false;
-        })
-      );
-
-    /*
-     * 4. Hent medlemsdata.
-     */
+    // Hent alle eksplisitt koblede medlemmer først.
     const memberIds = Array.from(
       new Set(
         signupRows
-          .map((row) =>
-            String(
-              row.existing_member_id || ""
-            ).trim()
-          )
+          .map((row) => normalize(row.existing_member_id))
           .filter(Boolean)
       )
     );
@@ -170,192 +85,117 @@ exports.handler = async (event) => {
     let linkedMembers = [];
 
     if (memberIds.length) {
-      const memberResult =
-        await supabase
-          .from("members")
-          .select(`
-            id,
-            name,
-            membership_fee_paid
-          `)
-          .in(
-            "id",
-            memberIds
-          );
+      const linkedResult = await supabase
+        .from("members")
+        .select("id, name, membership_fee_paid")
+        .in("id", memberIds);
 
-      if (memberResult.error) {
-        console.error(
-          "Medlemmer:",
-          memberResult.error
-        );
-
+      if (linkedResult.error) {
+        console.error("report-idrettsrad linked members:", linkedResult.error);
         return json(500, {
-          error:
-            "Kunne ikke hente medlemsstatus.",
+          error: "Kunne ikke hente medlemsstatus.",
         });
       }
 
-      linkedMembers =
-        memberResult.data || [];
+      linkedMembers = linkedResult.data || [];
     }
 
-    const membersById = new Map(
+    const linkedById = new Map(
       linkedMembers.map((member) => [
         String(member.id),
         member,
       ])
     );
 
-    /*
-     * Hent også medlemmer for navnematch på
-     * eldre påmeldinger uten existing_member_id.
-     */
-    const allMembersResult =
-      await supabase
+    // For eldre påmeldinger uten existing_member_id bruker vi kun
+    // entydig navnematch, samme prinsipp som ellers i appen.
+    const unresolvedNames = Array.from(
+      new Set(
+        signupRows
+          .filter((row) => !normalize(row.existing_member_id))
+          .map((row) => normalize(row.child_name))
+          .filter(Boolean)
+      )
+    );
+
+    let nameMembers = [];
+
+    if (unresolvedNames.length) {
+      const membersResult = await supabase
         .from("members")
-        .select(`
-          id,
-          name,
-          membership_fee_paid
-        `);
+        .select("id, name, membership_fee_paid");
 
-    if (allMembersResult.error) {
-      console.error(
-        "Alle medlemmer:",
-        allMembersResult.error
-      );
+      if (membersResult.error) {
+        console.error("report-idrettsrad all members:", membersResult.error);
+        return json(500, {
+          error: "Kunne ikke hente medlemsstatus.",
+        });
+      }
 
-      return json(500, {
-        error:
-          "Kunne ikke hente medlemsstatus.",
-      });
+      nameMembers = membersResult.data || [];
     }
 
-    const membersByName =
-      new Map();
+    const byNormalizedName = new Map();
 
-    (
-      allMembersResult.data || []
-    ).forEach((member) => {
-      const key =
-        normalize(member.name);
+    nameMembers.forEach((member) => {
+      const key = normalize(member.name).toLowerCase();
+      if (!key) return;
 
-      if (!key) {
-        return;
+      if (!byNormalizedName.has(key)) {
+        byNormalizedName.set(key, []);
       }
 
-      if (
-        !membersByName.has(key)
-      ) {
-        membersByName.set(
-          key,
-          []
-        );
-      }
-
-      membersByName
-        .get(key)
-        .push(member);
+      byNormalizedName.get(key).push(member);
     });
 
-    /*
-     * 5. Bygg rapporten.
-     */
-    const rows =
-      signupRows.map((signup) => {
-        let member = null;
+    const rows = signupRows.map((signup) => {
+      let member = null;
 
-        if (
-          signup.existing_member_id
-        ) {
-          member =
-            membersById.get(
-              String(
-                signup.existing_member_id
-              )
-            ) || null;
+      if (signup.existing_member_id) {
+        member = linkedById.get(String(signup.existing_member_id)) || null;
+      }
+
+      if (!member) {
+        const key = normalize(signup.child_name).toLowerCase();
+        const matches = key ? (byNormalizedName.get(key) || []) : [];
+
+        if (matches.length === 1) {
+          member = matches[0];
         }
+      }
 
-        if (!member) {
-          const matches =
-            membersByName.get(
-              normalize(
-                signup.child_name
-              )
-            ) || [];
+      return {
+        name: signup.child_name || "",
+        created_at: signup.created_at || null,
+        code:
+          signup.access_code ||
+          (signup.access_code_id ? "Kodepåmelding" : ""),
+        member_found: !!member,
+        membership_fee_paid: !!(
+          member &&
+          member.membership_fee_paid === true
+        ),
+      };
+    });
 
-          if (
-            matches.length === 1
-          ) {
-            member =
-              matches[0];
-          }
-        }
-
-        return {
-          name:
-            signup.child_name || "",
-
-          code:
-            signup.access_code ||
-            (
-              signup.access_code_id
-                ? "Kodepåmelding"
-                : ""
-            ),
-
-          member_found:
-            !!member,
-
-          membership_fee_paid:
-            !!(
-              member &&
-              member.membership_fee_paid === true
-            ),
-        };
-      });
-
-    rows.sort(
-      (a, b) =>
-        String(
-          a.name || ""
-        ).localeCompare(
-          String(
-            b.name || ""
-          ),
-          "no"
-        )
+    rows.sort((a, b) =>
+      String(a.name || "").localeCompare(
+        String(b.name || ""),
+        "no"
+      )
     );
 
     return json(200, {
       success: true,
-
-      active_semesters:
-        activeBatches.map(
-          (batch) => batch.name
-        ),
-
-      code_signups_total:
-        codeSignups.length,
-
-      code_signups_active_semester:
-        signupRows.length,
-
-      count:
-        rows.length,
-
+      count: rows.length,
       rows,
     });
   } catch (error) {
-    console.error(
-      "report-idrettsrad:",
-      error
-    );
+    console.error("Unhandled report-idrettsrad error:", error);
 
     return json(500, {
       error:
-        error &&
-        error.message
+        error && error.message
           ? error.message
           : "Noe gikk galt ved generering av rapporten.",
     });
