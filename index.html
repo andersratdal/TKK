@@ -2596,7 +2596,7 @@ body.auth-locked > .container {
     <div>
       <h2>Grupper</h2>
       <div class="help" style="margin-top:8px;">
-        Eksporterer alle registrerte skøyteskoledeltakere med navn, gruppe, fødselsår, semester og e-postadresse.
+        Eksporterer alle registrerte skøyteskoledeltakere med navn, gruppe, fødselsår, semester, e-postadresse, språk, tillatelse til foto og om deltakeren har et aktivt skøyteutlån.
       </div>
     </div>
     <div class="toolbar">
@@ -9155,53 +9155,46 @@ function populateMemberEditList() {
     }
 
     function exportGroupsReportXlsx() {
+      const normalized = value => String(value || "").trim().toLocaleLowerCase("nb-NO").replace(/\s+/g, " ");
       const rows = (state.schoolEnrollments || [])
         .slice()
-        .sort((a, b) =>
-          String((a.members && a.members.name) || "").localeCompare(
-            String((b.members && b.members.name) || ""),
-            "no"
-          )
-        )
-        .map((enrollment) => {
-          const member = (state.members || []).find((item) =>
-            sameId(item.id, enrollment.member_id)
+        .sort((a, b) => String((a.members && a.members.name) || "").localeCompare(String((b.members && b.members.name) || ""), "nb"))
+        .map(enrollment => {
+          const member = (state.members || []).find(m => sameId(m.id, enrollment.member_id)) || enrollment.members || {};
+          const name = member.name || (enrollment.members && enrollment.members.name) || "";
+          const batch = (state.schoolBatches || []).find(b => sameId(b.id, enrollment.batch_id));
+          const email = member.email || (enrollment.members && enrollment.members.email) || "";
+          // Knytt kun påmelding til deltakeren ved entydig treff.
+          const matches = (state.schoolSignups || []).filter(signup =>
+            sameId(signup.batch_id, enrollment.batch_id) &&
+            (signup.existing_member_id ? sameId(signup.existing_member_id, enrollment.member_id) : normalized(signup.child_name) === normalized(name))
           );
-
-          const name =
-            (enrollment.members && enrollment.members.name) ||
-            (member && member.name) ||
-            "";
-
-          const batch = (state.schoolBatches || []).find((item) =>
-            sameId(item.id, enrollment.batch_id)
-          );
-
-          const email =
-            (enrollment.members && enrollment.members.email) ||
-            (member && member.email) ||
-            "";
-
+          const signup = matches.length === 1 ? matches[0] : null;
+          const language = enrollment.preferred_language || (signup && signup.preferred_language) || "Ikke registrert";
+          // Ingen bekreftet samtykkekolonne i påmeldingsdata; aldri anta samtykke.
+          const photoConsent = "Ikke registrert";
+          const activeLoan = (state.loans || []).some(loan => sameId(loan.member_id, enrollment.member_id) && !loan.returned_at);
           return [
             name,
             getSchoolGroupNameForEnrollment(enrollment) || "Ikke fordelt",
             enrollment.birth_year || "",
-            batch ? (batch.name || "") : "",
-            email
+            batch ? batch.name || "" : "",
+            email,
+            language,
+            photoConsent,
+            activeLoan ? "Ja" : "Nei"
           ];
         });
-
       if (!rows.length) {
         alert("Fant ingen registrerte skøyteskoledeltakere.");
         return;
       }
-
       exportRowsToXlsx(
         "Grupper.xlsx",
         "Grupper",
-        ["Navn", "Gruppe", "Fødselsår", "Semester", "E-post"],
+        ["Navn", "Gruppe", "Fødselsår", "Semester", "E-post", "Språk", "Tillatelse til foto", "Har lånt skøyter"],
         rows,
-        [32, 20, 14, 22, 34]
+        [32, 20, 14, 22, 34, 20, 24, 20]
       );
     }
 
