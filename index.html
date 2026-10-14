@@ -2071,10 +2071,28 @@ body.auth-locked > .container {
       <button type="button" class="school-tab active" data-school-tab="school">Deltakere</button>
       <button type="button" class="school-tab" id="schoolSignupCodesLink">Påmeldingskoder</button>
     <button type="button" class="school-tab" data-school-tab="signupForms">Påmeldingsskjema</button>
+      <button type="button" class="school-tab" data-school-tab="export">Eksport</button>
     </div>
   </div>
 
   
+
+  <div id="schoolExportPanel" class="school-section-hidden">
+    <div class="section-card"><h2>Eksport fra skøyteskolen</h2><div class="help">Ferdige rapporter og tilpasset Excel-eksport. Velg semester og kolonner nedenfor. Data om samtykke til fotografering er ikke tilgjengelig i dagens registreringsfelter og vises derfor som «Ikke registrert».</div></div>
+    <div class="section-card"><h3>Ferdige rapporter</h3><div class="toolbar" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:12px">
+      <button type="button" class="btn-primary" id="schoolExportCouncil">Til idrettsrådet (Excel)</button>
+      <button type="button" class="btn-secondary" id="schoolExportGroups">Grupper (Excel)</button>
+      <button type="button" class="btn-secondary" id="schoolExportSkates">Skøyter og utstyr (Excel)</button>
+      <button class="btn-secondary" id="btnPrintSchoolBarcodes" type="button">Skriv ut deltakerliste med QR-koder</button>
+    </div><div class="help" style="margin-top:10px">Rapporten «Til idrettsrådet» bruker eksisterende kodepåmeldingsrapport. «Grupper» inkluderer alle semestre, som før. For QR-listen velger du semester og gruppe under «Tilpasset deltakerrapport» nedenfor.</div></div>
+    <div class="section-card"><h3>Tilpasset deltakerrapport</h3>
+      <div class="toolbar" style="display:flex;flex-wrap:wrap;gap:12px;margin:14px 0"><label>Semester <select id="schoolExportBatch"><option value="">Alle semestre</option></select></label><label>Gruppe <select id="schoolExportGroup"><option value="">Alle grupper</option></select></label></div>
+      <div class="help" id="schoolBarcodeMessage" role="status"></div>
+      <select id="schoolBarcodeGroup" hidden aria-label="Gruppe for QR-liste"><option value="all">Alle grupper</option></select>
+      <div class="help">Velg kolonner (navn er alltid med):</div><div id="schoolExportColumns" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px;margin:14px 0"></div>
+      <div class="toolbar"><button type="button" class="btn-primary" id="schoolExportCustom">Eksporter Excel</button><span class="help" id="schoolExportStatus" role="status"></span></div>
+    </div>
+  </div>
 
   <div id="schoolMainSection">
 
@@ -2108,12 +2126,6 @@ body.auth-locked > .container {
         <button class="btn-primary" id="btnAddSchoolParticipant" type="button">Legg til deltaker</button>
       </div>
     </div>
-    <div class="toolbar" style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-      <label for="schoolBarcodeGroup">Strekkodeliste:</label>
-      <select id="schoolBarcodeGroup"><option value="all">Alle grupper</option></select>
-      <button class="btn-secondary" id="btnPrintSchoolBarcodes" type="button">Skriv ut deltakerliste med QR-koder</button>
-    </div>
-    <div class="help" id="schoolBarcodeMessage" role="status"></div>
     <div class="help" id="schoolParticipantMessage" style="margin-top:10px;"></div>
     <div id="schoolParticipantsWrap"></div>
   </div>
@@ -2584,7 +2596,7 @@ body.auth-locked > .container {
     <div>
       <h2>Grupper</h2>
       <div class="help" style="margin-top:8px;">
-        Eksporterer alle registrerte skøyteskoledeltakere med navn, gruppe, fødselsår, semester og e-postadresse.
+        Eksporterer alle registrerte skøyteskoledeltakere med navn, gruppe, fødselsår, semester, e-postadresse, språk, tillatelse til foto og om deltakeren har et aktivt skøyteutlån.
       </div>
     </div>
     <div class="toolbar">
@@ -9041,54 +9053,148 @@ function populateMemberEditList() {
       return group ? String(group.name || "") : "";
     }
 
+    const schoolExportFields = [
+      ["group", "Gruppe"], ["semester", "Semester"], ["birth_year", "Fødselsår"],
+      ["birth_date", "Fødselsdato"], ["email", "E-post"], ["phone", "Telefon"],
+      ["signup_time", "Påmeldt tidspunkt"], ["language", "Ønsket språk"],
+      ["skate_status", "Skøytestatus"], ["requested_size", "Ønsket skøytestørrelse"],
+      ["borrowed_skate", "Lånt skøytenummer"], ["own_skates", "Har egne skøyter"],
+      ["photo_consent", "Samtykke til fotografering"], ["code", "Påmeldingskode"],
+      ["membership_paid", "Betalt medlemsavgift"]
+    ];
+
+    function refreshSchoolExportFilters() {
+      const batchSelect = byId("schoolExportBatch");
+      const groupSelect = byId("schoolExportGroup");
+      if (!batchSelect || !groupSelect) return;
+      const oldBatch = batchSelect.value;
+      const batchOptions = (state.schoolBatches || []).map(b =>
+        `<option value="${String(b.id).replace(/[^a-zA-Z0-9-]/g, "")}">${escapeHtml(String(b.name || ""))}</option>`
+      ).join("");
+      batchSelect.innerHTML = '<option value="">Alle semestre</option>' + batchOptions;
+      batchSelect.value = oldBatch || (byId("schoolBatchPicker") && byId("schoolBatchPicker").value) || "";
+      const oldGroup = groupSelect.value;
+      const groups = (state.schoolGroups || []).filter(g => !batchSelect.value || sameId(g.batch_id, batchSelect.value));
+      groupSelect.innerHTML = '<option value="">Alle grupper</option><option value="unassigned">Ikke fordelt</option>' + groups.map(g =>
+        `<option value="${String(g.id).replace(/[^a-zA-Z0-9-]/g, "")}">${escapeHtml(String(g.name || ""))}</option>`
+      ).join("");
+      groupSelect.value = oldGroup === "unassigned" || groups.some(g => sameId(g.id, oldGroup)) ? oldGroup : "";
+    }
+
+    function exportSchoolCustomXlsx() {
+      const batchId = byId("schoolExportBatch").value;
+      const groupId = byId("schoolExportGroup").value;
+      const selected = schoolExportFields.filter(([key]) => {
+        const input = document.querySelector(`#schoolExportColumns input[value="${key}"]`);
+        return input && input.checked;
+      });
+      const enrollments = (state.schoolEnrollments || []).filter(e =>
+        (!batchId || sameId(e.batch_id, batchId)) && (!groupId || (groupId === "unassigned" ? !e.school_group_id : sameId(e.school_group_id, groupId)))
+      );
+      if (!enrollments.length) { alert("Ingen deltakere for valgt semester og gruppe."); return; }
+      const normalized = value => String(value || "").trim().toLocaleLowerCase("nb-NO").replace(/\s+/g, " ");
+      const timeText = value => {
+        if (!value) return "";
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? "" : new Intl.DateTimeFormat("nb-NO", {
+          timeZone: "Europe/Oslo", day: "2-digit", month: "2-digit", year: "numeric",
+          hour: "2-digit", minute: "2-digit", hourCycle: "h23"
+        }).format(date);
+      };
+      let ambiguous = 0;
+      const rows = enrollments.map(e => {
+        const member = (state.members || []).find(m => sameId(m.id, e.member_id)) || e.members || {};
+        const batch = (state.schoolBatches || []).find(b => sameId(b.id, e.batch_id));
+        const matches = (state.schoolSignups || []).filter(s => sameId(s.batch_id, e.batch_id) &&
+          (s.existing_member_id ? sameId(s.existing_member_id, e.member_id) : normalized(s.child_name) === normalized(member.name)));
+        // Unambiguous signup only; do not attribute a signup from another child.
+        const signup = matches.length === 1 ? matches[0] : null;
+        if (matches.length > 1) ambiguous++;
+        const activeLoan = (state.loans || []).find(l => sameId(l.member_id, e.member_id) && !l.returned_at);
+        const skate = activeLoan && ((state.skates || []).find(s => sameId(s.id, activeLoan.skate_id)) || activeLoan.skates);
+        const skateStatus = activeLoan ? "Har aktivt utlån" : signup && signup.has_own_skates === true ? "Har egne skøyter" : signup && signup.requested_skate_size ? "Ønsker størrelse" : "Ikke registrert";
+        const data = {
+          group: getSchoolGroupNameForEnrollment(e) || "Ikke fordelt", semester: batch ? batch.name || "" : "",
+          birth_year: e.birth_year || "", birth_date: signup ? formatBirthDate(signup.birth_date) : "",
+          email: member.email || (signup && signup.email) || "", phone: member.phone || (signup && signup.phone) || "",
+          signup_time: signup ? timeText(signup.created_at) : "", language: e.preferred_language || (signup && signup.preferred_language) || "",
+          skate_status: skateStatus, requested_size: signup ? signup.requested_skate_size || "" : "",
+          borrowed_skate: skate ? skate.skate_code || "" : "",
+          own_skates: signup ? (signup.has_own_skates === true ? "Ja" : signup.has_own_skates === false ? "Nei" : "Ukjent") : "Ukjent",
+          photo_consent: "Ikke registrert", code: signup ? signup.access_code || "" : "",
+          membership_paid: member.membership_fee_paid === true ? "Betalt" : "Ikke betalt"
+        };
+        return [member.name || "", ...selected.map(([key]) => data[key] ?? "")];
+      });
+      rows.sort((a, b) => String(a[0]).localeCompare(String(b[0]), "nb"));
+      exportRowsToXlsx("Skoyteskole-tilpasset.xlsx", "Deltakere", ["Navn", ...selected.map(([, title]) => title)], rows, [32, ...selected.map(() => 23)]);
+      const status = byId("schoolExportStatus");
+      if (status) status.textContent = `${rows.length} deltakere eksportert.${ambiguous ? ` ${ambiguous} har flere mulige påmeldinger; påmeldingsdata er utelatt for disse.` : ""}`;
+    }
+
+    function setupSchoolExport() {
+      const columns = byId("schoolExportColumns");
+      if (!columns) return;
+      const defaults = new Set(["group", "semester", "language", "skate_status", "requested_size", "borrowed_skate", "photo_consent"]);
+      columns.innerHTML = schoolExportFields.map(([key, label]) =>
+        `<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" value="${key}" ${defaults.has(key) ? "checked" : ""}>${label}</label>`
+      ).join("");
+      byId("schoolExportBatch").addEventListener("change", refreshSchoolExportFilters);
+      byId("schoolExportCustom").addEventListener("click", exportSchoolCustomXlsx);
+      byId("schoolExportCouncil").addEventListener("click", exportCouncilReportXlsx);
+      byId("schoolExportGroups").addEventListener("click", exportGroupsReportXlsx);
+      byId("schoolExportSkates").addEventListener("click", () => {
+        const skateFields = new Set(["group", "semester", "skate_status", "requested_size", "borrowed_skate", "own_skates"]);
+        document.querySelectorAll('#schoolExportColumns input[type="checkbox"]').forEach(input => { input.checked = skateFields.has(input.value); });
+        exportSchoolCustomXlsx();
+      });
+      // QR-knappen bruker den eksisterende utskriftsfunksjonen,
+      // men henter semester og gruppe fra Eksport-fanens filtre.
+      // Klikklytter for knappen registreres sammen med øvrige skoleknapper.
+
+    }
+
     function exportGroupsReportXlsx() {
+      const normalized = value => String(value || "").trim().toLocaleLowerCase("nb-NO").replace(/\s+/g, " ");
       const rows = (state.schoolEnrollments || [])
         .slice()
-        .sort((a, b) =>
-          String((a.members && a.members.name) || "").localeCompare(
-            String((b.members && b.members.name) || ""),
-            "no"
-          )
-        )
-        .map((enrollment) => {
-          const member = (state.members || []).find((item) =>
-            sameId(item.id, enrollment.member_id)
+        .sort((a, b) => String((a.members && a.members.name) || "").localeCompare(String((b.members && b.members.name) || ""), "nb"))
+        .map(enrollment => {
+          const member = (state.members || []).find(m => sameId(m.id, enrollment.member_id)) || enrollment.members || {};
+          const name = member.name || (enrollment.members && enrollment.members.name) || "";
+          const batch = (state.schoolBatches || []).find(b => sameId(b.id, enrollment.batch_id));
+          const email = member.email || (enrollment.members && enrollment.members.email) || "";
+          // Knytt kun påmelding til deltakeren ved entydig treff.
+          const matches = (state.schoolSignups || []).filter(signup =>
+            sameId(signup.batch_id, enrollment.batch_id) &&
+            (signup.existing_member_id ? sameId(signup.existing_member_id, enrollment.member_id) : normalized(signup.child_name) === normalized(name))
           );
-
-          const name =
-            (enrollment.members && enrollment.members.name) ||
-            (member && member.name) ||
-            "";
-
-          const batch = (state.schoolBatches || []).find((item) =>
-            sameId(item.id, enrollment.batch_id)
-          );
-
-          const email =
-            (enrollment.members && enrollment.members.email) ||
-            (member && member.email) ||
-            "";
-
+          const signup = matches.length === 1 ? matches[0] : null;
+          const language = enrollment.preferred_language || (signup && signup.preferred_language) || "Ikke registrert";
+          // Ingen bekreftet samtykkekolonne i påmeldingsdata; aldri anta samtykke.
+          const photoConsent = "Ikke registrert";
+          const activeLoan = (state.loans || []).some(loan => sameId(loan.member_id, enrollment.member_id) && !loan.returned_at);
           return [
             name,
             getSchoolGroupNameForEnrollment(enrollment) || "Ikke fordelt",
             enrollment.birth_year || "",
-            batch ? (batch.name || "") : "",
-            email
+            batch ? batch.name || "" : "",
+            email,
+            language,
+            photoConsent,
+            activeLoan ? "Ja" : "Nei"
           ];
         });
-
       if (!rows.length) {
         alert("Fant ingen registrerte skøyteskoledeltakere.");
         return;
       }
-
       exportRowsToXlsx(
         "Grupper.xlsx",
         "Grupper",
-        ["Navn", "Gruppe", "Fødselsår", "Semester", "E-post"],
+        ["Navn", "Gruppe", "Fødselsår", "Semester", "E-post", "Språk", "Tillatelse til foto", "Har lånt skøyter"],
         rows,
-        [32, 20, 14, 22, 34]
+        [32, 20, 14, 22, 34, 20, 24, 20]
       );
     }
 
@@ -9394,7 +9500,7 @@ async function loadAll() {
 
         const schoolEnrollmentsRes = await supabaseClient
           .from("skating_school_enrollments")
-          .select("id, batch_id, member_id, school_group_id, birth_year, advisor_name, assignment_reason, manual_override, notes, members(name, role, phone, email)")
+          .select("id, batch_id, member_id, school_group_id, birth_year, advisor_name, preferred_language, assignment_reason, manual_override, notes, members(name, role, phone, email)")
           .order("created_at", { ascending: true });
         if (schoolEnrollmentsRes.error) throw schoolEnrollmentsRes.error;
 
@@ -9403,7 +9509,7 @@ async function loadAll() {
         try {
           const schoolSignupsRes = await supabaseClient
             .from("skating_school_signups")
-            .select("id, created_at, batch_id, department_id, batch_name, child_name, phone, email, birth_date, requested_skate_size, has_own_skates, existing_member_id, advisor_name, status, payment_status, payment_exempt, amount_nok, stripe_checkout_session_id, stripe_payment_intent_id, paid_at, source, notes, access_code_id, access_code")
+            .select("id, created_at, batch_id, department_id, batch_name, child_name, phone, email, birth_date, requested_skate_size, has_own_skates, existing_member_id, advisor_name, preferred_language, status, payment_status, payment_exempt, amount_nok, stripe_checkout_session_id, stripe_payment_intent_id, paid_at, source, notes, access_code_id, access_code")
             .order("created_at", { ascending: false });
           if (schoolSignupsRes.error) throw schoolSignupsRes.error;
           schoolSignupsData = schoolSignupsRes.data || [];
@@ -10342,7 +10448,19 @@ async function loadAll() {
       renderSchoolParticipants();
     });
 
-    if (byId("btnPrintSchoolBarcodes")) byId("btnPrintSchoolBarcodes").addEventListener("click", printSchoolBarcodes);
+    if (byId("btnPrintSchoolBarcodes")) byId("btnPrintSchoolBarcodes").addEventListener("click", () => {
+      const batch = byId("schoolExportBatch")?.value || "";
+      const message = byId("schoolBarcodeMessage");
+      if (!batch) { if (message) message.textContent = "Velg semester før du skriver ut QR-listen."; return; }
+      const picker = byId("schoolBatchPicker");
+      const previousBatch = picker?.value || "";
+      if (picker) picker.value = batch;
+      refreshSchoolBarcodeGroups();
+      const group = byId("schoolBarcodeGroup");
+      if (group) group.value = byId("schoolExportGroup")?.value || "all";
+      try { printSchoolBarcodes(); }
+      finally { if (picker) picker.value = previousBatch; refreshSchoolBarcodeGroups(); }
+    });
     if (byId("schoolBatchPicker")) byId("schoolBatchPicker").addEventListener("change", function () {
       setUiPref("schoolBatchPicker", byId("schoolBatchPicker").value || "");
       renderSchoolBatchOverview();
@@ -10972,6 +11090,7 @@ if (byId("skateFlowHomeLink")) byId("skateFlowHomeLink").addEventListener("click
     }
 
     function setupSchoolTabs() {
+      setupSchoolExport();
       const tabs = Array.from(document.querySelectorAll("#skatingSchoolTab .school-tab"));
       const schoolSection = byId("schoolMainSection");
 
@@ -11026,6 +11145,17 @@ if (byId("skateFlowHomeLink")) byId("skateFlowHomeLink").addEventListener("click
         if (!tab.dataset.schoolTab) return;
 
         tab.addEventListener("click", () => {
+          const exportPanel = byId("schoolExportPanel");
+          if (exportPanel) exportPanel.classList.add("school-section-hidden");
+          if (tab.dataset.schoolTab === "export") {
+            const signupPanel = byId("schoolSignupFormsPanel");
+            if (signupPanel) signupPanel.classList.add("hidden");
+            schoolSection.classList.add("school-section-hidden");
+            if (exportPanel) exportPanel.classList.remove("school-section-hidden");
+            tabs.forEach((item) => item.classList.toggle("active", item === tab));
+            refreshSchoolExportFilters();
+            return;
+          }
           if (tab.dataset.schoolTab === "signupForms") {
             const signupPanel = byId("schoolSignupFormsPanel");
             if (signupPanel) {
@@ -11040,6 +11170,7 @@ if (byId("skateFlowHomeLink")) byId("skateFlowHomeLink").addEventListener("click
 
           const signupPanel = byId("schoolSignupFormsPanel");
           if (signupPanel) signupPanel.classList.add("hidden");
+          if (exportPanel) exportPanel.classList.add("school-section-hidden");
 
           activateSchoolTab(tab.dataset.schoolTab || "school");
         });
