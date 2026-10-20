@@ -9173,11 +9173,18 @@ function populateMemberEditList() {
           const batch = (state.schoolBatches || []).find(b => sameId(b.id, enrollment.batch_id));
           const email = member.email || (enrollment.members && enrollment.members.email) || "";
           // Knytt kun påmelding til deltakeren ved entydig treff.
-          const matches = (state.schoolSignups || []).filter(signup =>
-            sameId(signup.batch_id, enrollment.batch_id) &&
-            (signup.existing_member_id ? sameId(signup.existing_member_id, enrollment.member_id) : normalized(signup.child_name) === normalized(name))
+          // Påmeldingsskjema kan ha batch_name (f.eks. «September 2026»)
+          // uten batch_id. Medlems-ID er derfor primærnøkkelen for koblingen.
+          const memberMatches = (state.schoolSignups || []).filter(signup =>
+            signup.existing_member_id != null && sameId(signup.existing_member_id, enrollment.member_id)
           );
-          const signup = matches.length === 1 ? matches[0] : null;
+          const exactBatchMatches = memberMatches.filter(signup =>
+            signup.batch_id != null && sameId(signup.batch_id, enrollment.batch_id)
+          );
+          // Ved flere påmeldinger: bruk kun entydig batch-treff. Ellers
+          // ikke gjett dato for en bestemt semesterregistrering.
+          const signup = exactBatchMatches.length === 1 ? exactBatchMatches[0]
+            : memberMatches.length === 1 ? memberMatches[0] : null;
           const language = enrollment.preferred_language || (signup && signup.preferred_language) || "Ikke registrert";
           // Ingen bekreftet samtykkekolonne i påmeldingsdata; aldri anta samtykke.
           const photoConsent = "Ikke registrert";
