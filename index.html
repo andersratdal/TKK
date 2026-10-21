@@ -9523,7 +9523,7 @@ async function loadAll() {
 
         const schoolEnrollmentsRes = await supabaseClient
           .from("skating_school_enrollments")
-          .select("id, batch_id, member_id, school_group_id, birth_year, advisor_name, preferred_language, assignment_reason, manual_override, notes, members(name, role, phone, email)")
+          .select("id, batch_id, member_id, school_group_id, birth_year, created_at, advisor_name, preferred_language, assignment_reason, manual_override, notes, members(name, role, phone, email)")
           .order("created_at", { ascending: true });
         if (schoolEnrollmentsRes.error) throw schoolEnrollmentsRes.error;
 
