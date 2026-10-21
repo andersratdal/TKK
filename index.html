@@ -9155,15 +9155,25 @@ function populateMemberEditList() {
     }
 
     function exportGroupsReportXlsx() {
-      const normalized = value => String(value || "").trim().toLocaleLowerCase("nb-NO").replace(/\s+/g, " ");
+      // Build the lookup directly from the loaded signup records. The signup
+      // semester label (e.g. "September 2026") can differ from batch.name.
+      const signupsByMember = new Map();
+      for (const signup of (state.schoolSignups || [])) {
+        const key = String(signup.existing_member_id || "").trim().toLowerCase();
+        if (!key || !signup.created_at) continue;
+        if (!signupsByMember.has(key)) signupsByMember.set(key, []);
+        signupsByMember.get(key).push(signup);
+      }
       const formatSignupTime = value => {
-        if (!value) return "";
+        if (!value) return "Ikke registrert";
         const date = new Date(value);
-        return Number.isNaN(date.getTime()) ? "" : new Intl.DateTimeFormat("nb-NO", {
+        if (Number.isNaN(date.getTime())) return "Ikke registrert";
+        return new Intl.DateTimeFormat("nb-NO", {
           timeZone: "Europe/Oslo", day: "2-digit", month: "2-digit", year: "numeric",
           hour: "2-digit", minute: "2-digit", hourCycle: "h23"
         }).format(date);
       };
+      let datedRows = 0;
       const rows = (state.schoolEnrollments || [])
         .slice()
         .sort((a, b) => String((a.members && a.members.name) || "").localeCompare(String((b.members && b.members.name) || ""), "nb"))
@@ -9172,22 +9182,15 @@ function populateMemberEditList() {
           const name = member.name || (enrollment.members && enrollment.members.name) || "";
           const batch = (state.schoolBatches || []).find(b => sameId(b.id, enrollment.batch_id));
           const email = member.email || (enrollment.members && enrollment.members.email) || "";
-          // Knytt kun påmelding til deltakeren ved entydig treff.
-          // Påmeldingsskjema kan ha batch_name (f.eks. «September 2026»)
-          // uten batch_id. Medlems-ID er derfor primærnøkkelen for koblingen.
-          const memberMatches = (state.schoolSignups || []).filter(signup =>
-            signup.existing_member_id != null && sameId(signup.existing_member_id, enrollment.member_id)
-          );
-          const exactBatchMatches = memberMatches.filter(signup =>
-            signup.batch_id != null && sameId(signup.batch_id, enrollment.batch_id)
-          );
-          // Ved flere påmeldinger: bruk kun entydig batch-treff. Ellers
-          // ikke gjett dato for en bestemt semesterregistrering.
-          const signup = exactBatchMatches.length === 1 ? exactBatchMatches[0]
-            : memberMatches.length === 1 ? memberMatches[0] : null;
+          const key = String(enrollment.member_id || "").trim().toLowerCase();
+          const matches = signupsByMember.get(key) || [];
+          // Prefer the matching batch ID. If only one signup exists for this
+          // member, use its timestamp even if batch_name differs from the batch.
+          const batchMatches = matches.filter(s => s.batch_id && sameId(s.batch_id, enrollment.batch_id));
+          const signup = batchMatches.length === 1 ? batchMatches[0]
+            : (matches.length === 1 ? matches[0] : null);
+          if (signup) datedRows++;
           const language = enrollment.preferred_language || (signup && signup.preferred_language) || "Ikke registrert";
-          // Ingen bekreftet samtykkekolonne i påmeldingsdata; aldri anta samtykke.
-          const photoConsent = "Ikke registrert";
           const activeLoan = (state.loans || []).some(loan => sameId(loan.member_id, enrollment.member_id) && !loan.returned_at);
           return [
             name,
@@ -9195,9 +9198,9 @@ function populateMemberEditList() {
             enrollment.birth_year || "",
             batch ? batch.name || "" : "",
             email,
-            signup ? formatSignupTime(signup.created_at) : "",
+            signup ? formatSignupTime(signup.created_at) : "Ikke registrert",
             language,
-            photoConsent,
+            "Ikke registrert",
             activeLoan ? "Ja" : "Nei"
           ];
         });
@@ -9206,12 +9209,14 @@ function populateMemberEditList() {
         return;
       }
       exportRowsToXlsx(
-        "Grupper.xlsx",
-        "Grupper",
+        "Grupper.xlsx", "Grupper",
         ["Navn", "Gruppe", "Fødselsår", "Semester", "E-post", "Påmeldingstidspunkt", "Språk", "Tillatelse til foto", "Har lånt skøyter"],
-        rows,
-        [32, 20, 14, 22, 34, 24, 20, 24, 20]
+        rows, [32, 20, 14, 22, 34, 24, 20, 24, 20]
       );
+      console.info(`Grupper-rapport: ${datedRows} av ${rows.length} deltakerregistreringer fikk påmeldingstidspunkt; ${state.schoolSignups.length} påmeldinger er lastet.`);
+      if (datedRows === 0 && (state.schoolSignups || []).length > 0) {
+        alert("Grupper-rapporten ble laget, men ingen påmeldingstidspunkter kunne knyttes til deltakerne. Se Console for antall og kontroller semesterutvalget.");
+      }
     }
 
     function exportSkatesReportCsv() {
