@@ -9155,68 +9155,70 @@ function populateMemberEditList() {
     }
 
     function exportGroupsReportXlsx() {
-      // Build the lookup directly from the loaded signup records. The signup
-      // semester label (e.g. "September 2026") can differ from batch.name.
-      const signupsByMember = new Map();
-      for (const signup of (state.schoolSignups || [])) {
-        const key = String(signup.existing_member_id || "").trim().toLowerCase();
-        if (!key || !signup.created_at) continue;
-        if (!signupsByMember.has(key)) signupsByMember.set(key, []);
-        signupsByMember.get(key).push(signup);
-      }
-      const formatSignupTime = value => {
+      // Deltakerregistreringer er hovedkilden: inkluder både Spond, skjema og manuelle.
+      const batchId = byId("schoolExportBatch")?.value || "";
+      const groupId = byId("schoolExportGroup")?.value || "";
+      const formatDate = value => {
         if (!value) return "Ikke registrert";
         const date = new Date(value);
-        if (Number.isNaN(date.getTime())) return "Ikke registrert";
-        return new Intl.DateTimeFormat("nb-NO", {
+        return Number.isNaN(date.getTime()) ? "Ikke registrert" : new Intl.DateTimeFormat("nb-NO", {
           timeZone: "Europe/Oslo", day: "2-digit", month: "2-digit", year: "numeric",
           hour: "2-digit", minute: "2-digit", hourCycle: "h23"
         }).format(date);
       };
-      let datedRows = 0;
-      const rows = (state.schoolEnrollments || [])
+      const enrollments = (state.schoolEnrollments || []).filter(e =>
+        (!batchId || sameId(e.batch_id, batchId)) &&
+        (!groupId || (groupId === "unassigned" ? !e.school_group_id : sameId(e.school_group_id, groupId)))
+      );
+      let signupDatesFound = 0;
+      const rows = enrollments
         .slice()
-        .sort((a, b) => String((a.members && a.members.name) || "").localeCompare(String((b.members && b.members.name) || ""), "nb"))
+        .sort((a, b) => String(a.members?.name || "").localeCompare(String(b.members?.name || ""), "nb"))
         .map(enrollment => {
           const member = (state.members || []).find(m => sameId(m.id, enrollment.member_id)) || enrollment.members || {};
-          const name = member.name || (enrollment.members && enrollment.members.name) || "";
+          const name = member.name || enrollment.members?.name || "";
           const batch = (state.schoolBatches || []).find(b => sameId(b.id, enrollment.batch_id));
-          const email = member.email || (enrollment.members && enrollment.members.email) || "";
-          const key = String(enrollment.member_id || "").trim().toLowerCase();
-          const matches = signupsByMember.get(key) || [];
-          // Prefer the matching batch ID. If only one signup exists for this
-          // member, use its timestamp even if batch_name differs from the batch.
-          const batchMatches = matches.filter(s => s.batch_id && sameId(s.batch_id, enrollment.batch_id));
+          const memberMatches = (state.schoolSignups || []).filter(s =>
+            s.existing_member_id && sameId(s.existing_member_id, enrollment.member_id)
+          );
+          // Prioriter en entydig match på både medlem og semester. Hvis bare
+          // én påmelding finnes for medlemmet, bruk denne uten å anta batch_id.
+          const batchMatches = memberMatches.filter(s =>
+            (s.batch_id && sameId(s.batch_id, enrollment.batch_id)) ||
+            (s.batch_name && batch?.name && String(s.batch_name).trim().toLocaleLowerCase("nb-NO") === String(batch.name).trim().toLocaleLowerCase("nb-NO"))
+          );
           const signup = batchMatches.length === 1 ? batchMatches[0]
-            : (matches.length === 1 ? matches[0] : null);
-          if (signup) datedRows++;
-          const language = enrollment.preferred_language || (signup && signup.preferred_language) || "Ikke registrert";
-          const activeLoan = (state.loans || []).some(loan => sameId(loan.member_id, enrollment.member_id) && !loan.returned_at);
+            : memberMatches.length === 1 ? memberMatches[0] : null;
+          if (signup?.created_at) signupDatesFound++;
+          const language = enrollment.preferred_language || signup?.preferred_language || "Ikke registrert";
+          const activeLoan = (state.loans || []).some(loan =>
+            sameId(loan.member_id, enrollment.member_id) && !loan.returned_at
+          );
           return [
             name,
             getSchoolGroupNameForEnrollment(enrollment) || "Ikke fordelt",
             enrollment.birth_year || "",
-            batch ? batch.name || "" : "",
-            email,
-            signup ? formatSignupTime(signup.created_at) : "Ikke registrert",
+            batch?.name || "",
+            member.email || enrollment.members?.email || "",
+            signup ? formatDate(signup.created_at) : "Ikke registrert",
+            formatDate(enrollment.created_at),
             language,
-            "Ikke registrert",
+            "Ikke registrert", // Samtykke er ikke bekreftet i datamodellen.
             activeLoan ? "Ja" : "Nei"
           ];
         });
       if (!rows.length) {
-        alert("Fant ingen registrerte skøyteskoledeltakere.");
+        alert("Ingen deltakere for valgt semester og gruppe.");
         return;
       }
+      console.info(`Grupper-rapport: ${rows.length} deltakerregistreringer, ${signupDatesFound} med påmeldingstidspunkt fra skjema.`);
       exportRowsToXlsx(
-        "Grupper.xlsx", "Grupper",
-        ["Navn", "Gruppe", "Fødselsår", "Semester", "E-post", "Påmeldingstidspunkt", "Språk", "Tillatelse til foto", "Har lånt skøyter"],
-        rows, [32, 20, 14, 22, 34, 24, 20, 24, 20]
+        "Grupper.xlsx",
+        "Grupper",
+        ["Navn", "Gruppe", "Fødselsår", "Semester", "E-post", "Påmeldingstidspunkt", "Registrert i SkateFlow", "Språk", "Tillatelse til foto", "Har lånt skøyter"],
+        rows,
+        [32, 20, 14, 22, 34, 24, 26, 20, 24, 20]
       );
-      console.info(`Grupper-rapport: ${datedRows} av ${rows.length} deltakerregistreringer fikk påmeldingstidspunkt; ${state.schoolSignups.length} påmeldinger er lastet.`);
-      if (datedRows === 0 && (state.schoolSignups || []).length > 0) {
-        alert("Grupper-rapporten ble laget, men ingen påmeldingstidspunkter kunne knyttes til deltakerne. Se Console for antall og kontroller semesterutvalget.");
-      }
     }
 
     function exportSkatesReportCsv() {
