@@ -2072,10 +2072,21 @@ body.auth-locked > .container {
       <button type="button" class="school-tab" id="schoolSignupCodesLink">Påmeldingskoder</button>
     <button type="button" class="school-tab" data-school-tab="signupForms">Påmeldingsskjema</button>
       <button type="button" class="school-tab" data-school-tab="export">Eksport</button>
+      <button type="button" class="school-tab" data-school-tab="semesterControl">Semesterstyring</button>
     </div>
   </div>
 
   
+
+  <div id="schoolSemesterControlPanel" class="school-section-hidden">
+    <div class="section-card">
+      <h2>Semesterstyring</h2>
+      <p class="help">Velg status for hvert semester. Standard drift og standard påmelding kan peke på forskjellige semestre. Endringer lagres i Supabase.</p>
+      <p class="help" style="color:#9a3412">Merk: Påmeldingssiden og Netlify-funksjonene må også oppdateres før stenging håndheves. Denne fanen alene stopper ikke påmeldinger.</p>
+      <div id="schoolSemesterControlMessage" class="help" role="status"></div>
+      <div id="schoolSemesterControlRows" style="overflow-x:auto"></div>
+    </div>
+  </div>
 
   <div id="schoolExportPanel" class="school-section-hidden">
     <div class="section-card"><h2>Eksport fra skøyteskolen</h2><div class="help">Ferdige rapporter og tilpasset Excel-eksport. Velg semester og kolonner nedenfor. Data om samtykke til fotografering er ikke tilgjengelig i dagens registreringsfelter og vises derfor som «Ikke registrert».</div></div>
@@ -9155,69 +9166,56 @@ function populateMemberEditList() {
     }
 
     function exportGroupsReportXlsx() {
-      // Deltakerregistreringer er hovedkilden: inkluder både Spond, skjema og manuelle.
-      const batchId = byId("schoolExportBatch")?.value || "";
-      const groupId = byId("schoolExportGroup")?.value || "";
-      const formatDate = value => {
+      const normalized = value => String(value || "").trim().toLocaleLowerCase("nb-NO").replace(/\s+/g, " ");
+      const formatSignupTime = value => {
         if (!value) return "Ikke registrert";
         const date = new Date(value);
-        return Number.isNaN(date.getTime()) ? "Ikke registrert" : new Intl.DateTimeFormat("nb-NO", {
+        if (Number.isNaN(date.getTime())) return "Ikke registrert";
+        return new Intl.DateTimeFormat("nb-NO", {
           timeZone: "Europe/Oslo", day: "2-digit", month: "2-digit", year: "numeric",
           hour: "2-digit", minute: "2-digit", hourCycle: "h23"
         }).format(date);
       };
-      const enrollments = (state.schoolEnrollments || []).filter(e =>
-        (!batchId || sameId(e.batch_id, batchId)) &&
-        (!groupId || (groupId === "unassigned" ? !e.school_group_id : sameId(e.school_group_id, groupId)))
-      );
-      let signupDatesFound = 0;
-      const rows = enrollments
+      const rows = (state.schoolEnrollments || [])
         .slice()
-        .sort((a, b) => String(a.members?.name || "").localeCompare(String(b.members?.name || ""), "nb"))
+        .sort((a, b) => String((a.members && a.members.name) || "").localeCompare(String((b.members && b.members.name) || ""), "nb"))
         .map(enrollment => {
           const member = (state.members || []).find(m => sameId(m.id, enrollment.member_id)) || enrollment.members || {};
-          const name = member.name || enrollment.members?.name || "";
+          const name = member.name || (enrollment.members && enrollment.members.name) || "";
           const batch = (state.schoolBatches || []).find(b => sameId(b.id, enrollment.batch_id));
-          const memberMatches = (state.schoolSignups || []).filter(s =>
-            s.existing_member_id && sameId(s.existing_member_id, enrollment.member_id)
+          const email = member.email || (enrollment.members && enrollment.members.email) || "";
+          // Knytt kun påmelding til deltakeren ved entydig treff.
+          const matches = (state.schoolSignups || []).filter(signup =>
+            sameId(signup.batch_id, enrollment.batch_id) &&
+            (signup.existing_member_id ? sameId(signup.existing_member_id, enrollment.member_id) : normalized(signup.child_name) === normalized(name))
           );
-          // Prioriter en entydig match på både medlem og semester. Hvis bare
-          // én påmelding finnes for medlemmet, bruk denne uten å anta batch_id.
-          const batchMatches = memberMatches.filter(s =>
-            (s.batch_id && sameId(s.batch_id, enrollment.batch_id)) ||
-            (s.batch_name && batch?.name && String(s.batch_name).trim().toLocaleLowerCase("nb-NO") === String(batch.name).trim().toLocaleLowerCase("nb-NO"))
-          );
-          const signup = batchMatches.length === 1 ? batchMatches[0]
-            : memberMatches.length === 1 ? memberMatches[0] : null;
-          if (signup?.created_at) signupDatesFound++;
-          const language = enrollment.preferred_language || signup?.preferred_language || "Ikke registrert";
-          const activeLoan = (state.loans || []).some(loan =>
-            sameId(loan.member_id, enrollment.member_id) && !loan.returned_at
-          );
+          const signup = matches.length === 1 ? matches[0] : null;
+          const language = enrollment.preferred_language || (signup && signup.preferred_language) || "Ikke registrert";
+          // Ingen bekreftet samtykkekolonne i påmeldingsdata; aldri anta samtykke.
+          const photoConsent = "Ikke registrert";
+          const activeLoan = (state.loans || []).some(loan => sameId(loan.member_id, enrollment.member_id) && !loan.returned_at);
           return [
             name,
             getSchoolGroupNameForEnrollment(enrollment) || "Ikke fordelt",
             enrollment.birth_year || "",
-            batch?.name || "",
-            member.email || enrollment.members?.email || "",
-            signup ? formatDate(signup.created_at) : "Ikke registrert",
-            formatDate(enrollment.created_at),
+            batch ? batch.name || "" : "",
+            email,
+            formatSignupTime(signup && signup.created_at),
             language,
-            "Ikke registrert", // Samtykke er ikke bekreftet i datamodellen.
+            photoConsent,
             activeLoan ? "Ja" : "Nei"
           ];
         });
       if (!rows.length) {
-        alert("Ingen deltakere for valgt semester og gruppe.");
+        alert("Fant ingen registrerte skøyteskoledeltakere.");
         return;
       }
-      console.info(`Grupper-rapport: ${rows.length} deltakerregistreringer, ${signupDatesFound} med påmeldingstidspunkt fra skjema.`);
       exportRowsToXlsx(
         "Grupper.xlsx",
         "Grupper",
-        ["Navn", "Gruppe", "Fødselsår", "Semester", "E-post", "Påmeldingstidspunkt", "Registrert i SkateFlow", "Språk", "Tillatelse til foto", "Har lånt skøyter"],
+        ["Navn", "Gruppe", "Fødselsår", "Semester", "E-post", "Påmeldingstidspunkt", "Språk", "Tillatelse til foto", "Har lånt skøyter"],
         rows,
-        [32, 20, 14, 22, 34, 24, 26, 20, 24, 20]
+        [32, 20, 14, 22, 34, 24, 20, 24, 20]
       );
     }
 
@@ -9523,7 +9521,7 @@ async function loadAll() {
 
         const schoolEnrollmentsRes = await supabaseClient
           .from("skating_school_enrollments")
-          .select("id, batch_id, member_id, school_group_id, birth_year, created_at, advisor_name, preferred_language, assignment_reason, manual_override, notes, members(name, role, phone, email)")
+          .select("id, batch_id, member_id, school_group_id, birth_year, advisor_name, preferred_language, assignment_reason, manual_override, notes, members(name, role, phone, email)")
           .order("created_at", { ascending: true });
         if (schoolEnrollmentsRes.error) throw schoolEnrollmentsRes.error;
 
@@ -11112,6 +11110,71 @@ if (byId("skateFlowHomeLink")) byId("skateFlowHomeLink").addEventListener("click
       }
     }
 
+    // Semesterstyring, fase 1: status lagres i skating_school_batches.
+    // Server-side sperre må implementeres før status kan brukes til å stenge påmelding.
+    const SCHOOL_LIFECYCLE = ["Planlagt", "Pågående", "Avsluttet", "Arkivert"];
+    const SCHOOL_REGISTRATION = ["Ikke åpnet", "Åpen", "Fulltegnet", "Stengt"];
+
+    function renderSchoolSemesterControl() {
+      const wrap = byId("schoolSemesterControlRows");
+      if (!wrap) return;
+      const batches = (state.schoolBatches || []).slice().sort((a,b) => compareBatchNames(a.name,b.name));
+      wrap.replaceChildren();
+      if (!batches.length) { wrap.textContent = "Ingen semestre er registrert."; return; }
+      const table = document.createElement("table");
+      const head = document.createElement("thead");
+      const hr = document.createElement("tr");
+      ["Semester", "Semesterstatus", "Påmelding", "Standard drift", "Standard påmelding", "Lagre"].forEach(label => {
+        const th = document.createElement("th"); th.textContent = label; hr.appendChild(th);
+      });
+      head.appendChild(hr); table.appendChild(head);
+      const body = document.createElement("tbody");
+      batches.forEach(batch => {
+        const row = document.createElement("tr");
+        const name = document.createElement("td"); name.textContent = batch.name || "Uten navn"; row.appendChild(name);
+        function addSelect(values, current) {
+          const cell = document.createElement("td"); const select = document.createElement("select");
+          values.forEach(value => { const option = document.createElement("option"); option.value = value; option.textContent = value; select.appendChild(option); });
+          select.value = values.includes(current) ? current : values[0];
+          cell.appendChild(select); row.appendChild(cell); return select;
+        }
+        const lifecycle = addSelect(SCHOOL_LIFECYCLE, batch.lifecycle_status || (String(batch.status).toLowerCase() === "aktiv" ? "Pågående" : "Planlagt"));
+        const registration = addSelect(SCHOOL_REGISTRATION, batch.registration_status || "Ikke åpnet");
+        function addCheck(checked) { const cell=document.createElement("td"); const box=document.createElement("input"); box.type="checkbox"; box.checked=!!checked; cell.appendChild(box); row.appendChild(cell); return box; }
+        const operating = addCheck(batch.is_default_operating);
+        const signup = addCheck(batch.is_default_registration);
+        const cell = document.createElement("td"); const save = document.createElement("button"); save.type="button"; save.className="btn-secondary btn-small"; save.textContent="Lagre";
+        save.addEventListener("click", async () => {
+          if (!supabaseClient) { setSchoolMessage("schoolSemesterControlMessage", "Ikke tilkoblet Supabase.", true); return; }
+          if (!confirm("Lagre status for " + (batch.name || "semesteret") + "?")) return;
+          save.disabled = true;
+          try {
+            // To separate oppdateringer gir tydeligere feilhåndtering ved unikhetskonflikt.
+            // Sett først eksisterende standard til false, deretter ønsket standard til true.
+            if (operating.checked) {
+              const old = batches.filter(b => b.is_default_operating && String(b.id) !== String(batch.id));
+              for (const item of old) { const r=await supabaseClient.from("skating_school_batches").update({is_default_operating:false}).eq("id",item.id).select("id"); if(r.error) throw r.error; if(!r.data?.length) throw new Error("Ingen tilgang til å endre standard driftssemester."); }
+            }
+            if (signup.checked) {
+              const old = batches.filter(b => b.is_default_registration && String(b.id) !== String(batch.id));
+              for (const item of old) { const r=await supabaseClient.from("skating_school_batches").update({is_default_registration:false}).eq("id",item.id).select("id"); if(r.error) throw r.error; if(!r.data?.length) throw new Error("Ingen tilgang til å endre standard påmeldingssemester."); }
+            }
+            const changes = {lifecycle_status:lifecycle.value,registration_status:registration.value,is_default_operating:operating.checked,is_default_registration:signup.checked};
+            const result = await supabaseClient.from("skating_school_batches").update(changes).eq("id",batch.id).select("id");
+            if (result.error) throw result.error;
+            if (!result.data?.length) throw new Error("Ingen rader oppdatert. Kontroller tilgangsreglene i Supabase.");
+            await loadAll();
+            renderSchoolSemesterControl();
+            setSchoolMessage("schoolSemesterControlMessage", "Lagret: " + (batch.name || "semester") + ".", false);
+          } catch(error) {
+            setSchoolMessage("schoolSemesterControlMessage", "Kunne ikke lagre: " + (error.message || error) + ". Kontroller at SQL-migreringen er kjørt i Dev.", true);
+          } finally { save.disabled = false; }
+        });
+        cell.appendChild(save); row.appendChild(cell); body.appendChild(row);
+      });
+      table.appendChild(body); wrap.appendChild(table);
+    }
+
     function setupSchoolTabs() {
       setupSchoolExport();
       const tabs = Array.from(document.querySelectorAll("#skatingSchoolTab .school-tab"));
@@ -11170,6 +11233,17 @@ if (byId("skateFlowHomeLink")) byId("skateFlowHomeLink").addEventListener("click
         tab.addEventListener("click", () => {
           const exportPanel = byId("schoolExportPanel");
           if (exportPanel) exportPanel.classList.add("school-section-hidden");
+          const semesterPanel = byId("schoolSemesterControlPanel");
+          if (semesterPanel) semesterPanel.classList.add("school-section-hidden");
+          if (tab.dataset.schoolTab === "semesterControl") {
+            const signupPanel = byId("schoolSignupFormsPanel");
+            if (signupPanel) signupPanel.classList.add("hidden");
+            schoolSection.classList.add("school-section-hidden");
+            if (semesterPanel) semesterPanel.classList.remove("school-section-hidden");
+            tabs.forEach(item => item.classList.toggle("active", item === tab));
+            renderSchoolSemesterControl();
+            return;
+          }
           if (tab.dataset.schoolTab === "export") {
             const signupPanel = byId("schoolSignupFormsPanel");
             if (signupPanel) signupPanel.classList.add("hidden");
