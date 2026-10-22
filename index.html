@@ -5730,7 +5730,8 @@ function updateSchoolBatchPicker() {
   if (stillExists) {
     picker.value = current;
   } else if (rows.length) {
-    const latestBatch = getLatestBatchByName(rows);
+    const latestBatch = rows.find(batch => batch.is_default_operating);
+    picker.value = "";
     if (latestBatch && latestBatch.id) picker.value = String(latestBatch.id);
   } else {
     picker.value = "";
@@ -8431,7 +8432,7 @@ function updateMoveMemberToSchoolPanel(memberId) {
       select.value = current;
     } else {
       const activeBatches = (state.schoolBatches || []).filter(
-        (batch) => String(batch.status || "").trim().toLowerCase() === "aktiv"
+        (batch) => batch.is_default_operating === true
       );
 
       if (activeBatches.length === 1) {
@@ -11010,7 +11011,7 @@ if (byId("skateFlowHomeLink")) byId("skateFlowHomeLink").addEventListener("click
                 end_date: nextEnd
               })
               .eq("id", batch.id)
-              .select("id, name, department_id, status, start_date, end_date, created_at")
+              .select("*")
               .maybeSingle();
 
             if (result.error) throw result.error;
@@ -11093,7 +11094,7 @@ if (byId("skateFlowHomeLink")) byId("skateFlowHomeLink").addEventListener("click
 
         const result = await supabaseClient
           .from("skating_school_batches")
-          .select("id, name, department_id, status, start_date, end_date, created_at")
+          .select("*")
           .order("created_at", { ascending: false });
 
         if (result.error) throw result.error;
@@ -11111,7 +11112,7 @@ if (byId("skateFlowHomeLink")) byId("skateFlowHomeLink").addEventListener("click
     }
 
     // Semesterstyring, fase 1: status lagres i skating_school_batches.
-    // Server-side sperre må implementeres før status kan brukes til å stenge påmelding.
+    // Fase 2: Netlify og databasetriggeren håndhever påmeldingsstatus.
     const SCHOOL_LIFECYCLE = ["Planlagt", "Pågående", "Avsluttet", "Arkivert"];
     const SCHOOL_REGISTRATION = ["Ikke åpnet", "Åpen", "Fulltegnet", "Stengt"];
 
@@ -11191,7 +11192,7 @@ if (byId("skateFlowHomeLink")) byId("skateFlowHomeLink").addEventListener("click
           schoolSection.classList.remove("school-section-hidden");
 
           const activeBatch = (state.schoolBatches || []).find(
-            (batch) => String(batch.status || "").trim().toLowerCase() === "aktiv"
+            (batch) => batch.is_default_operating === true
           );
 
           const picker = byId("schoolBatchPicker");
@@ -11208,7 +11209,7 @@ if (byId("skateFlowHomeLink")) byId("skateFlowHomeLink").addEventListener("click
           if (supabaseClient) {
             loadAll().then(() => {
               const refreshedActiveBatch = (state.schoolBatches || []).find(
-                (batch) => String(batch.status || "").trim().toLowerCase() === "aktiv"
+                (batch) => batch.is_default_operating === true
               );
 
               const refreshedPicker = byId("schoolBatchPicker");
@@ -11775,3 +11776,4 @@ if (byId("skateFlowHomeLink")) byId("skateFlowHomeLink").addEventListener("click
 
 </body>
 </html>
+

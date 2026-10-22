@@ -549,6 +549,8 @@
     }
     
 </style>
+<style>#signupForm[hidden]{display:none!important}#schoolRegistrationNotice{padding:14px;margin:14px 0;background:#eef2ff;border-radius:10px}#schoolCoursePeriod{margin:8px 0}</style>
+  <script src="/school-registration.js" defer></script>
 </head>
 <body>
 <div class="app-header">
@@ -587,7 +589,7 @@
         To register through this page, you must have received a registration code from Trondheim Sports Council. Enter the code and complete the form below to submit your registration.
       </p>
 
-      <form id="signupForm">
+      <form id="signupForm" hidden>
         <div class="grid grid-2">
           <div>
             <label for="access_code">Code <span class="required">*</span></label>
@@ -696,7 +698,7 @@
   </template>
 
   <script>
-    const ACTIVE_BATCH_NAME = "Høst 2026";
+    let ACTIVE_BATCH_NAME = "";
 
     const form = document.getElementById("signupForm");
     const childrenContainer = document.getElementById("childrenContainer");
@@ -871,7 +873,7 @@
             access_code,
             email,
             phone,
-            batch_name: ACTIVE_BATCH_NAME,
+            batch_id: window.schoolRegistration.semester.id,
             children
           })
         });
@@ -900,3 +902,4 @@
   </script>
 </body>
 </html>
+
