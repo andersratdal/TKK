@@ -1,3 +1,4 @@
+const { registrationBatch } = require('./lib/school-semester');
 const { createClient } = require("@supabase/supabase-js");
 
 function json(statusCode, body) {
@@ -1006,78 +1007,10 @@ exports.handler =
         );
       }
 
-      const {
-        data: activeBatches,
-        error: batchError
-      } = await supabase
-        .from(
-          "skating_school_batches"
-        )
-        .select(
-          [
-            "id",
-            "name",
-            "department_id",
-            "status",
-            "start_date",
-            "end_date",
-            "created_at"
-          ].join(", ")
-        )
-        .eq(
-          "status",
-          "Aktiv"
-        )
-        .order(
-          "created_at",
-          {
-            ascending: false
-          }
-        )
-        .limit(2);
-
-      if (batchError) {
-        console.error(
-          "Active semester fetch error:",
-          batchError
-        );
-
-        return json(
-          500,
-          {
-            error:
-              "Kunne ikke hente aktivt semester."
-          }
-        );
-      }
-
-      if (
-        !activeBatches ||
-        activeBatches.length === 0
-      ) {
-        return json(
-          400,
-          {
-            error:
-              "Det finnes ikke noe aktivt semester for påmelding."
-          }
-        );
-      }
-
-      if (
-        activeBatches.length > 1
-      ) {
-        return json(
-          400,
-          {
-            error:
-              "Det finnes flere aktive semester. Sett kun ett semester til Aktiv før påmelding."
-          }
-        );
-      }
-
-      const activeBatch =
-        activeBatches[0];
+      const activeBatch = await registrationBatch(supabase, {
+        requireOpen: true, expectedId: body.batch_id
+      });
+      if (!body.batch_id) return json(400, { error: "Last påmeldingssiden på nytt før innsending." });
 
       const {
         data: accessCodeRow,
@@ -1333,12 +1266,6 @@ exports.handler =
         });
       }
 
-      const groups =
-        await ensureDefaultSchoolGroups(
-          supabase,
-          activeBatch.id
-        );
-
       const familySignupId =
         typeof crypto !==
           "undefined" &&
@@ -1348,145 +1275,50 @@ exports.handler =
               .toString(36)
               .slice(2)}`;
 
-      const signupRows =
-        [];
-
-      const memberResults =
-        [];
-
-      for (
-        const child of
-        normalizedChildren
-      ) {
-        const preferredLanguage =
-          child.preferred_language;
-
-        const otherInformation =
-          child.other_information;
-
-        const memberResult =
-          await findOrCreateMember(
-            supabase,
-            child,
-            email,
-            phone
-          );
-
-        const member =
-          memberResult.member;
-
-        const enrollmentResult =
-          await ensureEnrollment(
-            supabase,
-            activeBatch,
-            member,
-            child,
-            groups,
-            preferredLanguage,
-            otherInformation
-          );
-
-        memberResults.push({
-          member_id:
-            member.id,
-
-          member_name:
-            member.name,
-
-          member_created:
-            memberResult.created,
-
-          enrollment_id:
-            enrollmentResult
-              .enrollment.id,
-
-          enrollment_created:
-            enrollmentResult.created,
-
-          preferred_language:
-            preferredLanguage,
-
-          other_information:
-            otherInformation
-        });
-
-        signupRows.push({
-          family_signup_id:
-            familySignupId,
-
-          batch_id:
-            activeBatch.id,
-
-          batch_name:
-            activeBatch.name,
-
-          department_id:
-            activeBatch.department_id,
-
-          access_code_id:
-            accessCodeRow.id,
-
-          access_code:
-            accessCodeRow.code,
-
-          email,
-
-          phone,
-
-          child_name:
-            child.child_name,
-
-          birth_date:
-            child.birth_date,
-
-          requested_skate_size:
-            child.requested_skate_size,
-
-          has_own_skates:
-            child.has_own_skates,
-
-          preferred_language:
-            preferredLanguage,
-
-          other_information:
-            otherInformation,
-
-          existing_member_id:
-            member.id,
-
-          status:
-            "Ferdig",
-
-          notes:
-            "Påmeldt via kodepåmelding. Medlem og semesterdeltakelse opprettet automatisk."
-        });
-      }
-
-      const {
-        data: insertedSignups,
-        error: insertError
-      } = await supabase
-        .from(
-          "skating_school_signups"
-        )
-        .insert(
-          signupRows
-        )
-        .select();
-
+      const signupRows = normalizedChildren.map(child => ({
+        family_signup_id: familySignupId,
+        batch_id: activeBatch.id, batch_name: activeBatch.name,
+        department_id: activeBatch.department_id,
+        access_code_id: accessCodeRow.id, access_code: accessCodeRow.code,
+        email, phone, child_name: child.child_name, birth_date: child.birth_date,
+        requested_skate_size: child.requested_skate_size,
+        has_own_skates: child.has_own_skates,
+        preferred_language: child.preferred_language,
+        other_information: child.other_information,
+        status: "Ny", notes: "Kodepåmelding mottatt. Klargjør medlem og semesterdeltakelse."
+      }));
+      const { data: insertedSignups, error: insertError } = await supabase
+        .from("skating_school_signups").insert(signupRows).select();
       if (insertError) {
-        console.error(
-          "Signup insert error:",
-          insertError
-        );
-
-        return json(
-          500,
-          {
-            error:
-              "Medlemmet ble opprettet, men påmeldingsloggen kunne ikke lagres. Kontakt administrator."
-          }
-        );
+        if (insertError.code === "P0001") return json(409, { error: "Påmeldingen er stengt eller semesteret er endret. Last siden på nytt." });
+        throw insertError;
+      }
+      let groups = [];
+      try { groups = await ensureDefaultSchoolGroups(supabase, activeBatch.id); }
+      catch (error) { console.error("Group setup failed; registration retained for admin:", error); }
+      const memberResults = [];
+      let provisioningWarning = null;
+      for (const child of normalizedChildren) {
+        try {
+          const memberResult = await findOrCreateMember(supabase, child, email, phone);
+          const enrollmentResult = await ensureEnrollment(supabase, activeBatch, memberResult.member,
+            child, groups, child.preferred_language, child.other_information);
+          memberResults.push({ member_id: memberResult.member.id, member_name: memberResult.member.name,
+            member_created: memberResult.created, enrollment_id: enrollmentResult.enrollment.id,
+            enrollment_created: enrollmentResult.created, preferred_language: child.preferred_language,
+            other_information: child.other_information });
+          const logged = insertedSignups.find(row => row.child_name === child.child_name && row.birth_date === child.birth_date && !row._processed);
+          if (!logged) throw new Error("Fant ikke påmeldingsloggen.");
+          const { error } = await supabase.from("skating_school_signups").update({
+            existing_member_id: memberResult.member.id, status: "Ferdig",
+            notes: "Påmeldt via kodepåmelding. Medlem og semesterdeltakelse opprettet automatisk."
+          }).eq("id", logged.id);
+          if (error) throw error;
+          logged._processed = true;
+        } catch (error) {
+          console.error("Code signup needs admin processing:", error);
+          provisioningWarning = "Påmeldingen er mottatt. Administrator må fullføre deltakerregistreringen.";
+        }
       }
 
       const nextUsedCount =
@@ -1564,6 +1396,8 @@ exports.handler =
           email_warning:
             emailWarning,
 
+          provisioning_warning: provisioningWarning,
+
           family_signup_id:
             familySignupId,
 
@@ -1594,7 +1428,7 @@ exports.handler =
       );
 
       return json(
-        500,
+        error.statusCode || 500,
         {
           error:
             error &&
@@ -1605,3 +1439,4 @@ exports.handler =
       );
     }
   };
+
